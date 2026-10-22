@@ -1,10 +1,15 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-e12b128a5384';
+const CACHE = 'classeur-fc2b7bb60b51';
 const ASSETS = [
   "./",
   "css/app.css",
+  "fonts/Marelle-Regular.ttf",
+  "fonts/Marelle2-Regular.ttf",
+  "fonts/MarelleBaton-Regular.ttf",
+  "fonts/MarelleBaton2-Regular.ttf",
+  "fonts/OFL.txt",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",

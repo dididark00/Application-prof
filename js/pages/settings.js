@@ -60,11 +60,19 @@ function general() {
 
 function appearance() {
   const t = Theme.current();
+  const c = { ...Theme.DEFAULT_CUSTOM, ...(t.custom || {}) };
+  const custom = (key, label, help) => field(label, h('input', { type: 'color', value: c[key], 'data-testid': `custom-${key}`,
+    oninput: (e) => { c[key] = e.target.value; Theme.apply({ ...Theme.current(), name: 'perso', custom: { ...c } }); },
+    onchange: () => Theme.set({ name: 'perso', custom: { ...c } }) }), help);
   return h('div', { class: 'card form', 'data-testid': 'appearance' },
     h('h2', {}, 'Apparence'),
     h('div', { class: 'theme-grid', role: 'radiogroup', 'aria-label': 'Couleurs' }, Theme.THEMES.map(([id, label, sw]) =>
-      h('button', { type: 'button', role: 'radio', 'aria-checked': String(t.name === id), class: `theme-choice${t.name === id ? ' on' : ''}`, 'data-testid': `theme-${id}`, onclick: () => Theme.set({ name: id }) },
-        h('span', { class: 'theme-swatches' }, sw.map(c => h('span', { style: { background: c } }))), label))),
+      h('button', { type: 'button', role: 'radio', 'aria-checked': String(t.name === id), class: `theme-choice${t.name === id ? ' on' : ''}`, 'data-testid': `theme-${id}`, onclick: () => Theme.set({ name: id, custom: id === 'perso' ? c : t.custom }) },
+        h('span', { class: 'theme-swatches' }, (sw || [c.fond, c.accent, c.menu]).map(col => h('span', { style: { background: col } }))), label))),
+    t.name === 'perso' ? h('div', { class: 'grid-3', 'data-testid': 'custom-colors' },
+      custom('accent', 'Couleur principale', 'Boutons, liens, titres actifs. Assombrie automatiquement si besoin pour rester lisible.'),
+      custom('menu', 'Couleur du menu actif'),
+      custom('fond', 'Couleur du fond')) : h('p', { class: 'muted small' }, 'Choisissez « Mes couleurs » pour composer votre propre thème.'),
     field('Mode sombre', h('select', { 'data-testid': 'theme-mode', onchange: (e) => Theme.set({ mode: e.target.value }) }, Theme.MODES.map(([v, l]) => h('option', { value: v, selected: t.mode === v }, l))), 'Le soir, l’application passe dans la version sombre du même thème. Impressions, projection et diaporamas restent sur fond blanc.'));
 }
 

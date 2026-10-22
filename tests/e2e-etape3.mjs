@@ -258,22 +258,24 @@ await test('Téléphone : pages de l’étape 3 sans débordement horizontal', a
   await m.close();
 });
 
-await test('Tableau d’écriture Seyès : police importée, lignes de base sur les lignes épaisses, sauvegarde', async () => {
-  await go('#/atelier'); await page.getByTestId('tool-ecriture').click(); await page.waitForTimeout(150);
-  await page.getByTestId('font-file').setInputFiles({ name: 'Marelle-Regular.ttf', mimeType: 'font/ttf', buffer: readFileSync(new URL('./police-essai.ttf', import.meta.url)) });
-  await page.waitForFunction(() => [...document.querySelectorAll('[data-testid=p-police] option')].some(o => o.value === 'Marelle'));
-  eq(await page.getByTestId('p-police').inputValue(), 'Marelle', 'police sélectionnée après import');
+await test('Tableau d’écriture Seyès : Marelle intégrée, lignes de base sur les lignes épaisses, import d’une autre police', async () => {
+  await go('#/atelier'); await page.getByTestId('tool-ecriture').click();
+  await page.waitForFunction(() => document.fonts.check('20px "Marelle"'));
+  eq(await page.getByTestId('p-police').inputValue(), 'Marelle', 'Marelle proposée par défaut');
   await page.getByTestId('p-texte').fill('Bonjour les élèves\nOn écrit en attaché');
   await page.waitForTimeout(150);
-  const t = await page.evaluate(() => [...document.querySelectorAll('[data-testid=atelier-preview] text[data-line]')].map(e => ({ y: +e.getAttribute('y'), fam: e.getAttribute('font-family'), txt: e.textContent, fs: +e.getAttribute('font-size') })));
+  const t = await page.evaluate(() => [...document.querySelectorAll('[data-testid=atelier-preview] text[data-line]')].map(e => ({ y: +e.getAttribute('y'), fam: e.getAttribute('font-family'), fs: +e.getAttribute('font-size') })));
   eq(t.length, 2, 'deux lignes écrites');
   assert(t[0].fam.includes('Marelle'), 'police Marelle appliquée');
   eq(t[0].y, 32, '1re ligne de base sur la 2e ligne épaisse'); eq(t[1].y, 48, 'une ligne sautée (interligne 8 mm)');
   const ratio = await page.evaluate(async () => (await import('./js/fonts.js')).xHeightRatio('Marelle'));
+  assert(ratio > 0.15 && ratio < 0.9 && ratio !== 0.42, `hauteur x mesurée sur la vraie police (${ratio})`);
   assert(Math.abs(t[0].fs * ratio - 2) < 0.05, `hauteur des minuscules ≈ 2 mm (obtenu ${(t[0].fs * ratio).toFixed(2)})`);
-  const b = await page.evaluate(async () => { const m = await import('./js/backup.js'); const s = await import('./js/store.js'); const bk = await m.buildBackup(); const f = s.getSettings().fonts[0]; return { name: f.name, inBackup: JSON.parse(bk.dataJson).blobs.some(x => x.id === f.blobId) }; });
-  eq(b.name, 'Marelle', 'police mémorisée'); assert(b.inBackup, 'police incluse dans la sauvegarde');
   await page.screenshot({ path: `${OUT}etape3-ecriture.png` });
+  await page.getByTestId('font-file').setInputFiles({ name: 'Police-Essai.ttf', mimeType: 'font/ttf', buffer: readFileSync(new URL('./police-essai.ttf', import.meta.url)) });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-testid=p-police] option')].some(o => o.value === 'Police Essai'));
+  const b = await page.evaluate(async () => { const m = await import('./js/backup.js'); const s = await import('./js/store.js'); const bk = await m.buildBackup(); const f = s.getSettings().fonts[0]; return { name: f.name, inBackup: JSON.parse(bk.dataJson).blobs.some(x => x.id === f.blobId) }; });
+  eq(b.name, 'Police Essai', 'police importée mémorisée'); assert(b.inBackup, 'police importée incluse dans la sauvegarde');
 });
 
 await test('Apparence : thèmes et version sombre du soir', async () => {
@@ -288,7 +290,19 @@ await test('Apparence : thèmes et version sombre du soir', async () => {
   await go('#/reglages/general'); await page.getByTestId('theme-bleu').click(); await page.waitForTimeout(150);
   eq(await page.evaluate(() => document.documentElement.dataset.theme), 'bleu', 'thème bleu appliqué');
   eq(await page.evaluate(async () => (await import('./js/store.js')).getSettings().theme.name), 'bleu', 'thème enregistré dans les réglages');
+  await page.getByTestId('theme-perso').click(); await page.waitForTimeout(150);
+  await page.getByTestId('custom-accent').evaluate((el) => { el.value = '#ffd700'; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.waitForTimeout(200);
+  const perso = await page.evaluate(async () => { const t = await import('./js/theme.js'); const a = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(); const cs = getComputedStyle(document.documentElement); return { a, c: t.contrast(a, cs.getPropertyValue('--surface').trim()), ci: t.contrast(a, cs.getPropertyValue('--accent-ink').trim()), saved: (await import('./js/store.js')).getSettings().theme.custom.accent, mode: document.documentElement.dataset.mode }; });
+  eq(perso.saved, '#ffd700', 'couleur personnalisée enregistrée');
+  assert(perso.c >= 4.5, `couleur principale lisible sur les cartes (contraste ${perso.c.toFixed(2)}, ${perso.a})`);
+  assert(perso.ci >= 4.5, `texte des boutons lisible (contraste ${perso.ci.toFixed(2)})`);
+  const light = await page.evaluate(async () => { const t = await import('./js/theme.js'); const v = t.customVars({ accent: '#ffd700' }, false); return t.contrast(v['--accent'], '#ffffff'); });
+  assert(light >= 4.5, `en clair, jaune assombri pour rester lisible (${light.toFixed(2)})`);
+  await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-perso-sombre.png` });
+  await go('#/reglages/general');
   await page.getByTestId('theme-pastel').click(); await page.getByTestId('theme-mode').selectOption('clair'); await page.waitForTimeout(150);
+  eq(await page.evaluate(() => document.documentElement.getAttribute('style')), null, 'variables personnalisées retirées');
   await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-pastel-clair.png` });
   await page.getByTestId('theme-mode').count();
 });

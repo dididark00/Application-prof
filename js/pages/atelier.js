@@ -92,7 +92,7 @@ const DRAW = {
     }
     for (let x = left + Number(o.marge); x <= right; x += il) svg.append(S('line', { x1: x, x2: x, y1: top, y2: Math.min(top + o.lignes * il, PAGE.h - 10), stroke: o.couleur, 'stroke-width': 0.12 }));
     svg.append(S('line', { x1: left + Number(o.marge), x2: left + Number(o.marge), y1: top - 4, y2: Math.min(top + o.lignes * il, PAGE.h - 10), stroke: o.marge_couleur, 'stroke-width': 0.4 }));
-    if (o.modele) svg.append(S('text', { x: left + Number(o.marge) + 2, y: top + il - 1, 'font-size': il * 0.75, fill: '#333' }, o.modele));
+    if (o.modele) svg.append(S('text', { x: left + Number(o.marge) + 2, y: top + il, 'font-size': (il / 4) / F.xHeightRatio('Marelle'), 'font-family': '"Marelle", cursive', fill: '#333' }, o.modele));
     return svg;
   },
   reglure(o) {
@@ -260,15 +260,15 @@ function currentFont(o) {
 /** Choix de la police + import d'un fichier de police (Marelle, téléchargée gratuitement sur le site du ministère). */
 function fontField(o, rerender) {
   const font = currentFont(o);
-  const hasCursive = F.BUNDLED.length || F.imported().length;
   const input = h('input', { type: 'file', accept: '.ttf,.otf,.woff,.woff2', hidden: true, 'data-testid': 'font-file', onchange: async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try { o.police = await F.importFont(f); toast(`Police « ${o.police} » installée sur cet appareil`); rerender(); } catch (err) { toast(err.message, { kind: 'error' }); }
   } });
   return h('div', {},
     field('Police', h('select', { 'data-testid': 'p-police', onchange: (e) => { o.police = e.target.value; rerender(); } }, F.available().map(([v, l]) => h('option', { value: v, selected: v === font }, l)))),
-    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'font-import', onclick: () => input.click() }, icon('download', 14), 'Importer une police (.ttf, .otf, .woff2)'), input,
-    hasCursive ? null : h('p', { class: 'muted small', 'data-testid': 'font-hint' }, 'Pour l’écriture attachée officielle, téléchargez gratuitement la police Marelle (ministère de l’Éducation nationale, licence libre) sur marelle.forge.apps.education.fr, décompressez le fichier puis importez « Marelle-Regular » ici. Elle sera gardée sur l’appareil et incluse dans la sauvegarde.'));
+    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'font-import', onclick: () => input.click() }, icon('download', 14), 'Importer une autre police (.ttf, .otf, .woff2)'), input,
+    h('p', { class: 'muted small' }, 'Polices Marelle © ministère de l’Éducation nationale, licence libre SIL OFL 1.1 (fichier fonts/OFL.txt).'),
+    null);
 }
 
 function printSvg(svg) {

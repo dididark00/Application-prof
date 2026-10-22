@@ -18,6 +18,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     extensions_map = {
         **http.server.SimpleHTTPRequestHandler.extensions_map,
         '.js': 'text/javascript',
+        '.ttf': 'font/ttf',
+        '.otf': 'font/otf',
         '.mjs': 'text/javascript',
         '.css': 'text/css',
         '.json': 'application/json',
