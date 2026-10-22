@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; frame-src 'self' blob:; object-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'">
+  <meta name="theme-color" content="#2f5d50">
+  <meta name="description" content="Application de gestion de classe pour professeurs des écoles">
+  <title>Classeur</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <a class="skip" href="#main">Aller au contenu</a>
+  <div id="app" class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Navigation principale"></aside>
+    <div class="workspace">
+      <header id="topbar" class="topbar"></header>
+      <main id="main" class="main" tabindex="-1">
+        <noscript>Cette application nécessite JavaScript.</noscript>
+        <p class="loading">Chargement…</p>
+      </main>
+    </div>
+    <nav id="bottomnav" class="bottomnav" aria-label="Navigation mobile"></nav>
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="print-root" class="print-root" aria-hidden="true"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
