@@ -119,6 +119,17 @@ npm test                          # étapes 1 et 2
 node tools/build-sw.mjs           # après toute modification des fichiers de l'application
 ```
 
+## 4 bis. Mise en ligne sur Netlify (offre gratuite)
+
+Le dépôt contient `netlify.toml` : site statique, sans étape de construction ; les fichiers qui ne font pas partie de l'application (tests, outils, documents) ne sont pas servis.
+
+1. Créer un compte sur netlify.com (« Sign up with GitHub », avec le compte dididark00).
+2. « Add new project » › « Import an existing project » › GitHub › autoriser Netlify sur le seul dépôt **Application-prof**.
+3. Réglages proposés : *Branch to deploy* = **production** ; *Build command* = vide ; *Publish directory* = `.` (repris de `netlify.toml`). Lancer le déploiement.
+4. Ouvrir l'adresse en `https://….netlify.app`, puis « Installer » (ordinateur) ou « Ajouter à l'écran d'accueil » (téléphone, tablette).
+
+Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits par mois ; un déploiement de production coûte 15 crédits, la bande passante 20 crédits par Go. L'application pèse environ 0,3 Mo et se met en cache : c'est le nombre de déploiements qui compte. La branche `production` n'est donc mise à jour qu'une fois par étape. En cas de dépassement, Netlify **suspend le site jusqu'au mois suivant, sans facturer** l'offre gratuite. Les données restent dans chaque navigateur : la mise en ligne ne synchronise pas les appareils (étape 5).
+
 ## 5. Dépendances externes et coûts
 
 **Aucune pour l'étape 1.** Tout fonctionne localement et gratuitement. Aucun service n'a été souscrit, aucun mot de passe n'est demandé.
