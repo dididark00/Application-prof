@@ -5,6 +5,7 @@ import * as model from '../model.js';
 import * as E from '../eleve.js';
 import * as V from '../vie.js';
 import * as C from '../confidential.js';
+import * as O from '../orga.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyState, pickFiles } from '../ui.js';
 import { bound, pickMany, iconBtn } from '../forms.js';
 import { addFiles } from './files.js';
@@ -187,7 +188,8 @@ export function echangesTab(s) {
     h('p', { class: 'muted small' }, 'Historique personnel, non partagé. La messagerie avec les familles et la prise de rendez-vous arriveront avec l’étape 5.'),
     ex.length ? h('ul', { class: 'obs-list' }, ex.map(x => h('li', {}, h('strong', {}, model.frShort(x.date)), ' ', badge(x.kind, 'muted'), x.with ? ` avec ${x.with}` : '',
       h('p', { class: 'pre small' }, x.summary || ''), x.followUp ? h('p', { class: 'small' }, `Suite : ${x.followUp}`) : null,
-      h('button', { class: 'btn btn-link small', type: 'button', onclick: () => exchangeDialog(s, x) }, 'modifier')))) : h('p', { class: 'muted' }, 'Aucun échange noté.'));
+      h('button', { class: 'btn btn-link small', type: 'button', onclick: () => exchangeDialog(s, x) }, 'modifier')))) : h('p', { class: 'muted' }, 'Aucun échange noté.'),
+    (() => { const ms = O.meetingsOfStudent(s.id); return ms.length ? h('div', { 'data-testid': 'student-meetings' }, h('h3', {}, 'Réunions'), h('ul', { class: 'linked-list' }, ms.map(m => h('li', {}, h('a', { href: `#/reunions/${m.id}` }, `${model.frShort(m.date)} — ${m.title}`), ' ', badge(m.kind, 'muted'))))) : null; })());
 }
 function exchangeDialog(s, x = null) {
   simpleDialog('Échange avec la famille', [

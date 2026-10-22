@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (89) · 🟡 Partiel (9) · ⚙️ À configurer (1) · ⬜ À développer (36) — 135 entrées.
+Légende : ✅ Réalisé (96) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (28) — 135 entrées.
 
 ## Étape 1 — Socle
 
@@ -122,16 +122,16 @@ Légende : ✅ Réalisé (89) · 🟡 Partiel (9) · ⚙️ À configurer (1) ·
 |---|---|---|---|
 | 🟡 | §5 Préparation | Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider) | Nécessite les PDF officiels (le site du ministère n’est pas accessible depuis l’environnement de développement). |
 | ⬜ | §5 Préparation | OCR optionnel avec texte incertain signalé | Local et gratuit si possible ; OCR distant facultatif. |
-| ⬜ | §6 Planifier | Répartition des préparations avec la binôme |  |
+| ✅ | §6 Planifier | Répartition des préparations avec la binôme | Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme). |
 | ⬜ | §11 Fichiers | Charte visuelle enregistrée |  |
 | ⬜ | §11 Fichiers | Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle |  |
-| ⬜ | §12 Organisation | Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves |  |
-| ⬜ | §12 Organisation | Transmissions binôme (fait/à terminer/information, accusé de lecture) |  |
-| ⬜ | §12 Organisation | Répertoire de l’école et des intervenants |  |
-| ⬜ | §12 Organisation | 108 h : activités, prévu/réalisé, totaux, export (règles à vérifier) |  |
-| ⬜ | §12 Organisation | APC : objectifs, élèves, séances, présences, bilan, comptage unique |  |
-| ⬜ | §12 Organisation | Module PES : échéances INSPE, visites, objectifs, retours |  |
-| ⬜ | §12 Organisation | Dossiers remplacement/visite personnalisables |  |
+| ✅ | §12 Organisation | Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves |  |
+| 🟡 | §12 Organisation | Transmissions binôme (fait/à terminer/information, accusé de lecture) | Préremplies depuis le cahier journal ; lecture notée sur l’appareil, copie/impression pour l’envoi. Partage automatique avec les comptes (étape 5). |
+| ✅ | §12 Organisation | Répertoire de l’école et des intervenants |  |
+| ✅ | §12 Organisation | 108 h : activités, prévu/réalisé, totaux, export (règles à vérifier) | Objectifs indicatifs modifiables (quotité, consignes de la circonscription) ; réunions et APC comptées une seule fois. |
+| ✅ | §12 Organisation | APC : objectifs, élèves, séances, présences, bilan, comptage unique |  |
+| ✅ | §12 Organisation | Module PES : échéances INSPE, visites, objectifs, retours |  |
+| ✅ | §12 Organisation | Dossiers remplacement/visite personnalisables |  |
 | ⬜ | §12 Organisation | Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année |  |
 | ⬜ | §12 Organisation | Projets transdisciplinaires ; matériel (stocks, achats, prêts) |  |
 | ⬜ | §14 Exports | Dossier de semaine ; finances ; étiquettes à taille réelle |  |

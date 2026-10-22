@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-eab9e3f70eed';
+const CACHE = 'classeur-87391ee7151d';
 const ASSETS = [
   "./",
   "css/app.css",
@@ -26,17 +26,20 @@ const ASSETS = [
   "js/groups.js",
   "js/main.js",
   "js/model.js",
+  "js/orga.js",
   "js/pages/agenda.js",
   "js/pages/appel.js",
   "js/pages/atelier.js",
   "js/pages/bibliotheque.js",
   "js/pages/cahier.js",
+  "js/pages/contacts.js",
   "js/pages/devoirs.js",
   "js/pages/diaporamas.js",
   "js/pages/differenciation.js",
   "js/pages/edt.js",
   "js/pages/evaluations.js",
   "js/pages/files.js",
+  "js/pages/heures.js",
   "js/pages/inbox.js",
   "js/pages/interventions.js",
   "js/pages/lecons.js",
@@ -44,6 +47,7 @@ const ASSETS = [
   "js/pages/livrets.js",
   "js/pages/manuels.js",
   "js/pages/more.js",
+  "js/pages/pes.js",
   "js/pages/placeholder.js",
   "js/pages/plan.js",
   "js/pages/programmations.js",
@@ -51,7 +55,9 @@ const ASSETS = [
   "js/pages/projection.js",
   "js/pages/rattrapage.js",
   "js/pages/referentiels.js",
+  "js/pages/remplacement.js",
   "js/pages/responsabilites.js",
+  "js/pages/reunions.js",
   "js/pages/seance.js",
   "js/pages/search.js",
   "js/pages/sequences.js",
@@ -61,6 +67,7 @@ const ASSETS = [
   "js/pages/student.js",
   "js/pages/students.js",
   "js/pages/today.js",
+  "js/pages/transmissions.js",
   "js/pages/trombi.js",
   "js/pedago-ui.js",
   "js/pedago.js",

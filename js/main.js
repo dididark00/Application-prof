@@ -43,6 +43,12 @@ import * as pJobs from './pages/responsabilites.js';
 import * as pBiblio from './pages/bibliotheque.js';
 import * as pAtelier from './pages/atelier.js';
 import * as pDiapos from './pages/diaporamas.js';
+import * as pContacts from './pages/contacts.js';
+import * as pReunions from './pages/reunions.js';
+import * as pHeures from './pages/heures.js';
+import * as pTransm from './pages/transmissions.js';
+import * as pPes from './pages/pes.js';
+import * as pRempl from './pages/remplacement.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -83,6 +89,12 @@ const ROUTES = {
   bibliotheque: pBiblio,
   atelier: pAtelier,
   diaporamas: pDiapos,
+  contacts: pContacts,
+  reunions: pReunions,
+  heures: pHeures,
+  transmissions: pTransm,
+  pes: pPes,
+  remplacement: pRempl,
 };
 
 let rendering = false;

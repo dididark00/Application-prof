@@ -5,6 +5,7 @@ import * as PL from '../planning.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs } from '../components.js';
 import { levelChips } from '../pedago-ui.js';
+import * as O from '../orga.js';
 
 const CATS = ['préparation', 'administratif', 'familles', 'formation', 'personnel', 'autre'];
 
@@ -54,6 +55,8 @@ function dayCell(d, cls, view, ref) {
       h('button', { class: 'add-mini', type: 'button', 'aria-label': `Ajouter un événement le ${model.frDate(d)}`, onclick: () => eventDialog({ date: d }) }, '+')),
     plan && plan.school.ok ? h('a', { class: 'agenda-class', href: `#/cahier?d=${d}` }, `${cls.name} : ${plan.entries.filter(e => e.kind !== 'event').length} créneau(x)`, plan.warnings.length ? ' ⚠' : '') : null,
     evs.map(e => h('button', { class: `agenda-ev ${e.personal ? 'perso' : ''}`, type: 'button', 'data-testid': 'agenda-event', onclick: () => eventDialog(e) }, e.start ? `${e.start} ` : '', e.title)),
+    O.meetingsOn(d).map(m => h('a', { class: 'agenda-ev agenda-meeting', href: `#/reunions/${m.id}`, 'data-testid': 'agenda-meeting' }, m.start ? `${m.start} ` : '', m.title, m.cancelled ? ' (annulée)' : '')),
+    O.pesItems().filter(x => x.date === d && x.kind !== 'objectif').map(x => h('a', { class: `agenda-ev agenda-pes ${x.done ? 'done' : ''}`, href: x.kind === 'visite' ? `#/pes/${x.id}` : '#/pes' }, x.kind === 'visite' ? `${x.start ? x.start + ' ' : ''}${x.title}` : `Échéance : ${x.title}`)),
     tasks.map(t => h('button', { class: `agenda-task ${t.done ? 'done' : ''}`, type: 'button', onclick: () => taskDialog(t) }, t.done ? '☑ ' : '☐ ', t.title)));
 }
 

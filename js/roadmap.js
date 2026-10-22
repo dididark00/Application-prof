@@ -67,7 +67,7 @@ export const ROADMAP = [
   R(2, '§6 Planifier', 'Cahier journal depuis l’EDT : bilan express, faite/partielle/reportée, historique', 'fait'),
   R(2, '§6 Planifier', 'Rituels récurrents ; liste consolidée matériel/photocopies', 'fait'),
   R(2, '§6 Planifier', 'Agenda personnel et professionnel, tâches, échéances', 'fait'),
-  R(4, '§6 Planifier', 'Répartition des préparations avec la binôme'),
+  R(4, '§6 Planifier', 'Répartition des préparations avec la binôme', 'fait', 'Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme).'),
   R(5, '§6 Planifier', 'Notifications configurables'),
 
   // ── §7 Appel et quotidien
@@ -112,13 +112,13 @@ export const ROADMAP = [
   R(4, '§11 Fichiers', 'Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle'),
 
   // ── §12 Organisation et finances
-  R(4, '§12 Organisation', 'Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves'),
-  R(4, '§12 Organisation', 'Transmissions binôme (fait/à terminer/information, accusé de lecture)'),
-  R(4, '§12 Organisation', 'Répertoire de l’école et des intervenants'),
-  R(4, '§12 Organisation', '108 h : activités, prévu/réalisé, totaux, export (règles à vérifier)'),
-  R(4, '§12 Organisation', 'APC : objectifs, élèves, séances, présences, bilan, comptage unique'),
-  R(4, '§12 Organisation', 'Module PES : échéances INSPE, visites, objectifs, retours'),
-  R(4, '§12 Organisation', 'Dossiers remplacement/visite personnalisables'),
+  R(4, '§12 Organisation', 'Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves', 'fait'),
+  R(4, '§12 Organisation', 'Transmissions binôme (fait/à terminer/information, accusé de lecture)', 'partiel', 'Préremplies depuis le cahier journal ; lecture notée sur l’appareil, copie/impression pour l’envoi. Partage automatique avec les comptes (étape 5).'),
+  R(4, '§12 Organisation', 'Répertoire de l’école et des intervenants', 'fait'),
+  R(4, '§12 Organisation', '108 h : activités, prévu/réalisé, totaux, export (règles à vérifier)', 'fait', 'Objectifs indicatifs modifiables (quotité, consignes de la circonscription) ; réunions et APC comptées une seule fois.'),
+  R(4, '§12 Organisation', 'APC : objectifs, élèves, séances, présences, bilan, comptage unique', 'fait'),
+  R(4, '§12 Organisation', 'Module PES : échéances INSPE, visites, objectifs, retours', 'fait'),
+  R(4, '§12 Organisation', 'Dossiers remplacement/visite personnalisables', 'fait'),
   R(4, '§12 Organisation', 'Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année'),
   R(4, '§12 Organisation', 'Projets transdisciplinaires ; matériel (stocks, achats, prêts)'),
 
@@ -237,13 +237,13 @@ export const RUBRIQUES = [
   ]},
   { id: 'organisation', titre: 'Organisation', icone: 'briefcase', sous: [
     { id: 'reception', titre: 'Boîte de réception', route: 'reception' },
-    { id: 'reunions', titre: 'Réunions et notes', etape: 4 },
-    { id: 'heures', titre: '108 h et APC', etape: 4 },
-    { id: 'transmissions', titre: 'Transmissions binôme', etape: 4 },
+    { id: 'reunions', titre: 'Réunions et notes', route: 'reunions' },
+    { id: 'heures', titre: '108 h et APC', route: 'heures' },
+    { id: 'transmissions', titre: 'Transmissions binôme', route: 'transmissions' },
     { id: 'argent', titre: 'Argent et projets', etape: 4 },
     { id: 'materiel', titre: 'Matériel', etape: 4 },
-    { id: 'contacts', titre: 'Contacts', etape: 4 },
-    { id: 'remplacement', titre: 'Dossier remplacement', etape: 4 },
-    { id: 'pes', titre: 'PES et visites', etape: 4 },
+    { id: 'contacts', titre: 'Contacts', route: 'contacts' },
+    { id: 'remplacement', titre: 'Dossiers remplacement et visite', route: 'remplacement' },
+    { id: 'pes', titre: 'PES et visites', route: 'pes' },
   ]},
 ];
