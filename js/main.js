@@ -31,6 +31,7 @@ import * as pServices from './pages/services.js';
 import * as pProjection from './pages/projection.js';
 import * as T from './timer.js';
 import * as F from './fonts.js';
+import * as Theme from './theme.js';
 import * as pTrombi from './pages/trombi.js';
 import * as pListes from './pages/listes.js';
 import * as pEvals from './pages/evaluations.js';
@@ -109,6 +110,7 @@ export async function render() {
 }
 
 async function start() {
+  Theme.init();
   setRenderer(render);
   try {
     await store.init();
@@ -120,10 +122,12 @@ async function start() {
     return;
   }
   ensureSelection();
+  Theme.apply();
   renderShell({ navigate, onQuickAdd: openQuickAdd });
   window.addEventListener('hashchange', render);
   store.subscribe((evt) => {
     if ((evt.kind === 'change' || evt.kind === 'settings') && evt.quiet) { refreshChrome(); return; }
+    if (evt.kind === 'settings' || evt.kind === 'init') Theme.apply();
     if (evt.kind === 'change' || evt.kind === 'settings' || evt.kind === 'init') { ensureSelection(); render(); }
     if (evt.kind === 'save') refreshChrome();
   });

@@ -1,5 +1,6 @@
 import * as store from '../store.js';
 import * as model from '../model.js';
+import * as Theme from '../theme.js';
 import * as backup from '../backup.js';
 import * as demo from '../demo.js';
 import * as P from '../pedago.js';
@@ -51,10 +52,20 @@ function general() {
     h('h2', {}, 'Disciplines'),
     field('Une discipline par ligne', h('textarea', { name: 'subjects', rows: 8, 'data-testid': 'subjects' }, model.subjects().join('\n')), 'Utilisées dans l’emploi du temps, les programmations, les fiches et les fichiers. Renommer une discipline ne modifie pas les fiches existantes.'),
     h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Enregistrer')));
-  return h('div', { class: 'stack' }, form,
+  return h('div', { class: 'stack' }, appearance(), form,
     h('div', { class: 'card' }, h('h2', {}, 'À propos'),
       h('p', {}, `Version ${backup.APP_VERSION} — étapes 1 (socle), 2 (préparation et planification) et 3 (usage en classe). Les données sont enregistrées dans ce navigateur, sur cet appareil.`),
       h('p', { class: 'muted' }, 'Service, binôme et niveaux se règlent dans l’onglet Classes. Calendrier et périodes dans Années et périodes.')));
+}
+
+function appearance() {
+  const t = Theme.current();
+  return h('div', { class: 'card form', 'data-testid': 'appearance' },
+    h('h2', {}, 'Apparence'),
+    h('div', { class: 'theme-grid', role: 'radiogroup', 'aria-label': 'Couleurs' }, Theme.THEMES.map(([id, label, sw]) =>
+      h('button', { type: 'button', role: 'radio', 'aria-checked': String(t.name === id), class: `theme-choice${t.name === id ? ' on' : ''}`, 'data-testid': `theme-${id}`, onclick: () => Theme.set({ name: id }) },
+        h('span', { class: 'theme-swatches' }, sw.map(c => h('span', { style: { background: c } }))), label))),
+    field('Mode sombre', h('select', { 'data-testid': 'theme-mode', onchange: (e) => Theme.set({ mode: e.target.value }) }, Theme.MODES.map(([v, l]) => h('option', { value: v, selected: t.mode === v }, l))), 'Le soir, l’application passe dans la version sombre du même thème. Impressions, projection et diaporamas restent sur fond blanc.'));
 }
 
 // ───────── Années

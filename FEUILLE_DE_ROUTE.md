@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (87) · 🟡 Partiel (8) · ⚙️ À configurer (1) · ⬜ À développer (36) — 132 entrées.
+Légende : ✅ Réalisé (88) · 🟡 Partiel (8) · ⚙️ À configurer (1) · ⬜ À développer (36) — 133 entrées.
 
 ## Étape 1 — Socle
 
@@ -104,6 +104,7 @@ Légende : ✅ Réalisé (87) · 🟡 Partiel (8) · ⚙️ À configurer (1) ·
 | ✅ | §14 Exports | Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans |  |
 | 🟡 | §14 Exports | Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut | Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4). |
 | 🟡 | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche | Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5. |
+| ✅ | §2 Interface | Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages |  |
 | ✅ | §19 Atelier | Timer de couleur persistant (widget flottant, plein écran, heure cible) | Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge). |
 | ✅ | §19 Atelier | Écriture : lignes Seyès, réglures, textes à compléter |  |
 | ✅ | §19 Atelier | Tableau d’écriture Seyès : texte tapé en cursive (police Marelle importée), calé sur les lignes, imprimable et affichable en grand avec annotation | La police Marelle (gratuite, licence libre) se télécharge sur le site du ministère puis s’importe une fois par appareil. |

@@ -276,6 +276,23 @@ await test('Tableau d’écriture Seyès : police importée, lignes de base sur 
   await page.screenshot({ path: `${OUT}etape3-ecriture.png` });
 });
 
+await test('Apparence : thèmes et version sombre du soir', async () => {
+  eq(await page.evaluate(() => document.documentElement.dataset.theme), 'pastel', 'thème par défaut pastel');
+  eq(await page.evaluate(() => document.documentElement.dataset.mode), 'clair', 'clair à 9 h (mode automatique le soir)');
+  const dark = await page.evaluate(async () => { const t = await import('./js/theme.js'); return [t.isDark('soir', new Date('2026-11-02T20:30:00')), t.isDark('soir', new Date('2026-11-02T06:30:00')), t.isDark('soir', new Date('2026-11-02T12:00:00'))]; });
+  eq(dark.join(), 'true,true,false', 'sombre de 19 h à 7 h');
+  await go('#/reglages/general');
+  await page.getByTestId('theme-mode').selectOption('sombre'); await page.waitForTimeout(150);
+  eq(await page.evaluate(() => document.documentElement.dataset.mode), 'sombre', 'mode sombre appliqué');
+  await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-pastel-sombre.png` });
+  await go('#/reglages/general'); await page.getByTestId('theme-bleu').click(); await page.waitForTimeout(150);
+  eq(await page.evaluate(() => document.documentElement.dataset.theme), 'bleu', 'thème bleu appliqué');
+  eq(await page.evaluate(async () => (await import('./js/store.js')).getSettings().theme.name), 'bleu', 'thème enregistré dans les réglages');
+  await page.getByTestId('theme-pastel').click(); await page.getByTestId('theme-mode').selectOption('clair'); await page.waitForTimeout(150);
+  await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-pastel-clair.png` });
+  await page.getByTestId('theme-mode').count();
+});
+
 await test('Aucune erreur JavaScript', async () => { eq(errors.length, 0, errors.join(' | ')); });
 
 await browser.close();

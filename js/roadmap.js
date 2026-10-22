@@ -148,6 +148,7 @@ export const ROADMAP = [
   R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche', 'partiel', 'Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5.'),
   R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants'),
 
+  R(3, '§2 Interface', 'Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages', 'fait'),
   // ── §19 Atelier
   R(3, '§19 Atelier', 'Timer de couleur persistant (widget flottant, plein écran, heure cible)', 'fait', 'Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge).'),
   R(3, '§19 Atelier', 'Écriture : lignes Seyès, réglures, textes à compléter', 'fait'),
