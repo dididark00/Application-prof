@@ -3,6 +3,9 @@ import * as model from '../model.js';
 import * as backup from '../backup.js';
 import * as demo from '../demo.js';
 import * as P from '../pedago.js';
+import * as E from '../eleve.js';
+import * as C from '../confidential.js';
+import * as V from '../vie.js';
 import { ROADMAP, STATUTS, RUBRIQUES } from '../roadmap.js';
 import { h, icon, toast, modal, confirmDialog, field, formData, download, pickFiles, formatSize, badge, emptyState } from '../ui.js';
 import { pageHeader, demoBadge } from '../components.js';
@@ -16,6 +19,7 @@ const TABS = [
   ['connexions', 'Connexions'],
   ['historique', 'Historique'],
   ['corbeille', 'Corbeille'],
+  ['documents', 'Documents et confidentialité'],
   ['reprise', 'Reprise d\u2019année'],
   ['demo', 'Démonstration'],
   ['feuille', 'Feuille de route'],
@@ -23,7 +27,7 @@ const TABS = [
 
 export async function render({ params }) {
   const tab = TABS.some(t => t[0] === params[0]) ? params[0] : 'general';
-  const content = await ({ general, annees, classes, modules, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille, reprise })[tab]();
+  const content = await ({ general, annees, classes, modules, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
   return h('div', { class: 'page' },
     pageHeader('Réglages', { favKey: 'reglages' }),
     h('nav', { class: 'subtabs', 'aria-label': 'Réglages' }, TABS.map(([id, label]) =>
@@ -336,7 +340,7 @@ function connexions() {
 // ───────── Historique
 async function historique() {
   const log = await store.auditLog(300);
-  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel', lot: 'Lot' };
+  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', attendance: 'Appel', serviceplan: 'Services', serviceexc: 'Exception de service', studentdoc: 'Document élève', observation: 'Observation', levelmark: 'Niveau', aid: 'Aide', portfolio: 'Portfolio', need: 'Besoin particulier', plan: 'Dispositif', exchange: 'Échange', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel', lot: 'Lot' };
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Les 300 dernières modifications, avec leur auteur. Le bouton « Annuler » du haut de l’écran revient sur les dernières actions de cette session.'),
     log.length ? h('div', { class: 'card' }, h('table', { class: 'table', 'data-testid': 'audit-table' },
@@ -348,7 +352,7 @@ async function historique() {
 function corbeille() {
   const items = store.trash();
   const name = (r) => r.name || r.label || r.title || (r.firstName ? `${r.firstName} ${r.lastName || ''}` : null) || r.text?.slice(0, 40) || (r.type === 'occurrence' ? `${r.subject || 'Séance'} du ${model.frShort(r.date)}` : r.type);
-  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel' };
+  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', attendance: 'Appel', serviceplan: 'Services', serviceexc: 'Exception de service', studentdoc: 'Document élève', observation: 'Observation', levelmark: 'Niveau', aid: 'Aide', portfolio: 'Portfolio', need: 'Besoin particulier', plan: 'Dispositif', exchange: 'Échange', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel' };
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Les éléments supprimés restent ici jusqu’à leur suppression définitive. Ils sont exclus de la recherche et des listes.'),
     items.length ? h('div', { class: 'card' }, h('table', { class: 'table' },
@@ -378,6 +382,36 @@ function demoTab() {
         if (!await confirmDialog('Retirer les données de démonstration ?', 'Seuls les éléments marqués « Démo » sont supprimés définitivement. Vos propres données ne sont pas touchées.', { confirmLabel: 'Retirer', danger: true })) return;
         const n = await demo.removeDemo(); toast(`${n} élément(s) de démonstration retiré(s)`);
       } }, 'Retirer les données fictives'))));
+}
+
+// ───────── Documents des élèves, services et confidentialité
+function documents() {
+  const st = store.getSettings();
+  const docs = (Array.isArray(st.docTemplates) && st.docTemplates.length ? st.docTemplates : E.DEFAULT_DOCS);
+  const docsTa = h('textarea', { rows: 7, 'data-testid': 'doc-templates' }, docs.map(d => `${d.category === 'autorisation' ? 'A' : 'D'}${d.validity ? '+' : ''} ${d.label}`).join('\n'));
+  const usagesTa = h('textarea', { rows: 5 }, (Array.isArray(st.imageUsages) && st.imageUsages.length ? st.imageUsages : E.DEFAULT_IMAGE_USAGES).join('\n'));
+  const svcTa = h('textarea', { rows: 4 }, V.services().join('\n'));
+  const pin = h('input', { type: 'password', inputmode: 'numeric', autocomplete: 'new-password', placeholder: C.hasPin() ? 'nouveau code' : 'code (4 chiffres ou plus)', 'data-testid': 'set-pin' });
+  return h('div', { class: 'stack' },
+    h('div', { class: 'card form' }, h('h2', {}, 'Documents et autorisations demandés chaque année'),
+      h('p', { class: 'muted small' }, 'Une ligne par élément. Commencez par « D » pour un document, « A » pour une autorisation ; ajoutez « + » pour une date de validité (ex. « D+ Attestation d’assurance »). Les états déjà saisis sont conservés.'),
+      docsTa,
+      h('h3', {}, 'Usages pour le droit à l’image'), usagesTa,
+      h('h3', {}, 'Services (cantine, étude, garderie…)'), svcTa,
+      h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: async () => {
+        const lines = docsTa.value.split('\n').map(l => l.trim()).filter(Boolean);
+        const templates = lines.map(l => { const m = l.match(/^([DA])(\+)?\s+(.*)$/i); const label = m ? m[3].trim() : l; const prev = docs.find(d => d.label === label);
+          return { id: prev?.id || label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-'), label, category: m && m[1].toUpperCase() === 'A' ? 'autorisation' : 'document', validity: !!(m && m[2]) }; });
+        await store.setSettings({ docTemplates: templates, imageUsages: usagesTa.value.split('\n').map(x => x.trim()).filter(Boolean), services: svcTa.value.split('\n').map(x => x.trim()).filter(Boolean) });
+        toast('Listes enregistrées');
+      } }, 'Enregistrer'))),
+    h('div', { class: 'card form' }, h('h2', {}, 'Informations confidentielles'),
+      h('p', {}, 'Besoins particuliers, PPRE/PAP/PPS/PAI/AESH et santé sont masqués par défaut, jamais affichés dans la recherche ni en projection, et exclus des exports par défaut.'),
+      h('p', { class: 'warn' }, 'Sur cet appareil, il s’agit d’un masquage d’affichage, pas d’un chiffrement : toute personne ayant accès à votre session de navigateur pourrait lire la sauvegarde. Le contrôle d’accès par compte arrivera avec l’étape 5.'),
+      field(C.hasPin() ? 'Changer le code' : 'Définir un code (facultatif)', pin),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn btn-primary', type: 'button', onclick: async () => { if (pin.value.length < 4) { toast('Au moins 4 caractères', { kind: 'error' }); return; } await C.setPin(pin.value); toast('Code enregistré'); } }, 'Enregistrer le code'),
+        C.hasPin() ? h('button', { class: 'btn btn-ghost-danger', type: 'button', onclick: async () => { await C.setPin(''); toast('Code retiré'); } }, 'Retirer le code') : null)));
 }
 
 // ───────── Reprise d'une année précédente

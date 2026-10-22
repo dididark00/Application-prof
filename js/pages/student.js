@@ -3,8 +3,13 @@ import * as model from '../model.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, pickFiles, badge, emptyState, safeUrl } from '../ui.js';
 import { pageHeader, demoBadge, avatar } from '../components.js';
 import { studentDialog } from './students.js';
+import * as ST from './student-tabs.js';
+import * as E from '../eleve.js';
 
-export function render({ params }) {
+const TABS = [['identite', 'Identité et contacts'], ['documents', 'Documents et autorisations'], ['suivi', 'Suivi pédagogique'], ['besoins', 'Besoins particuliers'], ['vie', 'Vie scolaire'], ['echanges', 'Échanges']];
+
+export function render({ params, query, rerender }) {
+  const tab = TABS.some(t => t[0] === query.t) ? query.t : 'identite';
   const s = store.get(params[0]);
   if (!s || s.deletedAt) return h('div', { class: 'page' }, pageHeader('Élève introuvable'), emptyState('Cette fiche n’existe pas ou a été mise à la corbeille.', '', h('a', { class: 'btn', href: '#/eleves' }, 'Retour à la liste')));
   const enrs = model.enrollmentsOfStudent(s.id);
@@ -30,6 +35,13 @@ export function render({ params }) {
           toast('Fiche mise à la corbeille', { action: 'Annuler', onAction: () => store.undo() });
         } }, icon('trash', 16)))),
 
+    h('nav', { class: 'subtabs', 'aria-label': 'Fiche élève' }, TABS.map(([id, label]) => h('a', { href: `#/eleve/${s.id}?t=${id}`, class: tab === id ? 'active' : '', 'aria-current': tab === id ? 'page' : null, 'data-testid': `tab-${id}` }, label))),
+    tab === 'documents' ? ST.docsTab(s, E.yearOfStudent(s.id)) :
+    tab === 'suivi' ? ST.suiviTab(s, cls, rerender) :
+    tab === 'besoins' ? ST.besoinsTab(s, rerender) :
+    tab === 'vie' ? ST.vieTab(s, cls) :
+    tab === 'echanges' ? ST.echangesTab(s) :
+    h('div', { class: 'stack' },
     h('section', { class: 'card' },
       h('div', { class: 'card-head' }, h('h2', {}, 'Scolarité'),
         current && !current.end ? h('button', { class: 'btn', type: 'button', 'data-testid': 'record-departure', onclick: () => departureDialog(s, current) }, 'Enregistrer un départ') : null),
@@ -65,17 +77,7 @@ export function render({ params }) {
       h('div', { class: 'card-head' }, h('h2', {}, 'Fichiers liés'), h('a', { class: 'btn', href: '#/fichiers' }, 'Ouvrir les fichiers')),
       files.length ? h('ul', { class: 'link-list' }, files.map(f => h('li', {}, icon(f.kind === 'link' ? 'link' : 'file', 16), ' ',
         f.kind === 'link' && safeUrl(f.url) ? h('a', { href: safeUrl(f.url), target: '_blank', rel: 'noopener noreferrer' }, f.name) : h('a', { href: `#/fichiers?open=${f.id}` }, f.name))))
-        : h('p', { class: 'muted' }, 'Aucun fichier lié. Dans Fichiers, « Modifier » permet de rattacher un fichier à des élèves.')),
-
-    h('section', { class: 'card later-card' },
-      h('h2', {}, 'Prévu sur cette fiche'),
-      h('ul', {},
-        h('li', {}, 'Documents (à recevoir/reçu/à compléter, assurance avec validité, relances) — étape 3'),
-        h('li', {}, 'Droit à l’image par usage et autorisations — étape 3'),
-        h('li', {}, 'Observations datées, réussites, aides efficaces, niveau par domaine — étape 3'),
-        h('li', {}, 'Besoins particuliers et PPRE/PAP/PPS/PAI/AESH à accès restreint — étape 3'),
-        h('li', {}, 'Appel, rattrapage, évaluations, portfolio, prêts de livres — étape 3'),
-        h('li', {}, 'Historique des échanges et rendez-vous — étapes 4 et 5'))));
+        : h('p', { class: 'muted' }, 'Aucun fichier lié. Dans Fichiers, « Modifier » permet de rattacher un fichier à des élèves.'))));
 }
 
 async function photoAction(s) {

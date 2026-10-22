@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-594179400af2';
+const CACHE = 'classeur-75344f8753e4';
 const ASSETS = [
   "./",
   "css/app.css",
@@ -11,9 +11,11 @@ const ASSETS = [
   "index.html",
   "js/backup.js",
   "js/components.js",
+  "js/confidential.js",
   "js/csv.js",
   "js/db.js",
   "js/demo.js",
+  "js/eleve.js",
   "js/forms.js",
   "js/main.js",
   "js/model.js",
@@ -38,9 +40,11 @@ const ASSETS = [
   "js/pages/sequences.js",
   "js/pages/services.js",
   "js/pages/settings.js",
+  "js/pages/student-tabs.js",
   "js/pages/student.js",
   "js/pages/students.js",
   "js/pages/today.js",
+  "js/pages/trombi.js",
   "js/pedago-ui.js",
   "js/pedago.js",
   "js/planning.js",

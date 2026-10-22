@@ -214,7 +214,7 @@ export const RUBRIQUES = [
   ]},
   { id: 'classe', titre: 'Ma classe', icone: 'users', sous: [
     { id: 'eleves', titre: 'Élèves', route: 'eleves' },
-    { id: 'trombi', titre: 'Trombinoscope', etape: 3 },
+    { id: 'trombi', titre: 'Trombinoscope', route: 'trombi' },
     { id: 'evaluations', titre: 'Évaluations', etape: 3 },
     { id: 'livrets', titre: 'Livrets et bilans', etape: 3 },
     { id: 'differenciation', titre: 'Différenciation', etape: 3 },
