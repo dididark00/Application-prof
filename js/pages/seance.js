@@ -1,4 +1,4 @@
-// Fiche de séance (modèle « Fiche séance » de Julia) : modèle réutilisable, distinct
+// Fiche de séance (modèle « Fiche séance » de l’enseignante) : modèle réutilisable, distinct
 // des séances datées du cahier journal qui y renvoient par lien.
 import * as store from '../store.js';
 import * as model from '../model.js';

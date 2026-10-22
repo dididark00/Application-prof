@@ -51,10 +51,10 @@ Légende : ✅ Réalisé (55) · 🟡 Partiel (4) · ⚙️ À configurer (1) ·
 | ✅ | §4 Années | Multiniveau : programmations/progressions par niveau, séquences communes, consignes distinctes |  |
 | ✅ | §4 Années | Cahier journal en colonnes parallèles ; travail dirigé/autonomie/ateliers |  |
 | ✅ | §4 Années | Signaler deux activités exigeant simultanément l’enseignant |  |
-| ✅ | §5 Préparation | Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions) | D’après les modèles de Julia ; import d’un tableau de notions. |
+| ✅ | §5 Préparation | Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions) | D’après les modèles de l’enseignante ; import d’un tableau de notions. |
 | ✅ | §5 Préparation | Bilans de période (notions réalisées et restantes) |  |
 | ✅ | §5 Préparation | Fiche de séquence complète |  |
-| ✅ | §5 Préparation | Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication | Phases typées du modèle de Julia ; modes quotidien/visite ; version vierge. |
+| ✅ | §5 Préparation | Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication | Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge. |
 | ✅ | §5 Préparation | Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes |  |
 | ✅ | §5 Préparation | Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle |  |
 | 🟡 | §5 Préparation | Photos du tableau et corrections ; suivi des apprentissages à reprendre | Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3). |
@@ -71,7 +71,7 @@ Légende : ✅ Réalisé (55) · 🟡 Partiel (4) · ⚙️ À configurer (1) ·
 | ✅ | §14 Exports | Impression EDT, cahier journal, préparations, séquences, progressions |  |
 | ✅ | §22 Visites | Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal |  |
 | ✅ | §22 Visites | Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge |  |
-| ✅ | §22 Visites | Import/reproduction du modèle personnel de l’utilisatrice | Modèles de Julia reproduits (programmation, progression, séquence, séance). |
+| ✅ | §22 Visites | Import/reproduction du modèle personnel de l’utilisatrice | Modèles de l’enseignante reproduits (programmation, progression, séquence, séance). |
 
 ## Étape 3 — Usage en classe
 

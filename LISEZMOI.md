@@ -1,6 +1,6 @@
 # Classeur — application de gestion de classe (nom provisoire)
 
-Application web installable (PWA) pour professeurs des écoles, en français. Référence : `Cahier_des_charges_application_prof_Claude.md`. Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
+Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
 **État : étapes 1 (socle) et 2 (préparation et planification liées) réalisées et testées.** Les étapes 3 à 5 restent à développer ; leurs pages sont visibles mais affichent honnêtement « Pas encore disponible », sans bouton factice.
 
@@ -43,7 +43,7 @@ Puis ouvrez **http://localhost:8080** dans Chrome, Edge, Firefox ou Safari. Pour
 
 Chargez les données fictives (Réglages › Démonstration), puis :
 
-1. **Préparer › Programmations** : la programmation de maths d'exemple (périodes × sous-domaines, vue « Détaillée » conforme au modèle de Julia). « Importer un tableau » accepte un CSV ou un copier-coller (Période ; Sous-domaine ; Notion ; Compétences ; Ressources).
+1. **Préparer › Programmations** : la programmation de maths d'exemple (périodes × sous-domaines, vue « Détaillée » conforme au modèle de l’enseignante). « Importer un tableau » accepte un CSV ou un copier-coller (Période ; Sous-domaine ; Notion ; Compétences ; Ressources).
 2. **Préparer › Séquences** › « Les nombres jusqu'à 10 000 » : les 7 blocs du modèle de séquence ; le déroulé se remplit depuis les fiches de séance.
 3. Ouvrez la **séance 1** : identification, objectifs, préparation matérielle, photocopies (nombre d'exemplaires calculé), puis les 5 phases avec leurs rubriques propres. Basculez **Quotidien / Visite** ; **Imprimer** et **Version vierge** produisent la fiche A4.
 4. **Planifier › Cahier journal**, le **2 novembre 2026** : la séance de maths y figure. Cliquez « Faite », remplissez « Bilan express » et « Après la séance ». Modifiez ensuite le titre de la fiche : le 2 novembre garde la version réalisée.
@@ -119,7 +119,15 @@ npm test                          # étapes 1 et 2
 node tools/build-sw.mjs           # après toute modification des fichiers de l'application
 ```
 
-## 4 bis. Mise en ligne sur Netlify (offre gratuite)
+## 4 bis. Mise en ligne sur GitHub Pages (choix retenu, gratuit)
+
+Le dépôt est public : on y trouve le code et des exemples fictifs, **jamais de données d'élèves** (elles restent dans le navigateur de chaque appareil).
+
+1. Sur GitHub : **Settings › Pages** › *Source* : **Deploy from a branch** › *Branch* : **production**, dossier **/ (root)** › **Save**.
+2. Après 1 à 2 minutes, l'application est à l'adresse **https://dididark00.github.io/Application-prof/**.
+3. La branche `production` est mise à jour à la fin de chaque étape ; la page se met à jour toute seule.
+
+## 4 ter. Autre possibilité : Netlify (non utilisée)
 
 Le dépôt contient `netlify.toml` : site statique, sans étape de construction ; les fichiers qui ne font pas partie de l'application (tests, outils, documents) ne sont pas servis.
 

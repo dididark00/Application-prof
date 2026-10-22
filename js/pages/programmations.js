@@ -1,4 +1,4 @@
-// Programmation annuelle (modèle « Programmation annuelle » de Julia) :
+// Programmation annuelle (modèle « Programmation annuelle » de l’enseignante) :
 // une fiche par discipline et par niveau, notions réparties par période et sous-domaine.
 import * as store from '../store.js';
 import * as model from '../model.js';

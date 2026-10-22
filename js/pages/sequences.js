@@ -1,4 +1,4 @@
-// Séquences (modèle « Fiche de séquence » de Julia), reliées aux notions de la programmation
+// Séquences (modèle « Fiche de séquence » de l’enseignante), reliées aux notions de la programmation
 // et aux fiches de séance, dont le déroulé est tiré automatiquement.
 import * as store from '../store.js';
 import * as model from '../model.js';

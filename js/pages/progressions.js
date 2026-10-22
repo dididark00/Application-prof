@@ -1,4 +1,4 @@
-// Progression de période (modèle « Progression période » de Julia) : suivi semaine par semaine
+// Progression de période (modèle « Progression période » de l’enseignante) : suivi semaine par semaine
 // de l'avancement réel, distinct de la programmation validée, avec bilan de période.
 import * as store from '../store.js';
 import * as model from '../model.js';

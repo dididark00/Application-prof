@@ -46,10 +46,10 @@ export const ROADMAP = [
   R(3, '§4 Années', 'Groupes de besoin transversaux, ateliers et rotations'),
 
   // ── §5 Préparation
-  R(2, '§5 Préparation', 'Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions)', 'fait', 'D’après les modèles de Julia ; import d’un tableau de notions.'),
+  R(2, '§5 Préparation', 'Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions)', 'fait', 'D’après les modèles de l’enseignante ; import d’un tableau de notions.'),
   R(2, '§5 Préparation', 'Bilans de période (notions réalisées et restantes)', 'fait'),
   R(2, '§5 Préparation', 'Fiche de séquence complète', 'fait'),
-  R(2, '§5 Préparation', 'Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication', 'fait', 'Phases typées du modèle de Julia ; modes quotidien/visite ; version vierge.'),
+  R(2, '§5 Préparation', 'Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication', 'fait', 'Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge.'),
   R(2, '§5 Préparation', 'Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes', 'fait'),
   R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'afaire', 'Local et gratuit si possible ; OCR distant facultatif.'),
   R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)'),
@@ -172,7 +172,7 @@ export const ROADMAP = [
   R(5, '§21 PWA', 'Politique de rétention distante'),
   R(2, '§22 Visites', 'Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal', 'fait'),
   R(2, '§22 Visites', 'Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge', 'fait'),
-  R(2, '§22 Visites', 'Import/reproduction du modèle personnel de l’utilisatrice', 'fait', 'Modèles de Julia reproduits (programmation, progression, séquence, séance).'),
+  R(2, '§22 Visites', 'Import/reproduction du modèle personnel de l’utilisatrice', 'fait', 'Modèles de l’enseignante reproduits (programmation, progression, séquence, séance).'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif'),

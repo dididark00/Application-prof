@@ -1,4 +1,4 @@
-// Préparation pédagogique : définitions des fiches (d'après les modèles de Julia)
+// Préparation pédagogique : définitions des fiches (d'après les modèles de l’enseignante)
 // et règles de liaison entre programmation, progression, séquence, séance et cahier journal.
 import * as store from './store.js';
 import * as model from './model.js';
