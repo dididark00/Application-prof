@@ -5,6 +5,7 @@ import { pageHeader, demoBadge, avatar } from '../components.js';
 import { studentDialog } from './students.js';
 import * as ST from './student-tabs.js';
 import * as E from '../eleve.js';
+import { openLoansOfStudent } from './bibliotheque.js';
 
 const TABS = [['identite', 'Identité et contacts'], ['documents', 'Documents et autorisations'], ['suivi', 'Suivi pédagogique'], ['besoins', 'Besoins particuliers'], ['vie', 'Vie scolaire'], ['echanges', 'Échanges']];
 
@@ -104,7 +105,8 @@ function departureDialog(s, enr) {
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
     field('Dernier jour dans la classe', h('input', { name: 'end', type: 'date', required: true, value: model.todayIso() })),
     field('Motif (facultatif)', h('input', { name: 'endReason', placeholder: 'ex. déménagement, changement d’école' })),
-    h('p', { class: 'muted' }, 'L’élève restera visible dans les listes et l’historique jusqu’à cette date, puis apparaîtra comme « parti ». Rien n’est effacé.'));
+    h('p', { class: 'muted' }, 'L’élève restera visible dans les listes et l’historique jusqu’à cette date, puis apparaîtra comme « parti ». Rien n’est effacé.'),
+    openLoansOfStudent(s.id).length ? h('p', { class: 'warn' }, `${openLoansOfStudent(s.id).length} livre(s) de la bibliothèque encore prêté(s) : ils ne sont pas marqués rendus automatiquement.`) : null);
   modal({ title: `Départ de ${s.firstName}`, body: form, actions: [{ label: 'Annuler' }, { label: 'Enregistrer le départ', primary: true, onClick: async () => {
     const d = formData(form);
     if (!d.end) return false;

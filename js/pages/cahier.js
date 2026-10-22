@@ -135,6 +135,8 @@ function entryCard(cls, e, inConflict) {
       } }, 'Nouvelle fiche')));
   }
 
+  if (e.occ?.groups) body.push(h('div', { class: 'small entry-groups' }, h('strong', {}, `Groupes « ${e.occ.groups.name} » : `),
+    e.occ.groups.groups.map(g => h('span', { class: 'gchip', style: { borderColor: g.color } }, `${g.name} (${g.memberIds.map(id => store.get(id)?.firstName).filter(Boolean).join(', ')})`))));
   const active = e.status !== 'reportée';
   const actions = h('div', { class: 'entry-actions' },
     active ? [['faite', 'Faite'], ['partielle', 'Partielle']].map(([st, l]) => h('button', { class: `btn btn-small ${e.status === st ? 'btn-primary' : ''}`, type: 'button', 'data-testid': `status-${st}`, onclick: () => PL.setStatus(e, cls, e.status === st ? 'prévue' : st) }, l)) : null,

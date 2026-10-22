@@ -4,6 +4,7 @@ import * as model from '../model.js';
 import { h, icon, badge } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { printDocument } from '../print.js';
+import * as G from '../groups.js';
 
 const opts = { level: '', group: '', perRow: 5, showLast: true };
 
@@ -22,7 +23,7 @@ export function render({ rerender }) {
   const cls = model.currentClass();
   const missing = needClass();
   if (missing) return h('div', { class: 'page' }, pageHeader('Trombinoscope'), subTabs(), missing);
-  const groups = store.all('group').filter(g => g.classId === cls.id && g.permanent !== false);
+  const groups = G.groupsOf(cls.id, { permanentOnly: true });
   const grp = groups.find(g => g.id === opts.group);
   const list = model.studentsOfClass(cls.id).filter(x => !x.student.archived && (!opts.level || x.enrollment.level === opts.level) && (!grp || (grp.memberIds || []).includes(x.student.id)));
   const grid = (size, linkable) => h('div', { class: 'trombi', style: { gridTemplateColumns: `repeat(${opts.perRow}, 1fr)` }, 'data-testid': 'trombi' }, list.map(({ student: s, enrollment: e }) =>

@@ -9,6 +9,7 @@ import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyStat
 import { bound, pickMany, iconBtn } from '../forms.js';
 import { addFiles } from './files.js';
 import { competencyLabel, competencyIndex, pickCompetencies } from './referentiels.js';
+import { openLoansOfStudent } from './bibliotheque.js';
 
 const fileLink = (id) => { const f = id && store.get(id); return f && !f.deletedAt ? h('a', { href: `#/fichiers?open=${f.id}` }, f.name) : null; };
 async function attach(extra) { const fs = await pickFiles({ accept: 'image/*,application/pdf' }); if (!fs.length) return null; const c = await addFiles(fs, null, { tags: ['élève'], ...extra }); return c[0]?.id || null; }
@@ -173,7 +174,10 @@ export function vieTab(s, cls) {
       h('ul', { class: 'plain' }, V.services().map(svc => h('li', {}, h('strong', {}, `${svc} : `), (plan[svc] || []).length ? plan[svc].map(d => model.JOURS[d]).join(', ') : 'non inscrit')),
         h('li', {}, h('strong', {}, 'Sortie habituelle : '), s.departure?.mode || 'à renseigner'),
         h('li', {}, h('strong', {}, 'Personnes autorisées : '), (s.contacts || []).filter(c => c.pickup).map(c => c.name).join(', ') || 'aucune renseignée')),
-      h('a', { class: 'btn btn-small', href: '#/services?t=semaine' }, 'Modifier la semaine type')));
+      h('a', { class: 'btn btn-small', href: '#/services?t=semaine' }, 'Modifier la semaine type')),
+    h('section', { class: 'card' }, h('h2', {}, 'Bibliothèque'),
+      openLoansOfStudent(s.id).length ? h('ul', { class: 'plain' }, openLoansOfStudent(s.id).map(l => { const b = store.get(l.bookId); return h('li', {}, `${b?.title || '?'} — depuis le ${model.frShort(l.start)}${l.due ? `, retour prévu le ${model.frShort(l.due)}` : ''}`); })) : h('p', { class: 'muted' }, 'Aucun livre emprunté.'),
+      h('a', { class: 'btn btn-small', href: '#/bibliotheque' }, 'Bibliothèque')));
 }
 
 // ───────── Échanges avec la famille

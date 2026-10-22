@@ -36,6 +36,9 @@ import * as pEvals from './pages/evaluations.js';
 import * as pLivrets from './pages/livrets.js';
 import * as pRattrapage from './pages/rattrapage.js';
 import * as pDiff from './pages/differenciation.js';
+import * as pPlan from './pages/plan.js';
+import * as pJobs from './pages/responsabilites.js';
+import * as pBiblio from './pages/bibliotheque.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -71,6 +74,9 @@ const ROUTES = {
   livrets: pLivrets,
   rattrapage: pRattrapage,
   differenciation: pDiff,
+  plan: pPlan,
+  responsabilites: pJobs,
+  bibliotheque: pBiblio,
 };
 
 let rendering = false;

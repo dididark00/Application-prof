@@ -220,9 +220,9 @@ export const RUBRIQUES = [
     { id: 'differenciation', titre: 'Différenciation', route: 'differenciation' },
     { id: 'rattrapage', titre: 'Rattrapage', route: 'rattrapage' },
     { id: 'listes', titre: 'Listes', route: 'listes' },
-    { id: 'plan', titre: 'Plan de classe et groupes', etape: 3 },
-    { id: 'responsabilites', titre: 'Responsabilités', etape: 3 },
-    { id: 'bibliotheque', titre: 'Bibliothèque', etape: 3 },
+    { id: 'plan', titre: 'Plan de classe et groupes', route: 'plan' },
+    { id: 'responsabilites', titre: 'Responsabilités', route: 'responsabilites' },
+    { id: 'bibliotheque', titre: 'Bibliothèque', route: 'bibliotheque' },
   ]},
   { id: 'familles', titre: 'Familles', icone: 'home', sous: [
     { id: 'messages', titre: 'Messages', etape: 5 },

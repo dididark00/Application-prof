@@ -10,6 +10,7 @@ import { bound, iconBtn, pickMany } from '../forms.js';
 import { sectionFields, competencyBlock, filesBlock, manualRefsBlock, levelChips } from '../pedago-ui.js';
 import { printDocument } from '../print.js';
 import { printSession } from '../printdocs.js';
+import * as G from '../groups.js';
 
 let rerender = () => {};
 const ui = { showAll: false };
@@ -153,7 +154,7 @@ function detail(id) {
 function adaptationsBlock(s, cls) {
   const list = s.adaptations || [];
   const students = model.studentsOfClass(cls.id);
-  const groups = store.all('group').filter(g => g.classId === cls.id);
+  const groups = G.groupsOf(cls.id);
   const name = (id) => { const st = store.get(id); return st ? st.firstName : '?'; };
   const save = (next, label, quiet = true) => store.update(s.id, { adaptations: next }, label, { quiet });
   const F = [['objective', 'Objectif adapté'], ['consigne', 'Consigne'], ['support', 'Support'], ['quantite', 'Quantité'], ['modalite', 'Modalité de réponse'], ['temps', 'Temps']];
@@ -162,7 +163,7 @@ function adaptationsBlock(s, cls) {
         const items = [...groups.map(g => ({ id: `g:${g.id}`, label: g.name, group: 'Groupes' })), ...students.map(({ student: x }) => ({ id: x.id, label: `${x.firstName} ${x.lastName}`, group: 'Élèves' }))];
         const sel = await pickMany({ title: 'Pour quels élèves ou groupes ?', items });
         if (!sel?.length) return;
-        const ids = [...new Set(sel.flatMap(x => x.startsWith('g:') ? (store.get(x.slice(2))?.memberIds || []) : [x]))];
+        const ids = [...new Set(sel.flatMap(x => x.startsWith('g:') ? (G.groupById(x.slice(2))?.memberIds || []) : [x]))];
         const groupIds = sel.filter(x => x.startsWith('g:')).map(x => x.slice(2));
         await save([...list, { id: store.uid(), studentIds: ids, groupIds }], 'Adaptation ajoutée', false);
       } }, '+ Adaptation')),
@@ -171,7 +172,7 @@ function adaptationsBlock(s, cls) {
       const aids = store.all('aid').filter(x => (a.studentIds || []).includes(x.studentId) && x.active !== false);
       const upd = (k) => (v) => save(store.get(s.id).adaptations.map(x => x.id === a.id ? { ...x, [k]: v } : x), `Adaptation : ${k}`);
       return h('div', { class: 'variant', 'data-testid': 'adaptation' },
-        h('div', { class: 'linked-head' }, h('strong', {}, [...(a.groupIds || []).map(g => store.get(g)?.name).filter(Boolean), ...(a.studentIds || []).map(name)].join(', ') || 'Aucun élève'),
+        h('div', { class: 'linked-head' }, h('strong', {}, [...(a.groupIds || []).map(g => G.groupById(g)?.name).filter(Boolean), ...(a.studentIds || []).map(name)].join(', ') || 'Aucun élève'),
           iconBtn('trash', 'Retirer l’adaptation', () => save(list.filter(x => x.id !== a.id), 'Adaptation retirée', false))),
         aids.length ? h('div', { class: 'row small' }, h('span', { class: 'muted' }, 'Aides enregistrées :'), aids.map(ai => h('button', { class: 'btn btn-small', type: 'button', title: `Ajouter au support (${name(ai.studentId)})`,
           onclick: () => save(store.get(s.id).adaptations.map(x => x.id === a.id ? { ...x, support: [x.support, ai.label].filter(Boolean).join(' ; ') } : x), 'Aide reprise dans l’adaptation', false) }, `${ai.label}${ai.effects?.at(-1) ? ' (' + ai.effects.at(-1).effect + ')' : ''}`))) : null,

@@ -6,12 +6,13 @@ import * as model from '../model.js';
 import * as P from '../pedago.js';
 import * as PL from '../planning.js';
 import * as T from '../timer.js';
+import * as G from '../groups.js';
 import { h, icon, toast, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 
 const KEY = 'classeur-projection';
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('classeur-projection') : null;
-const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false }, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
+const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false }, groupSetId: null, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
 
 function loadCtrl() { try { return { ...DEF, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch { return { ...DEF }; } }
 let ctrl = loadCtrl();
@@ -30,7 +31,12 @@ export function buildPayload(cls, date, c = ctrl) {
     .map(x => ({ title: x.title, dueDate: x.dueDate, levels: x.targets?.kind === 'niveau' ? x.targets.values : [] }));
   const support = c.supportFileId ? (() => { const f = store.get(c.supportFileId); if (!f || f.deletedAt) return null; const v = (f.versions || []).at(-1);
     return f.kind === 'link' ? { kind: 'link', name: f.name } : { kind: 'blob', blobId: v?.blobId, mime: v?.mime, name: f.name }; })() : null;
-  return { date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
+  // Groupes : nom, couleur, prénoms, rôles, activité. Jamais de niveau ni de besoin individuel.
+  const occGroups = entry?.occ?.groups;
+  const set = c.groupSetId ? store.get(c.groupSetId) : null;
+  const gsrc = occGroups || (set && !set.deletedAt ? G.snapshotSet(set) : null);
+  const groupes = gsrc ? { name: gsrc.name, groups: gsrc.groups.map(g => ({ name: g.name, color: g.color, activity: g.activity || '', members: g.memberIds.map(id => { const st = store.get(id); return st ? `${st.firstName}${g.roles?.[id] ? ' (' + g.roles[id] + ')' : ''}` : null; }).filter(Boolean) })) } : null;
+  return { groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
 }
 
 function publish(cls, date) {
@@ -62,8 +68,10 @@ export function render({ query, rerender }) {
     h('div', { class: 'card notice' }, h('p', {}, 'L’écran de projection n’affiche que ce qui est coché ci-dessous : jamais de bilans, notes, coordonnées ni informations personnelles. Glissez la fenêtre « écran » sur le vidéoprojecteur ou le TNI et mettez-la en plein écran (F11).')),
     h('div', { class: 'grid-2' },
       h('section', { class: 'card' }, h('h2', {}, 'Ce qui est projeté'),
-        h('div', { class: 'chips' }, [['programme', 'Programme du jour'], ['consigne', 'Consigne'], ['devoirs', 'Devoirs'], ['timer', 'Timer'], ['support', 'Support']].map(([k, l]) =>
+        h('div', { class: 'chips' }, [['programme', 'Programme du jour'], ['consigne', 'Consigne'], ['devoirs', 'Devoirs'], ['timer', 'Timer'], ['support', 'Support'], ['groupes', 'Groupes']].map(([k, l]) =>
           h('label', { class: 'chip' }, h('input', { type: 'checkbox', checked: !!ctrl.panels[k], 'data-testid': `panel-${k}`, onchange: (e) => setPanel(k, e.target.checked) }), l))),
+        G.setsOf(cls.id).length ? h('label', { class: 'inline' }, 'Groupes projetés', h('select', { 'data-testid': 'proj-groupset', onchange: (e) => set({ groupSetId: e.target.value || null, panels: { ...ctrl.panels, groupes: !!e.target.value } }) },
+          h('option', { value: '' }, entry?.occ?.groups ? 'ceux de la séance' : '—'), G.setsOf(cls.id).map(gs => h('option', { value: gs.id, selected: ctrl.groupSetId === gs.id }, gs.name)))) : null,
         h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: ctrl.blank, onchange: (e) => set({ blank: e.target.checked }) }), 'Écran noir (masquer tout)'),
         h('div', { class: 'field' }, h('label', {}, 'Message affiché'), h('input', { value: ctrl.message, placeholder: 'ex. Sortez votre cahier du jour', 'data-testid': 'proj-message', onchange: (e) => set({ message: e.target.value }) })),
         h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, 'Régler le timer'), h('span', { class: 'muted small' }, 'Le timer projeté suit celui de l’application.'))),
@@ -105,6 +113,7 @@ export function screenView(p, preview = false) {
       h('div', { class: 'screen-main' },
         p.panels.consigne && p.consigne ? h('section', { class: 'screen-consigne' }, h('h2', {}, p.consigne.phase), h('p', { class: 'pre' }, p.consigne.text || ''), p.consigne.trace ? h('p', { class: 'trace pre' }, p.consigne.trace) : null) : null,
         p.panels.support ? supportEl : null,
+        p.panels.groupes && p.groupes ? h('section', { class: 'screen-groups' }, h('h2', {}, p.groupes.name), h('div', { class: 'screen-groups-grid' }, p.groupes.groups.map(g => h('div', { class: 'screen-group', style: { borderColor: g.color } }, h('strong', { style: { color: g.color } }, g.name), g.activity ? h('div', { class: 'small' }, g.activity) : null, h('div', {}, g.members.join(', ')))))) : null,
         p.panels.devoirs && p.devoirs.length ? h('section', { class: 'screen-devoirs' }, h('h2', {}, 'Devoirs'), h('ul', {}, p.devoirs.map(d => h('li', {}, `${d.title} — pour le ${model.frDate(d.dueDate, { weekday: 'long', day: 'numeric', month: 'long' })}${d.levels.length ? ' (' + d.levels.join(', ') + ')' : ''}`)))) : null),
       showTimer ? h('section', { class: 'screen-timer' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null));
 }
