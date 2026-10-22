@@ -12,7 +12,7 @@ import { pageHeader, subTabs, needClass } from '../components.js';
 
 const KEY = 'classeur-projection';
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('classeur-projection') : null;
-const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false }, groupSetId: null, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
+const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false }, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
 
 function loadCtrl() { try { return { ...DEF, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch { return { ...DEF }; } }
 let ctrl = loadCtrl();
@@ -36,7 +36,17 @@ export function buildPayload(cls, date, c = ctrl) {
   const set = c.groupSetId ? store.get(c.groupSetId) : null;
   const gsrc = occGroups || (set && !set.deletedAt ? G.snapshotSet(set) : null);
   const groupes = gsrc ? { name: gsrc.name, groups: gsrc.groups.map(g => ({ name: g.name, color: g.color, activity: g.activity || '', members: g.memberIds.map(id => { const st = store.get(id); return st ? `${st.firstName}${g.roles?.[id] ? ' (' + g.roles[id] + ')' : ''}` : null; }).filter(Boolean) })) } : null;
-  return { groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
+  const ssh = c.slideshowId ? store.get(c.slideshowId) : null;
+  const sl = ssh && !ssh.deletedAt ? ssh.slides[Math.min(c.slideIndex || 0, ssh.slides.length - 1)] : null;
+  const diapo = sl ? (() => { const f = sl.fileId ? store.get(sl.fileId) : null; const v = f?.versions?.at(-1);
+    return { kind: sl.kind, kicker: sl.kicker || '', title: sl.title || '', text: sl.text || '', minutes: sl.minutes || null, blobId: v?.blobId || null, mime: v?.mime || '', url: sl.kind === 'lien' ? (sl.url || '') : '', index: c.slideIndex || 0, count: ssh.slides.length }; })() : null;
+  return { diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
+}
+
+/** Envoie une diapositive à l'écran de projection (sans les notes présentateur). */
+export function projectSlide(cls, slideshowId, index) {
+  ctrl = { ...ctrl, slideshowId, slideIndex: index, panels: { ...ctrl.panels, diapo: true } };
+  publish(cls, model.todayIso());
 }
 
 function publish(cls, date) {
@@ -76,6 +86,16 @@ export function render({ query, rerender }) {
         h('div', { class: 'field' }, h('label', {}, 'Message affiché'), h('input', { value: ctrl.message, placeholder: 'ex. Sortez votre cahier du jour', 'data-testid': 'proj-message', onchange: (e) => set({ message: e.target.value }) })),
         h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, 'Régler le timer'), h('span', { class: 'muted small' }, 'Le timer projeté suit celui de l’application.'))),
       h('section', { class: 'card' }, h('h2', {}, 'Aperçu de l’écran'), h('div', { class: 'screen-preview' }, screenView(payload, true)))),
+    ctrl.slideshowId && store.get(ctrl.slideshowId) ? (() => { const ss = store.get(ctrl.slideshowId); const i = Math.min(ctrl.slideIndex || 0, ss.slides.length - 1); const sl = ss.slides[i];
+      return h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, `Diaporama : ${ss.title}`),
+        h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => set({ slideIndex: Math.max(0, i - 1) }) }, '‹ Précédente'), h('span', {}, `${i + 1} / ${ss.slides.length}`),
+          h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'slide-next', onclick: () => set({ slideIndex: Math.min(ss.slides.length - 1, i + 1) }) }, 'Suivante ›'),
+          h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!ctrl.panels.diapo, onchange: (e) => setPanel('diapo', e.target.checked) }), 'Projeter le diaporama'),
+          h('button', { class: 'btn btn-small', type: 'button', onclick: () => set({ slideshowId: null, panels: { ...ctrl.panels, diapo: false } }) }, 'Arrêter'))),
+        h('p', {}, h('strong', {}, sl?.title || '')),
+        sl?.notes ? h('div', { class: 'presenter' }, h('h3', {}, 'Notes présentateur (non projetées)'), h('p', { class: 'pre' }, sl.notes)) : null,
+        sl?.minutes ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => { T.setDuration(sl.minutes * 60); T.open(); T.start(); } }, `Timer ${sl.minutes} min`) : null);
+    })() : null,
     h('section', { class: 'card' }, h('h2', {}, 'Séance projetée'),
       entries.length ? h('div', { class: 'quick-list' }, entries.map(e => h('button', { class: `quick-item ${e.key === ctrl.entryKey ? 'on' : ''}`, type: 'button', 'data-testid': 'proj-entry', onclick: () => set({ entryKey: e.key, phaseId: e.session?.phases?.[0]?.id || null, supportFileId: null }) },
         h('strong', {}, `${e.start}–${e.end} · ${e.subject || ''}`), h('span', { class: 'muted' }, e.title)))) : emptyState('Aucune séance ce jour'),
@@ -105,6 +125,14 @@ export function screenView(p, preview = false) {
       supportEl.replaceChildren((p.support.mime || '').startsWith('image/') ? h('img', { src: url, alt: p.support.name }) : (p.support.mime === 'application/pdf' ? h('iframe', { src: url, title: p.support.name }) : h('p', {}, p.support.name)));
     });
   } else if (p.panels.support && p.support) supportEl.append(h('p', { class: 'muted' }, `Support : ${p.support.name}${p.support.kind === 'link' ? ' (lien externe : ouvrez-le dans un autre onglet)' : ''}`));
+  if (p.panels.diapo && p.diapo) {
+    const d = p.diapo; const media = h('div', { class: 'slide-media' });
+    if (d.blobId && !preview) store.getBlob(d.blobId).then(b => { if (!b) return; const url = URL.createObjectURL(b); media.replaceChildren(d.mime.startsWith('image/') ? h('img', { src: url, alt: d.title }) : h('iframe', { src: url, title: d.title })); });
+    return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
+      h('div', { class: `slide slide-${d.kind} big` }, d.kicker ? h('div', { class: 'slide-kicker' }, d.kicker) : null, h('div', { class: 'slide-title' }, d.title),
+        d.kind === 'image' ? media : d.kind === 'lien' ? h('div', { class: 'slide-text' }, 'Présentation externe : ouverte sur l’ordinateur de l’enseignante') : d.text ? h('div', { class: 'slide-text pre' }, d.text) : null),
+      showTimer ? h('section', { class: 'screen-timer corner' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null);
+  }
   return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
     h('header', { class: 'screen-head' }, h('span', {}, p.dateLabel.replace(/^./, c => c.toUpperCase()))),
     p.message ? h('div', { class: 'screen-message' }, p.message) : null,

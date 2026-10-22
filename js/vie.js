@@ -59,7 +59,10 @@ export function serviceDay(cls, date, service) {
     const usual = (plan?.plans?.[s.id]?.[service] || []).includes(wd);
     const e = exc.find(x => x.studentId === s.id);
     const registered = e ? !!e.present : usual;
-    const absentAll = HALVES.every(([half]) => attendanceOf(cls.id, date, half)?.marks?.[s.id]?.status === 'absent');
+    const am = attendanceOf(cls.id, date, 'matin')?.marks?.[s.id]?.status;
+    const pm = attendanceOf(cls.id, date, 'après-midi')?.marks?.[s.id]?.status;
+    // Absent le matin et pas encore pointé l'après-midi : on ne le compte pas présent au service de midi.
+    const absentAll = am === 'absent' && (pm === 'absent' || !pm);
     const absentSome = !absentAll && absenceRanges(cls, s.id, date).length > 0;
     if (registered || e) rows.push({ student: s, usual, exception: e || null, registered, expected: registered && !absentAll, absentAll, absentSome });
   }

@@ -5,6 +5,8 @@ import { pageHeader, subTabs, needClass } from '../components.js';
 import { allPages } from '../router.js';
 import * as PL from '../planning.js';
 import { taskDialog } from './agenda.js';
+import * as V from '../vie.js';
+import * as T from '../timer.js';
 
 export function render() {
   const s = store.getSettings();
@@ -86,10 +88,14 @@ export function render() {
   const favs = (s.favorites || []).map(k => pages.find(p => p.key === k)).filter(Boolean);
   if (favs.length) cards.push(h('section', { class: 'card' }, h('h2', {}, 'Favoris'), h('div', { class: 'fav-grid' }, favs.map(f => h('a', { class: 'fav-tile', href: f.href }, icon('star', 16), f.title)))));
 
-  cards.push(h('section', { class: 'card later-card' }, h('h2', {}, 'Bientôt sur cette page'),
-    h('ul', {},
-      h('li', {}, 'Appel rapide matin/après-midi et services (cantine, étude) — étape 3'),
-      h('li', {}, 'Projection du programme du jour et timer de couleur — étape 3'))));
+  if (cls) {
+    const halves = V.HALVES.map(([k, l]) => { const a = V.attendanceOf(cls.id, today, k); return { k, l, a, absents: a ? Object.values(a.marks || {}).filter(m => m.status && m.status !== 'présent').length : 0 }; });
+    const svc = V.services().map(sv => ({ sv, n: V.serviceDay(cls, today, sv).filter(r => r.expected).length })).filter(x => x.n);
+    cards.unshift(h('section', { class: 'card', 'data-testid': 'today-class' }, h('h2', {}, 'En classe'),
+      h('div', { class: 'row' }, halves.map(x => h('a', { class: `btn ${x.a?.validated ? '' : 'btn-primary'}`, href: `#/appel?d=${today}&h=${encodeURIComponent(x.k)}` }, `Appel ${x.l.toLowerCase()}`, x.a?.validated ? badge(`validé · ${x.absents} absent(s) ou retard(s)`, 'ok') : x.a ? badge('en cours', 'warn') : null))),
+      svc.length ? h('p', { class: 'small' }, svc.map(x => `${x.sv} : ${x.n}`).join(' · '), ' ', h('a', { href: '#/services' }, 'détails')) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'))));
+  }
 
   return h('div', { class: 'page' },
     pageHeader(model.frDate(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase()),

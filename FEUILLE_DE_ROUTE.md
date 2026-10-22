@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (55) · 🟡 Partiel (4) · ⚙️ À configurer (1) · ⬜ À développer (71) — 131 entrées.
+Légende : ✅ Réalisé (86) · 🟡 Partiel (8) · ⚙️ À configurer (1) · ⬜ À développer (36) — 131 entrées.
 
 ## Étape 1 — Socle
 
@@ -77,41 +77,41 @@ Légende : ✅ Réalisé (55) · 🟡 Partiel (4) · ⚙️ À configurer (1) ·
 
 | | Section | Fonction | Note |
 |---|---|---|---|
-| ⬜ | §3 Données | Distinguer remis/rattrapé, non évalué/non acquis, inscription/présence prévue |  |
-| ⬜ | §4 Années | Groupes de besoin transversaux, ateliers et rotations |  |
-| ⬜ | §7 Quotidien | Appel matin/après-midi (absent, retard, départ, absence partielle), validation |  |
-| ⬜ | §7 Quotidien | Cantine, étude, périscolaire : semaine type, exceptions, listes imprimables |  |
-| ⬜ | §7 Quotidien | Départ seul/accompagné, personnes autorisées, exceptions |  |
-| ⬜ | §7 Quotidien | Responsabilités et rotations |  |
-| ⬜ | §7 Quotidien | Trombinoscope (photo ou silhouette), vues classe/niveau/groupe, impression |  |
-| ⬜ | §8 Élèves | Statuts documentaires (à recevoir/reçu/à compléter, relance), assurance avec validité |  |
-| ⬜ | §8 Élèves | Droit à l’image par usage (autorisé/refusé/à renseigner), justificatif |  |
-| ⬜ | §8 Élèves | Observations datées par domaine, réussites, difficultés, actions |  |
-| ⬜ | §8 Élèves | Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint |  |
-| ⬜ | §8 Élèves | Niveau par domaine daté ; aides efficaces et historique |  |
-| ⬜ | §8 Élèves | Différenciation dans les préparations (sans adaptation automatique sur diagnostic) |  |
-| ⬜ | §8 Élèves | Portfolio lié aux compétences ; historique des échanges |  |
-| ⬜ | §9 Listes | Listes personnalisables (colonnes case/date/texte/montant/choix, filtres, tri, actions groupées) |  |
-| ⬜ | §9 Listes | Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement) |  |
-| ⬜ | §9 Listes | Modèles réutilisables d’une année à l’autre ; impression vierge ou remplie |  |
-| ⬜ | §10 Suivi | Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse |  |
-| ⬜ | §10 Suivi | Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle |  |
-| ⬜ | §10 Suivi | Rattrapage : absences × séances réellement faites × supports distribués ; remis/rattrapé |  |
-| ⬜ | §11 Fichiers | Diaporamas par séance, vue hebdomadaire, liste de projection du jour |  |
-| ⬜ | §11 Fichiers | Import PDF/images affichables ; PPTX : conversion nécessaire expliquée |  |
-| ⬜ | §11 Fichiers | Éditeur simple de diapositives (titre, texte, image, consigne, exercice, timer) |  |
-| ⬜ | §11 Fichiers | Mode projection séparé sans données privées ; notes présentateur |  |
-| ⬜ | §14 Exports | Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans |  |
-| ⬜ | §14 Exports | Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut |  |
-| ⬜ | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche |  |
-| ⬜ | §19 Atelier | Timer de couleur persistant (widget flottant, plein écran, heure cible) |  |
-| ⬜ | §19 Atelier | Écriture : lignes Seyès, réglures, textes à compléter |  |
-| ⬜ | §19 Atelier | Maths : droites graduées, numération, fractions, horloges |  |
-| ⬜ | §20 Plans | Plan de classe visuel : mobilier, modèles, dispositions nommées par période/séance |  |
-| ⬜ | §20 Plans | Groupes manuels ou aléatoires, absents, rôles, rotations ; groupes de séance figés |  |
-| ⬜ | §23 Bibliothèque | Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif |  |
-| ⬜ | §23 Bibliothèque | Vues par livre/élève, retards, retour en un clic, impressions, grille vierge |  |
-| ⬜ | §23 Bibliothèque | Prêts ouverts signalés au départ d’un élève ou au changement d’année |  |
+| ✅ | §3 Données | Distinguer remis/rattrapé, non évalué/non acquis, inscription/présence prévue |  |
+| ✅ | §4 Années | Groupes de besoin transversaux, ateliers et rotations |  |
+| ✅ | §7 Quotidien | Appel matin/après-midi (absent, retard, départ, absence partielle), validation |  |
+| ✅ | §7 Quotidien | Cantine, étude, périscolaire : semaine type, exceptions, listes imprimables |  |
+| ✅ | §7 Quotidien | Départ seul/accompagné, personnes autorisées, exceptions |  |
+| ✅ | §7 Quotidien | Responsabilités et rotations |  |
+| ✅ | §7 Quotidien | Trombinoscope (photo ou silhouette), vues classe/niveau/groupe, impression |  |
+| ✅ | §8 Élèves | Statuts documentaires (à recevoir/reçu/à compléter, relance), assurance avec validité |  |
+| ✅ | §8 Élèves | Droit à l’image par usage (autorisé/refusé/à renseigner), justificatif |  |
+| ✅ | §8 Élèves | Observations datées par domaine, réussites, difficultés, actions |  |
+| 🟡 | §8 Élèves | Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint | Masqués par défaut (code facultatif), hors recherche et projection. Contrôle d’accès par compte : étape 5. |
+| ✅ | §8 Élèves | Niveau par domaine daté ; aides efficaces et historique |  |
+| ✅ | §8 Élèves | Différenciation dans les préparations (sans adaptation automatique sur diagnostic) |  |
+| ✅ | §8 Élèves | Portfolio lié aux compétences ; historique des échanges |  |
+| ✅ | §9 Listes | Listes personnalisables (colonnes case/date/texte/montant/choix, filtres, tri, actions groupées) |  |
+| 🟡 | §9 Listes | Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement) | Documents, autorisations et droit à l’image : faits. Paiements : avec le module Argent et projets (étape 4). |
+| ✅ | §9 Listes | Modèles réutilisables d’une année à l’autre ; impression vierge ou remplie |  |
+| ✅ | §10 Suivi | Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse |  |
+| ✅ | §10 Suivi | Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle | Export tabulaire des appréciations à reporter dans le LSU ; vocabulaire adapté en maternelle. |
+| ✅ | §10 Suivi | Rattrapage : absences × séances réellement faites × supports distribués ; remis/rattrapé |  |
+| ✅ | §11 Fichiers | Diaporamas par séance, vue hebdomadaire, liste de projection du jour |  |
+| ✅ | §11 Fichiers | Import PDF/images affichables ; PPTX : conversion nécessaire expliquée |  |
+| ✅ | §11 Fichiers | Éditeur simple de diapositives (titre, texte, image, consigne, exercice, timer) |  |
+| ✅ | §11 Fichiers | Mode projection séparé sans données privées ; notes présentateur |  |
+| ✅ | §14 Exports | Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans |  |
+| 🟡 | §14 Exports | Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut | Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4). |
+| 🟡 | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche | Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5. |
+| ✅ | §19 Atelier | Timer de couleur persistant (widget flottant, plein écran, heure cible) | Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge). |
+| ✅ | §19 Atelier | Écriture : lignes Seyès, réglures, textes à compléter |  |
+| ✅ | §19 Atelier | Maths : droites graduées, numération, fractions, horloges |  |
+| ✅ | §20 Plans | Plan de classe visuel : mobilier, modèles, dispositions nommées par période/séance |  |
+| ✅ | §20 Plans | Groupes manuels ou aléatoires, absents, rôles, rotations ; groupes de séance figés |  |
+| ✅ | §23 Bibliothèque | Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif |  |
+| ✅ | §23 Bibliothèque | Vues par livre/élève, retards, retour en un clic, impressions, grille vierge |  |
+| ✅ | §23 Bibliothèque | Prêts ouverts signalés au départ d’un élève ou au changement d’année |  |
 
 ## Étape 4 — Organisation
 

@@ -31,7 +31,7 @@ export const ROADMAP = [
   R(2, '§3 Données', 'Chaîne programme → programmation → progression → séquence → séances/préparations', 'fait'),
   R(2, '§3 Données', 'Distinguer « lier » et « dupliquer » ; modèle réutilisable vs séance datée', 'fait'),
   R(2, '§3 Données', 'Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé', 'partiel', 'Prévu/réalisé (instantané figé) et EDT versionné : faits. Publié : avec le portail familles (étape 5).'),
-  R(3, '§3 Données', 'Distinguer remis/rattrapé, non évalué/non acquis, inscription/présence prévue'),
+  R(3, '§3 Données', 'Distinguer remis/rattrapé, non évalué/non acquis, inscription/présence prévue', 'fait'),
 
   // ── §4 Années, niveaux, multiniveau
   R(1, '§4 Années', 'Créer plusieurs années (périodes datées) et classes', 'fait', 'Préréglage zone C 2026-2027 sourcé.'),
@@ -43,7 +43,7 @@ export const ROADMAP = [
   R(2, '§4 Années', 'Multiniveau : programmations/progressions par niveau, séquences communes, consignes distinctes', 'fait'),
   R(2, '§4 Années', 'Cahier journal en colonnes parallèles ; travail dirigé/autonomie/ateliers', 'fait'),
   R(2, '§4 Années', 'Signaler deux activités exigeant simultanément l’enseignant', 'fait'),
-  R(3, '§4 Années', 'Groupes de besoin transversaux, ateliers et rotations'),
+  R(3, '§4 Années', 'Groupes de besoin transversaux, ateliers et rotations', 'fait'),
 
   // ── §5 Préparation
   R(2, '§5 Préparation', 'Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions)', 'fait', 'D’après les modèles de l’enseignante ; import d’un tableau de notions.'),
@@ -69,43 +69,43 @@ export const ROADMAP = [
   R(5, '§6 Planifier', 'Notifications configurables'),
 
   // ── §7 Appel et quotidien
-  R(3, '§7 Quotidien', 'Appel matin/après-midi (absent, retard, départ, absence partielle), validation'),
-  R(3, '§7 Quotidien', 'Cantine, étude, périscolaire : semaine type, exceptions, listes imprimables'),
-  R(3, '§7 Quotidien', 'Départ seul/accompagné, personnes autorisées, exceptions'),
-  R(3, '§7 Quotidien', 'Responsabilités et rotations'),
-  R(3, '§7 Quotidien', 'Trombinoscope (photo ou silhouette), vues classe/niveau/groupe, impression'),
+  R(3, '§7 Quotidien', 'Appel matin/après-midi (absent, retard, départ, absence partielle), validation', 'fait'),
+  R(3, '§7 Quotidien', 'Cantine, étude, périscolaire : semaine type, exceptions, listes imprimables', 'fait'),
+  R(3, '§7 Quotidien', 'Départ seul/accompagné, personnes autorisées, exceptions', 'fait'),
+  R(3, '§7 Quotidien', 'Responsabilités et rotations', 'fait'),
+  R(3, '§7 Quotidien', 'Trombinoscope (photo ou silhouette), vues classe/niveau/groupe, impression', 'fait'),
 
   // ── §8 Fiches élèves
   R(1, '§8 Élèves', 'Fiche élève : identité, responsables multiples, téléphones/emails, contact prioritaire, urgence, personnes autorisées', 'fait'),
-  R(3, '§8 Élèves', 'Statuts documentaires (à recevoir/reçu/à compléter, relance), assurance avec validité'),
-  R(3, '§8 Élèves', 'Droit à l’image par usage (autorisé/refusé/à renseigner), justificatif'),
-  R(3, '§8 Élèves', 'Observations datées par domaine, réussites, difficultés, actions'),
-  R(3, '§8 Élèves', 'Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint'),
-  R(3, '§8 Élèves', 'Niveau par domaine daté ; aides efficaces et historique'),
-  R(3, '§8 Élèves', 'Différenciation dans les préparations (sans adaptation automatique sur diagnostic)'),
-  R(3, '§8 Élèves', 'Portfolio lié aux compétences ; historique des échanges'),
+  R(3, '§8 Élèves', 'Statuts documentaires (à recevoir/reçu/à compléter, relance), assurance avec validité', 'fait'),
+  R(3, '§8 Élèves', 'Droit à l’image par usage (autorisé/refusé/à renseigner), justificatif', 'fait'),
+  R(3, '§8 Élèves', 'Observations datées par domaine, réussites, difficultés, actions', 'fait'),
+  R(3, '§8 Élèves', 'Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint', 'partiel', 'Masqués par défaut (code facultatif), hors recherche et projection. Contrôle d’accès par compte : étape 5.'),
+  R(3, '§8 Élèves', 'Niveau par domaine daté ; aides efficaces et historique', 'fait'),
+  R(3, '§8 Élèves', 'Différenciation dans les préparations (sans adaptation automatique sur diagnostic)', 'fait'),
+  R(3, '§8 Élèves', 'Portfolio lié aux compétences ; historique des échanges', 'fait'),
 
   // ── §9 Listes
-  R(3, '§9 Listes', 'Listes personnalisables (colonnes case/date/texte/montant/choix, filtres, tri, actions groupées)'),
-  R(3, '§9 Listes', 'Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement)'),
-  R(3, '§9 Listes', 'Modèles réutilisables d’une année à l’autre ; impression vierge ou remplie'),
+  R(3, '§9 Listes', 'Listes personnalisables (colonnes case/date/texte/montant/choix, filtres, tri, actions groupées)', 'fait'),
+  R(3, '§9 Listes', 'Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement)', 'partiel', 'Documents, autorisations et droit à l’image : faits. Paiements : avec le module Argent et projets (étape 4).'),
+  R(3, '§9 Listes', 'Modèles réutilisables d’une année à l’autre ; impression vierge ou remplie', 'fait'),
 
   // ── §10 Devoirs, évaluations, rattrapage
   R(2, '§10 Suivi', 'Devoirs datés liés aux séances/leçons, destinataires, publication volontaire', 'partiel', 'Préparé / donné : fait. Publication aux familles : étape 5.'),
-  R(3, '§10 Suivi', 'Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse'),
-  R(3, '§10 Suivi', 'Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle'),
+  R(3, '§10 Suivi', 'Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse', 'fait'),
+  R(3, '§10 Suivi', 'Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle', 'fait', 'Export tabulaire des appréciations à reporter dans le LSU ; vocabulaire adapté en maternelle.'),
   R(5, '§10 Suivi', 'Export compatible LSU (à vérifier séparément, sans remplacer le service officiel)'),
-  R(3, '§10 Suivi', 'Rattrapage : absences × séances réellement faites × supports distribués ; remis/rattrapé'),
+  R(3, '§10 Suivi', 'Rattrapage : absences × séances réellement faites × supports distribués ; remis/rattrapé', 'fait'),
 
   // ── §11 Fichiers, diaporamas, charte
   R(1, '§11 Fichiers', 'Espace fichiers : dossiers, tags, année/matière/niveau/projet, recherche, favoris', 'fait'),
   R(1, '§11 Fichiers', 'Aperçu (images, PDF, texte) et versions', 'fait', 'Les autres formats se téléchargent.'),
   R(1, '§11 Fichiers', 'Liens externes (Drive, Canva…) opérationnels sans connexion authentifiée', 'fait'),
   R(2, '§11 Fichiers', 'Réutilisation par lien (sans duplication) depuis séances et préparations', 'fait'),
-  R(3, '§11 Fichiers', 'Diaporamas par séance, vue hebdomadaire, liste de projection du jour'),
-  R(3, '§11 Fichiers', 'Import PDF/images affichables ; PPTX : conversion nécessaire expliquée'),
-  R(3, '§11 Fichiers', 'Éditeur simple de diapositives (titre, texte, image, consigne, exercice, timer)'),
-  R(3, '§11 Fichiers', 'Mode projection séparé sans données privées ; notes présentateur'),
+  R(3, '§11 Fichiers', 'Diaporamas par séance, vue hebdomadaire, liste de projection du jour', 'fait'),
+  R(3, '§11 Fichiers', 'Import PDF/images affichables ; PPTX : conversion nécessaire expliquée', 'fait'),
+  R(3, '§11 Fichiers', 'Éditeur simple de diapositives (titre, texte, image, consigne, exercice, timer)', 'fait'),
+  R(3, '§11 Fichiers', 'Mode projection séparé sans données privées ; notes présentateur', 'fait'),
   R(4, '§11 Fichiers', 'Charte visuelle enregistrée'),
   R(4, '§11 Fichiers', 'Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle'),
 
@@ -134,9 +134,9 @@ export const ROADMAP = [
   R(1, '§14 Exports', 'Export CSV (élèves, fichiers)', 'fait'),
   R(1, '§14 Exports', 'Sauvegarde complète réimportable', 'fait'),
   R(2, '§14 Exports', 'Impression EDT, cahier journal, préparations, séquences, progressions', 'fait'),
-  R(3, '§14 Exports', 'Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans'),
+  R(3, '§14 Exports', 'Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans', 'fait'),
   R(4, '§14 Exports', 'Dossier de semaine ; finances ; étiquettes à taille réelle'),
-  R(3, '§14 Exports', 'Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut'),
+  R(3, '§14 Exports', 'Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut', 'partiel', 'Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4).'),
 
   // ── §15 Fiabilité
   R(1, '§15 Fiabilité', 'Utilisable téléphone, tablette, ordinateur', 'fait'),
@@ -145,13 +145,13 @@ export const ROADMAP = [
   R(1, '§15 Fiabilité', 'Hors connexion : application entière (données locales)', 'fait'),
   R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur'),
   R(5, '§15 Fiabilité', 'Synchronisation, file de modifications et conflits explicites'),
-  R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche'),
+  R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche', 'partiel', 'Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5.'),
   R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants'),
 
   // ── §19 Atelier
-  R(3, '§19 Atelier', 'Timer de couleur persistant (widget flottant, plein écran, heure cible)'),
-  R(3, '§19 Atelier', 'Écriture : lignes Seyès, réglures, textes à compléter'),
-  R(3, '§19 Atelier', 'Maths : droites graduées, numération, fractions, horloges'),
+  R(3, '§19 Atelier', 'Timer de couleur persistant (widget flottant, plein écran, heure cible)', 'fait', 'Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge).'),
+  R(3, '§19 Atelier', 'Écriture : lignes Seyès, réglures, textes à compléter', 'fait'),
+  R(3, '§19 Atelier', 'Maths : droites graduées, numération, fractions, horloges', 'fait'),
   R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections'),
   R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées'),
   R(4, '§19 Atelier', 'Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes'),
@@ -160,8 +160,8 @@ export const ROADMAP = [
   R(4, '§19 Atelier', 'Fenêtre de projection séparée / image dans l’image si supporté'),
 
   // ── §20 Plans, groupes, EPS
-  R(3, '§20 Plans', 'Plan de classe visuel : mobilier, modèles, dispositions nommées par période/séance'),
-  R(3, '§20 Plans', 'Groupes manuels ou aléatoires, absents, rôles, rotations ; groupes de séance figés'),
+  R(3, '§20 Plans', 'Plan de classe visuel : mobilier, modèles, dispositions nommées par période/séance', 'fait'),
+  R(3, '§20 Plans', 'Groupes manuels ou aléatoires, absents, rôles, rotations ; groupes de séance figés', 'fait'),
   R(4, '§20 Plans', 'Fiches de groupes imprimables/projetables (version enseignant séparée)'),
   R(4, '§20 Plans', 'Éditeur de schémas EPS lié aux préparations et au cahier journal'),
 
@@ -175,9 +175,9 @@ export const ROADMAP = [
   R(2, '§22 Visites', 'Import/reproduction du modèle personnel de l’utilisatrice', 'fait', 'Modèles de l’enseignante reproduits (programmation, progression, séquence, séance).'),
 
   // ── §23 Bibliothèque
-  R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif'),
-  R(3, '§23 Bibliothèque', 'Vues par livre/élève, retards, retour en un clic, impressions, grille vierge'),
-  R(3, '§23 Bibliothèque', 'Prêts ouverts signalés au départ d’un élève ou au changement d’année'),
+  R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
+  R(3, '§23 Bibliothèque', 'Vues par livre/élève, retards, retour en un clic, impressions, grille vierge', 'fait'),
+  R(3, '§23 Bibliothèque', 'Prêts ouverts signalés au départ d’un élève ou au changement d’année', 'fait'),
   R(4, '§23 Bibliothèque', 'Scan code-barres/QR (facultatif)'),
 ];
 
@@ -200,8 +200,8 @@ export const RUBRIQUES = [
     { id: 'manuels', titre: 'Manuels', route: 'manuels' },
     { id: 'lecons', titre: 'Leçons', route: 'lecons' },
     { id: 'fichiers', titre: 'Fichiers et ressources', route: 'fichiers' },
-    { id: 'diaporamas', titre: 'Diaporamas', etape: 3 },
-    { id: 'atelier', titre: 'Atelier pédagogique', etape: 3 },
+    { id: 'diaporamas', titre: 'Diaporamas', route: 'diaporamas' },
+    { id: 'atelier', titre: 'Atelier pédagogique', route: 'atelier' },
     { id: 'etiquettes', titre: 'Étiquettes et affichages', etape: 4 },
   ]},
   { id: 'planifier', titre: 'Planifier', icone: 'calendar', sous: [

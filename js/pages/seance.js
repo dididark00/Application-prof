@@ -11,6 +11,7 @@ import { sectionFields, competencyBlock, filesBlock, manualRefsBlock, levelChips
 import { printDocument } from '../print.js';
 import { printSession } from '../printdocs.js';
 import * as G from '../groups.js';
+import { slideshowsOf, createFor } from './diaporamas.js';
 
 let rerender = () => {};
 const ui = { showAll: false };
@@ -229,6 +230,8 @@ function linksSection(s) {
             return has === want ? null : { id: l.id, patch: { sessionIds: want ? [...(l.sessionIds || []), s.id] : l.sessionIds.filter(x => x !== s.id) } };
           }).filter(Boolean), 'Leçons liées');
         } }, 'modifier')),
+      h('li', {}, h('strong', {}, 'Diaporama : '), slideshowsOf(s.id).length ? slideshowsOf(s.id).map(d => h('a', { href: `#/diaporamas/${d.id}` }, d.title)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])
+        : h('button', { class: 'btn btn-link small', type: 'button', 'data-testid': 'session-diapo', onclick: async () => { const d = await createFor(s); location.hash = `#/diaporamas/${d.id}`; } }, 'créer depuis cette fiche')),
       h('li', {}, h('strong', {}, 'Devoirs : '), hw.length ? hw.map(x => `${x.title} (pour le ${model.frShort(x.dueDate)})`).join(', ') : h('span', { class: 'muted' }, 'aucun'), ' ', h('a', { class: 'btn btn-link small', href: `#/devoirs?session=${s.id}` }, 'ajouter'))));
 }
 

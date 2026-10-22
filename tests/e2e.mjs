@@ -224,7 +224,7 @@ await test('Favoris : ajout depuis une page, visible dans la barre latérale', a
 });
 
 await test('Pages à venir : aucune action factice', async () => {
-  await go('#/avenir/classe/evaluations');
+  await go('#/avenir/familles/messages');
   await page.getByTestId('placeholder').waitFor();
   eq(await page.locator('[data-testid=placeholder] button').count(), 0, 'boutons dans une page à venir');
 });
@@ -345,7 +345,7 @@ await test('Téléphone : barre du bas, pas de défilement horizontal', async ()
   await mp.goto(BASE); await mp.waitForFunction(() => window.__classeurReady);
   // Ce contexte a son propre stockage : on charge la démo pour avoir du contenu.
   await mp.evaluate(async () => (await import('./js/demo.js')).loadDemo());
-  for (const hsh of ['#/aujourdhui', '#/eleves', '#/fichiers', '#/reception', '#/plus', '#/reglages/sauvegarde', '#/reglages/annees', '#/avenir/classe/trombi']) {
+  for (const hsh of ['#/aujourdhui', '#/eleves', '#/fichiers', '#/reception', '#/plus', '#/reglages/sauvegarde', '#/reglages/annees', '#/avenir/organisation/reunions']) {
     await mp.evaluate(h => { location.hash = h; }, hsh); await mp.waitForTimeout(200);
     const over = await mp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     assert(over <= 1, `${hsh} déborde de ${over}px`);

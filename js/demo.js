@@ -27,8 +27,9 @@ export async function loadDemo() {
   const classId = store.uid();
   items.push({ create: { type: 'class', data: { id: classId, yearId, demo: true, name: 'CE2 (démo)', levels: ['CE2'], school: 'École fictive des Tilleuls', classDays: [1, 2, 4, 5], serviceDays: [1, 2],
     service: { type: 'mi-temps', detail: 'Lundi, mardi (fictif)' }, binome: { name: 'Collègue fictive', detail: 'Jeudi, vendredi' } } } });
+  const sids = [];
   ELEVES.forEach(([firstName, lastName], i) => {
-    const sid = store.uid();
+    const sid = store.uid(); sids.push(sid);
     const n = String(i + 10).padStart(2, '0');
     items.push({ create: { type: 'student', data: { id: sid, demo: true, firstName, lastName, birthDate: `2018-${String((i % 12) + 1).padStart(2, '0')}-${String((i * 3 % 27) + 1).padStart(2, '0')}`,
       contacts: [
@@ -43,6 +44,7 @@ export async function loadDemo() {
   items.push({ create: { type: 'folder', data: { demo: true, name: 'Démo — Français', parentId: null } } });
   items.push({ create: { type: 'file', data: { demo: true, kind: 'link', name: 'Lien d’exemple (site fictif)', url: 'https://example.org/', tags: ['démo'], subject: 'Français', level: 'CE2', yearId, folderId: null, favorite: false, versions: [] } } });
   demoPedago(items, classId, periods);
+  demoClassLife(items, classId, yearId, sids);
   demoMultiLevel(items, yearId, periods);
   await store.batch(items, 'Chargement des données de démonstration');
   await store.setSettings({ currentYearId: yearId, currentClassId: classId });
@@ -101,6 +103,29 @@ function demoPedago(items, classId, periods) {
   items.push(D('task', { title: 'Préparer les plaques de numération (exemple)', due: '2026-11-02', category: 'préparation', done: false }));
 }
 function P_default() { return [['rappel', 5], ['recherche', null], ['institution', null], ['entrainement', null], ['bilan', 5]].map(([kind, duration]) => ({ id: store.uid(), kind, title: '', duration })); }
+
+/** Vie de classe fictive : appel, services, groupes, liste, évaluation, bibliothèque, responsabilités. */
+function demoClassLife(items, classId, yearId, sids) {
+  const [lou, nino, jade, malo, ines, sacha] = sids;
+  // Appel du lundi 2 novembre matin (validé) : Lou absente de 9 h 30 à 10 h 30, Nino absent.
+  // Alba (indice 10) est partie le 16 octobre ; Côme (indice 11) arrive le 2 novembre.
+  const marks = Object.fromEntries([...sids.slice(0, 10), sids[11]].map(id => [id, { status: 'présent' }]));
+  marks[lou] = { status: 'partiel', from: '09:30', to: '10:30', comment: 'rendez-vous (exemple)' }; marks[nino] = { status: 'absent' };
+  items.push(D('attendance', { classId, date: '2026-11-02', half: 'matin', marks, validated: true, validatedAt: '2026-11-02T08:45:00.000Z' }));
+  const plans = {}; sids.slice(0, 9).forEach((id, i) => { plans[id] = { Cantine: i % 3 ? [1, 2, 4, 5] : [1, 2, 4], Étude: i % 4 === 0 ? [1, 4] : [] }; });
+  items.push(D('serviceplan', { classId, plans }));
+  items.push(D('groupset', { classId, name: 'Équipes (exemple)', kind: 'équipes', permanent: true, groups: [
+    { id: store.uid(), name: 'Les Hiboux', color: '#2f6f8f', memberIds: [lou, nino, jade], roles: { [lou]: 'secrétaire' }, activity: '', material: '', order: 1 },
+    { id: store.uid(), name: 'Les Renards', color: '#d9534f', memberIds: [malo, ines, sacha], roles: {}, activity: '', material: '', order: 2 }] }));
+  items.push(D('list', { classId, title: 'Documents de rentrée (exemple)', columns: [{ id: store.uid(), label: 'Attestation d\u2019assurance scolaire', type: 'lien', options: [], link: 'assurance' }, { id: 'c-cahier', label: 'Cahier de liaison signé', type: 'case', options: [], link: null }], values: { [lou]: { 'c-cahier': true } } }));
+  items.push(D('evaluation', { classId, title: 'Les nombres jusqu\u2019à 1 000 (exemple)', date: '2026-10-12', subject: 'Mathématiques', sequenceId: null, mode: 'maîtrise', conditions: 'individuel, 30 min',
+    items: [{ id: 'i1', label: 'Lire et écrire les nombres', maxPoints: null, competencyId: null }, { id: 'i2', label: 'Comparer et ranger', maxPoints: null, competencyId: null }],
+    results: { [lou]: { items: { i1: { level: 'A' }, i2: { level: 'ECA' } } }, [jade]: { items: { i1: { level: 'NA' } } }, [nino]: { absent: true, catchup: 'à rattraper' } }, versions: [] }));
+  items.push(D('book', { title: 'Album d\u2019exemple (fictif)', author: 'Auteur fictif', category: 'album', level: 'CE2', ref: 'ALB', sequenceIds: [], copies: [{ id: 'cp1', code: 'ALB-1', state: 'disponible' }, { id: 'cp2', code: 'ALB-2', state: 'disponible' }] }));
+  const jobs = [{ id: 'j1', label: 'Distribuer le matériel', count: 1 }, { id: 'j2', label: 'Effacer le tableau', count: 1 }];
+  items.push(D('jobs', { classId, jobs, history: [{ from: '2026-11-02', map: { j1: [jade], j2: [malo] } }] }));
+  void yearId;
+}
 
 /** Petite classe multiniveau fictive : deux activités parallèles et un conflit de présence de l'enseignant. */
 function demoMultiLevel(items, yearId, periods) {

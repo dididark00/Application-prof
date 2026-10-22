@@ -39,6 +39,8 @@ import * as pDiff from './pages/differenciation.js';
 import * as pPlan from './pages/plan.js';
 import * as pJobs from './pages/responsabilites.js';
 import * as pBiblio from './pages/bibliotheque.js';
+import * as pAtelier from './pages/atelier.js';
+import * as pDiapos from './pages/diaporamas.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -77,6 +79,8 @@ const ROUTES = {
   plan: pPlan,
   responsabilites: pJobs,
   bibliotheque: pBiblio,
+  atelier: pAtelier,
+  diaporamas: pDiapos,
 };
 
 let rendering = false;

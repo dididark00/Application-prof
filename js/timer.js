@@ -118,12 +118,12 @@ function place() { if (!el) return; el.style.left = `${state.x}px`; el.style.top
 function dragify() {
   let start = null;
   el.addEventListener('pointerdown', (e) => {
-    if (!e.target.closest('.timer-drag')) return;
+    if (!e.target.closest('.timer-drag') || (e.target.closest('button, input, select') && !e.target.closest('.timer-pill'))) return;
     start = { px: e.clientX, py: e.clientY, x: state.x, y: state.y };
     el.setPointerCapture(e.pointerId); e.preventDefault();
   });
   el.addEventListener('pointermove', (e) => { if (!start) return; state.x = start.x + e.clientX - start.px; state.y = start.y + e.clientY - start.py; clamp(); place(); });
-  const end = () => { if (start) { start = null; save(false); } };
+  const end = () => { if (start) { if (Math.abs(state.x - start.x) + Math.abs(state.y - start.y) < 4 && state.min) { start = null; set({ min: false }); return; } start = null; save(false); } };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
 }
 
