@@ -318,7 +318,7 @@ await test('Données de démonstration : chargées puis retirées sans toucher a
   await go('#/reglages/demo');
   await page.getByTestId('load-demo').click();
   await page.waitForTimeout(300);
-  eq(await count('student'), 15, 'élèves avec démo');
+  eq(await count('student'), 21, 'élèves avec démo (3 + 12 + 6)');
   assert((await page.locator('#sidebar').innerText()).includes('Données fictives'), 'avertissement démo absent');
   await go('#/eleves');
   assert((await page.locator('[data-testid=students-table]').innerText()).includes('Démo'), 'badge démo absent');

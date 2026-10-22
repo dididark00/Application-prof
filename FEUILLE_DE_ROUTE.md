@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (29) · 🟡 Partiel (1) · ⚙️ À configurer (1) · ⬜ À développer (100) — 131 entrées.
+Légende : ✅ Réalisé (55) · 🟡 Partiel (4) · ⚙️ À configurer (1) · ⬜ À développer (71) — 131 entrées.
 
 ## Étape 1 — Socle
 
@@ -14,7 +14,7 @@ Légende : ✅ Réalisé (29) · 🟡 Partiel (1) · ⚙️ À configurer (1) ·
 | ✅ | §2 Navigation | Favoris personnalisables |  |
 | ✅ | §2 Navigation | Recherche globale | Élèves, classes, fichiers, notes, pages. Les modules masqués sont exclus. |
 | ✅ | §2 Navigation | Bouton d’ajout rapide | Élève, note, fichier, lien. S’enrichira à chaque étape. |
-| 🟡 | §2 Navigation | Liens contextuels entre pages | Élève ↔ classe ↔ fichiers. Les autres liens arrivent avec leurs modules. |
+| 🟡 | §2 Navigation | Liens contextuels entre pages | Élèves, classes, fichiers, programmation ↔ progression ↔ séquence ↔ séance ↔ cahier journal ↔ leçons/devoirs. Suite avec les modules des étapes 3-5. |
 | ✅ | §2 Navigation | Modules masquables sans effacer les données |  |
 | ✅ | §2 Navigation | Sélecteur d’année et de classe visible |  |
 | ✅ | §2 Navigation | Boîte de réception (photo, PDF, note à classer plus tard) |  |
@@ -43,35 +43,35 @@ Légende : ✅ Réalisé (29) · 🟡 Partiel (1) · ⚙️ À configurer (1) ·
 
 | | Section | Fonction | Note |
 |---|---|---|---|
-| ⬜ | §3 Données | Chaîne programme → programmation → progression → séquence → séances/préparations |  |
-| ⬜ | §3 Données | Distinguer « lier » et « dupliquer » ; modèle réutilisable vs séance datée |  |
-| ⬜ | §3 Données | Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé |  |
-| ⬜ | §4 Années | Reprendre modèles, séquences, ressources d’une année précédente (sans paiements, autorisations, résultats) |  |
-| ⬜ | §4 Années | Référentiels sourcés, datés, versionnés ; import vérifié avant intégration |  |
-| ⬜ | §4 Années | Multiniveau : programmations/progressions par niveau, séquences communes, consignes distinctes |  |
-| ⬜ | §4 Années | Cahier journal en colonnes parallèles ; travail dirigé/autonomie/ateliers |  |
-| ⬜ | §4 Années | Signaler deux activités exigeant simultanément l’enseignant |  |
-| ⬜ | §5 Préparation | Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions) |  |
-| ⬜ | §5 Préparation | Bilans de période (notions réalisées et restantes) |  |
-| ⬜ | §5 Préparation | Fiche de séquence complète |  |
-| ⬜ | §5 Préparation | Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication |  |
-| ⬜ | §5 Préparation | Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes |  |
-| ⬜ | §5 Préparation | Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle |  |
-| ⬜ | §5 Préparation | Photos du tableau et corrections ; suivi des apprentissages à reprendre |  |
-| ⬜ | §6 Planifier | EDT de référence par période, duplication, récurrences |  |
-| ⬜ | §6 Planifier | Exceptions datées (sortie, absence, visite, réunion, report) |  |
-| ⬜ | §6 Planifier | Interventions (contact, lieu, dates, créneaux, groupes) ; « à planifier » sans bloquer |  |
-| ⬜ | §6 Planifier | Conflits et propositions de report ajustables, sans décalage automatique |  |
-| ⬜ | §6 Planifier | Vues jour/semaine/période ; temps par matière avec référentiel configurable |  |
-| ⬜ | §6 Planifier | Cahier journal depuis l’EDT : bilan express, faite/partielle/reportée, historique |  |
-| ⬜ | §6 Planifier | Rituels récurrents ; liste consolidée matériel/photocopies |  |
-| ⬜ | §6 Planifier | Agenda personnel et professionnel, tâches, échéances |  |
-| ⬜ | §10 Suivi | Devoirs datés liés aux séances/leçons, destinataires, publication volontaire |  |
-| ⬜ | §11 Fichiers | Réutilisation par lien (sans duplication) depuis séances et préparations |  |
-| ⬜ | §14 Exports | Impression EDT, cahier journal, préparations, séquences, progressions |  |
-| ⬜ | §22 Visites | Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal |  |
-| ⬜ | §22 Visites | Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge |  |
-| ⬜ | §22 Visites | Import/reproduction du modèle personnel de l’utilisatrice |  |
+| ✅ | §3 Données | Chaîne programme → programmation → progression → séquence → séances/préparations |  |
+| ✅ | §3 Données | Distinguer « lier » et « dupliquer » ; modèle réutilisable vs séance datée |  |
+| 🟡 | §3 Données | Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé | Prévu/réalisé (instantané figé) et EDT versionné : faits. Publié : avec le portail familles (étape 5). |
+| ✅ | §4 Années | Reprendre modèles, séquences, ressources d’une année précédente (sans paiements, autorisations, résultats) |  |
+| ✅ | §4 Années | Référentiels sourcés, datés, versionnés ; import vérifié avant intégration | Aucun contenu officiel prérempli : import puis validation par l’enseignante. |
+| ✅ | §4 Années | Multiniveau : programmations/progressions par niveau, séquences communes, consignes distinctes |  |
+| ✅ | §4 Années | Cahier journal en colonnes parallèles ; travail dirigé/autonomie/ateliers |  |
+| ✅ | §4 Années | Signaler deux activités exigeant simultanément l’enseignant |  |
+| ✅ | §5 Préparation | Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions) | D’après les modèles de Julia ; import d’un tableau de notions. |
+| ✅ | §5 Préparation | Bilans de période (notions réalisées et restantes) |  |
+| ✅ | §5 Préparation | Fiche de séquence complète |  |
+| ✅ | §5 Préparation | Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication | Phases typées du modèle de Julia ; modes quotidien/visite ; version vierge. |
+| ✅ | §5 Préparation | Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes |  |
+| ✅ | §5 Préparation | Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle |  |
+| 🟡 | §5 Préparation | Photos du tableau et corrections ; suivi des apprentissages à reprendre | Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3). |
+| ✅ | §6 Planifier | EDT de référence par période, duplication, récurrences | Versions datées : une modification ne réécrit pas les journées passées. |
+| ✅ | §6 Planifier | Exceptions datées (sortie, absence, visite, réunion, report) |  |
+| ✅ | §6 Planifier | Interventions (contact, lieu, dates, créneaux, groupes) ; « à planifier » sans bloquer |  |
+| ✅ | §6 Planifier | Conflits et propositions de report ajustables, sans décalage automatique |  |
+| ✅ | §6 Planifier | Vues jour/semaine/période ; temps par matière avec référentiel configurable | Jour et semaine (cahier journal), semaine et mois (agenda), période (progression). Référence horaire saisie par l’enseignante. |
+| ✅ | §6 Planifier | Cahier journal depuis l’EDT : bilan express, faite/partielle/reportée, historique |  |
+| ✅ | §6 Planifier | Rituels récurrents ; liste consolidée matériel/photocopies |  |
+| ✅ | §6 Planifier | Agenda personnel et professionnel, tâches, échéances |  |
+| 🟡 | §10 Suivi | Devoirs datés liés aux séances/leçons, destinataires, publication volontaire | Préparé / donné : fait. Publication aux familles : étape 5. |
+| ✅ | §11 Fichiers | Réutilisation par lien (sans duplication) depuis séances et préparations |  |
+| ✅ | §14 Exports | Impression EDT, cahier journal, préparations, séquences, progressions |  |
+| ✅ | §22 Visites | Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal |  |
+| ✅ | §22 Visites | Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge |  |
+| ✅ | §22 Visites | Import/reproduction du modèle personnel de l’utilisatrice | Modèles de Julia reproduits (programmation, progression, séquence, séance). |
 
 ## Étape 3 — Usage en classe
 

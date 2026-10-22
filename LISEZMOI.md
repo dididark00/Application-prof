@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : `Cahier_des_charges_application_prof_Claude.md`. Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : étape 1 (socle) réalisée et testée.** Les étapes 2 à 5 restent à développer ; leurs pages sont visibles mais affichent honnêtement « Pas encore disponible », sans bouton factice.
+**État : étapes 1 (socle) et 2 (préparation et planification liées) réalisées et testées.** Les étapes 3 à 5 restent à développer ; leurs pages sont visibles mais affichent honnêtement « Pas encore disponible », sans bouton factice.
 
 ---
 
@@ -39,6 +39,22 @@ Puis ouvrez **http://localhost:8080** dans Chrome, Edge, Firefox ou Safari. Pour
 10. **Réglages › Sauvegarde** : exportez, puis « Tout effacer », puis « Restaurer » le fichier : le message confirme la vérification.
 11. **Réglages › Démonstration › Retirer les données fictives** avant de saisir vos vraies données.
 
+## 2 bis. Tester l'étape 2 (parcours conseillé, 15 minutes)
+
+Chargez les données fictives (Réglages › Démonstration), puis :
+
+1. **Préparer › Programmations** : la programmation de maths d'exemple (périodes × sous-domaines, vue « Détaillée » conforme au modèle de Julia). « Importer un tableau » accepte un CSV ou un copier-coller (Période ; Sous-domaine ; Notion ; Compétences ; Ressources).
+2. **Préparer › Séquences** › « Les nombres jusqu'à 10 000 » : les 7 blocs du modèle de séquence ; le déroulé se remplit depuis les fiches de séance.
+3. Ouvrez la **séance 1** : identification, objectifs, préparation matérielle, photocopies (nombre d'exemplaires calculé), puis les 5 phases avec leurs rubriques propres. Basculez **Quotidien / Visite** ; **Imprimer** et **Version vierge** produisent la fiche A4.
+4. **Planifier › Cahier journal**, le **2 novembre 2026** : la séance de maths y figure. Cliquez « Faite », remplissez « Bilan express » et « Après la séance ». Modifiez ensuite le titre de la fiche : le 2 novembre garde la version réalisée.
+5. Le **5 novembre 2026** : la sortie au musée crée des conflits. « Reporter… » propose les prochains créneaux de la même discipline ; la séance d'origine reste, marquée « reportée ».
+6. Le **19 novembre 2026** (jeudi) : la natation, confirmée à partir du 16 novembre, apparaît ; elle n'apparaît pas le 12.
+7. Sélecteur de classe › **CE1-CE2 (démo)**, cahier journal du 2 novembre : colonnes parallèles CE1 / CE2 et signalement de deux ateliers exigeant l'enseignant en même temps.
+8. **Planifier › Emploi du temps** : modifiez un créneau en choisissant « à partir du » une date future : les journées antérieures ne changent pas. En bas, le temps hebdomadaire par discipline (référence horaire à saisir vous-même).
+9. **Préparer › Progressions** › P2 : la ligne de la séquence indique l'avancement du cahier journal et propose un statut à appliquer (jamais appliqué tout seul) ; le bilan de période liste les notions terminées et restantes.
+10. **Agenda**, **Tâches et rendez-vous** (rubrique Aujourd'hui), **Devoirs**, **Interventions**, **Leçons**, **Manuels**, **Programmes et référentiels** (import puis validation, versions).
+11. **Réglages › Reprise d'année** : copie les modèles d'une classe d'une autre année, sans jamais reprendre journal, devoirs donnés ni bilans.
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -59,7 +75,17 @@ Puis ouvrez **http://localhost:8080** dans Chrome, Edge, Firefox ou Safari. Pour
 - `inbox` : éléments à classer (note, photo, PDF).
 - Historique (`audit`) : chaque modification, avec auteur, date, avant/après.
 
-Prévues aux étapes suivantes (déjà pensées dans le modèle) : référentiel versionné → programmation → progression → séquence → séance (modèle) → occurrence datée du cahier journal ; créneaux d'EDT par période ; appel ; évaluations ; mouvements financiers uniques, etc.
+Ajoutées à l'étape 2 :
+
+- `referential` : référentiel officiel importé, avec source, date du texte, version, statut « à vérifier » / « validé » ; une nouvelle version n'efface pas l'ancienne.
+- `programmation` (une discipline, un niveau, une classe) et `notion` (période, sous-domaine). Le statut d'une notion est **déduit** des progressions.
+- `progression` (une discipline, une période) : lignes semaine par semaine reliées à une séquence ou une séance, statut saisi à la main avec suggestion du cahier journal, bilan de période.
+- `sequence` et `session` (fiche de séance = **modèle réutilisable**, phases typées). `copiedFrom` distingue une copie d'un original.
+- `timetable` : EDT par période(s), en **versions datées** (`from`).
+- `occurrence` : une **séance datée** du cahier journal, liée à un créneau et à une fiche (par identifiant). Statut prévue/faite/partielle/reportée/annulée, bilan du jour, « après la séance », instantané (`snapshot`) de ce qui a été fait, `postponedFrom` / `postponedTo`.
+- `intervention`, `event`, `task`, `homework`, `lesson` (distributions datées), `manual`.
+
+Prévues ensuite : appel, évaluations, rattrapage (croisement absences × séances faites × documents distribués), mouvements financiers uniques, etc.
 
 **Fichiers du projet**
 
@@ -79,7 +105,9 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 
 ## 4. Vérifications automatiques
 
-27 scénarios testés dans Chromium (`tests/e2e.mjs`), dont : année zone C, classe, ajout et doublon, import CSV avec erreurs, annulation, contacts, départ daté et listes historiques, corbeille, fichiers et versions, lien dangereux refusé, réception, recherche (accents ignorés, contacts non indexés), modules masqués, page à venir sans bouton, export CSV, **PDF long de 2 pages au format A4 avec en-têtes répétés**, **fermer/rouvrir**, **export → tout effacer → restauration vérifiée (y compris une image)**, sauvegarde altérée refusée, historique, démo retirée sans toucher aux vraies données, **hors connexion**, **téléphone 375 px sans débordement**.
+**Étape 1** — 27 scénarios (`tests/e2e.mjs`), dont : année zone C, classe, ajout et doublon, import CSV avec erreurs, annulation, contacts, départ daté et listes historiques, corbeille, fichiers et versions, lien dangereux refusé, réception, recherche (accents ignorés, contacts non indexés), modules masqués, page à venir sans bouton, export CSV, **PDF long de 2 pages au format A4 avec en-têtes répétés**, **fermer/rouvrir**, **export → tout effacer → restauration vérifiée (y compris une image)**, sauvegarde altérée refusée, historique, démo retirée sans toucher aux vraies données, **hors connexion**, **téléphone 375 px sans débordement**.
+
+**Étape 2** — 17 scénarios (`tests/e2e-etape2.mjs`), dont ceux du cahier des charges : modifier une préparation et la retrouver au cahier journal sans doublon ; reporter une séance (supports conservés, créneau proposé, passé préservé) ; intervention à partir d'une date (absente avant) ; multiniveau (colonnes parallèles, conflit de présence de l'enseignant) ; réalisé figé ; EDT versionné ; statut de notion déduit ; copie indépendante ; référentiel validé et versionné ; reprise d'année sans journal ni résultats ; impressions PDF (fiche de visite sur 3 pages, séquence, EDT, journée, semaine, devoirs) ; sauvegarde/restauration de toutes les nouvelles données ; retrait complet de la démo.
 
 Pour les relancer (nécessite Node.js) :
 
@@ -87,7 +115,7 @@ Pour les relancer (nécessite Node.js) :
 npm install            # installe Playwright et pdf-lib (outils de test uniquement)
 npx playwright install chromium
 python3 serveur.py &              # ou dans un autre terminal
-npm test
+npm test                          # étapes 1 et 2
 node tools/build-sw.mjs           # après toute modification des fichiers de l'application
 ```
 
@@ -101,10 +129,13 @@ node tools/build-sw.mjs           # après toute modification des fichiers de l'
 - **Synchronisation entre appareils et sauvegarde en ligne** (étape 5) : demande une base de données et une authentification en ligne ; offres gratuites à comparer (quotas, localisation des données, conditions) **avant** toute donnée réelle d'enfant.
 - OCR, IA, SMS, emails en masse, domaine personnalisé : facultatifs, non nécessaires.
 
-## 6. Limites connues de l'étape 1
+## 6. Limites connues
 
 - Données sur un seul appareil/navigateur ; pas de synchronisation (le dire n'est pas un défaut caché : c'est affiché dans Réglages › Sauvegarde).
 - Numéro de page en pied de page : affiché par Chrome/Edge ; d'autres navigateurs peuvent l'omettre.
 - PowerPoint (.pptx) : pas d'aperçu dans le navigateur (téléchargement, ou export PDF à déposer).
 - Données sensibles (santé, PPS/PAI…) : pas encore saisissables ; elles arriveront à l'étape 3 avec un accès restreint.
 - Avant d'y mettre de vraies données d'élèves : exportez régulièrement la sauvegarde et rangez-la en lieu sûr.
+- Les notifications (rappels de tâches, de séances) arrivent à l'étape 5 ; la répartition des préparations avec la binôme, à l'étape 4.
+- Les heures de référence par discipline ne sont pas préremplies : à saisir depuis le texte officiel en vigueur.
+- Les champs de date affichent le format de la langue du navigateur.

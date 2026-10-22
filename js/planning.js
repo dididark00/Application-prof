@@ -61,7 +61,9 @@ export function eventsOn(date, { classId = null, includePersonal = true } = {}) 
 function entryFromOcc(o, slot = null) {
   const session = o.sessionId ? store.get(o.sessionId) : null;
   return { key: `o:${o.id}`, kind: 'occ', date: o.date, start: o.start, end: o.end, subject: o.subject || session?.subject || slot?.subject || '',
-    title: session ? P.sessionTitle(session) : (o.title || slot?.label || o.subject || 'Activité'), levels: o.levels || slot?.levels || [],
+    // Une séance faite garde le titre qu'elle avait ce jour-là (instantané).
+    title: (['faite', 'partielle'].includes(o.status) && o.snapshot?.title != null) ? `${o.snapshot.sequenceTitle && o.snapshot.number ? `S${o.snapshot.number} · ` : ''}${o.snapshot.title || 'Séance'}`
+      : session ? P.sessionTitle(session) : (o.title || slot?.label || o.subject || 'Activité'), levels: o.levels || slot?.levels || [],
     mode: o.mode || slot?.mode || 'dirigé', status: o.status || 'prévue', occ: o, slot, session: session && !session.deletedAt ? session : null,
     sessionId: o.sessionId || null, intervention: o.interventionId ? store.get(o.interventionId) : null };
 }
