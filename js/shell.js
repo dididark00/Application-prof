@@ -2,6 +2,7 @@
 import * as store from './store.js';
 import * as model from './model.js';
 import { h, icon, toast } from './ui.js';
+import * as T from './timer.js';
 import { visibleRubriques, subHref, currentLocation, parseHash, allPages, navigate } from './router.js';
 
 let opts = {};
@@ -86,6 +87,7 @@ function renderTopbar() {
     h('div', { class: 'top-right' },
       h('a', { class: 'icon-btn mobile-only', href: '#/recherche', 'aria-label': 'Rechercher' }, icon('search')),
       saveIndicator(),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Timer', title: 'Timer (le compte continue quand on change de page)', 'data-testid': 'timer-toggle', onclick: () => (T.getState().open ? T.recenter() : T.open()) }, icon('clock')),
       undoBtn,
       h('button', { class: 'btn btn-primary btn-add', type: 'button', 'data-testid': 'quick-add', onclick: () => opts.onQuickAdd() }, icon('plus', 18), h('span', { class: 'add-label' }, 'Ajouter'))),
   );

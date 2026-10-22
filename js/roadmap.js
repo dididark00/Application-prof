@@ -186,9 +186,10 @@ export const ROADMAP = [
 export const RUBRIQUES = [
   { id: 'aujourdhui', titre: 'Aujourd’hui', icone: 'sun', sous: [
     { id: 'journee', titre: 'Ma journée', route: 'aujourdhui' },
-    { id: 'appel', titre: 'Appel rapide', etape: 3 },
+    { id: 'appel', titre: 'Appel', route: 'appel' },
+    { id: 'services', titre: 'Cantine et services', route: 'services' },
     { id: 'taches', titre: 'Tâches et rendez-vous', route: 'taches' },
-    { id: 'projection', titre: 'Projection', etape: 3 },
+    { id: 'projection', titre: 'Projection', route: 'projection' },
   ]},
   { id: 'preparer', titre: 'Préparer', icone: 'book', sous: [
     { id: 'programmes', titre: 'Programmes et référentiels', route: 'referentiels' },

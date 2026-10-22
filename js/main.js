@@ -26,6 +26,10 @@ import * as pCahier from './pages/cahier.js';
 import * as pDevoirs from './pages/devoirs.js';
 import * as pInterv from './pages/interventions.js';
 import * as pAgenda from './pages/agenda.js';
+import * as pAppel from './pages/appel.js';
+import * as pServices from './pages/services.js';
+import * as pProjection from './pages/projection.js';
+import * as T from './timer.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -51,6 +55,10 @@ const ROUTES = {
   interventions: pInterv,
   agenda: pAgenda,
   taches: { render: pAgenda.renderTasks },
+  appel: pAppel,
+  services: pServices,
+  projection: pProjection,
+  ecran: { render: pProjection.renderScreen },
 };
 
 let rendering = false;
@@ -97,6 +105,7 @@ async function start() {
     if (evt.kind === 'save') refreshChrome();
   });
   await render();
+  T.init();
   registerServiceWorker();
   // Demande de stockage persistant : le navigateur ne videra pas les données sans action de l'utilisatrice.
   if (navigator.storage && navigator.storage.persist) {
