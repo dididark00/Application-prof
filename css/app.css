@@ -523,6 +523,19 @@ a.trombi-card:hover { background: var(--surface); }
 .trombi-photo img { width: 100%; height: 100%; object-fit: cover; }
 @media (max-width: 600px) { .trombi { grid-template-columns: repeat(3, 1fr) !important; } }
 
+/* Listes, évaluations, rattrapage */
+.list-table td, .list-table th { white-space: nowrap; }
+.list-table input[type=text], .list-table input[type=number], .list-table input[type=date] { min-width: 110px; }
+.eval-grid th.eval-item { min-width: 120px; vertical-align: bottom; white-space: normal; }
+.eval-cell { display: flex; gap: 4px; align-items: center; }
+.eval-cell select { min-width: 74px; }
+.eval-cell .pts { width: 64px; }
+.lvl-NA { background: var(--warn-soft); } .lvl-ECA { background: var(--info-soft); } .lvl-A, .lvl-D { background: var(--ok-soft); }
+.row-absent td { background: var(--surface-2); }
+.catch-list { list-style: none; padding: 0; margin: 0 0 10px; }
+.catch-list li { padding: 8px 0; border-bottom: 1px solid #efebe3; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.catch-list li > .small { flex-basis: 100%; }
+
 /* ── Impression réelle */
 @media print {
   body.printing > *:not(.print-root) { display: none !important; }

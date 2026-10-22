@@ -108,6 +108,8 @@ function detail(id) {
         bound({ label: 'Support', value: v.support, onSave: setV('support') }));
     }))) : null;
 
+  const adaptations = adaptationsBlock(s, cls);
+
   const phases = h('section', { class: 'card' },
     h('div', { class: 'card-head' }, h('h2', {}, `Déroulement — ${model.durationLabel(P.sessionDuration({ phases: s.phases })) || 'durées à compléter'}`),
       visit ? null : h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: ui.showAll, onchange: (e) => { ui.showAll = e.target.checked; rerender(); } }), 'Toutes les rubriques')),
@@ -144,7 +146,37 @@ function detail(id) {
         } }, icon('trash', 16))] }),
     s.copiedFrom && store.get(s.copiedFrom) ? h('p', { class: 'muted small' }, 'Copie de ', h('a', { href: `#/seance/${s.copiedFrom}` }, P.sessionTitle(store.get(s.copiedFrom))), ' : les deux fiches évoluent séparément.') : null,
     visit ? h('p', { class: 'muted small' }, 'Mode visite : toutes les rubriques sont affichées et imprimées. Ce modèle reprend votre fiche personnelle ; il n’est pas un format imposé par l’inspection.') : null,
-    ident, objectifs, materiel, variants, phases, after, checklist, links);
+    ident, objectifs, materiel, variants, adaptations, phases, after, checklist, links);
+}
+
+/** Différenciation par élèves (ou groupes) : les aides enregistrées sont proposées, jamais appliquées d'office. */
+function adaptationsBlock(s, cls) {
+  const list = s.adaptations || [];
+  const students = model.studentsOfClass(cls.id);
+  const groups = store.all('group').filter(g => g.classId === cls.id);
+  const name = (id) => { const st = store.get(id); return st ? st.firstName : '?'; };
+  const save = (next, label, quiet = true) => store.update(s.id, { adaptations: next }, label, { quiet });
+  const F = [['objective', 'Objectif adapté'], ['consigne', 'Consigne'], ['support', 'Support'], ['quantite', 'Quantité'], ['modalite', 'Modalité de réponse'], ['temps', 'Temps']];
+  return h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Différenciation par élèves ou groupes'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'add-adaptation', onclick: async () => {
+        const items = [...groups.map(g => ({ id: `g:${g.id}`, label: g.name, group: 'Groupes' })), ...students.map(({ student: x }) => ({ id: x.id, label: `${x.firstName} ${x.lastName}`, group: 'Élèves' }))];
+        const sel = await pickMany({ title: 'Pour quels élèves ou groupes ?', items });
+        if (!sel?.length) return;
+        const ids = [...new Set(sel.flatMap(x => x.startsWith('g:') ? (store.get(x.slice(2))?.memberIds || []) : [x]))];
+        const groupIds = sel.filter(x => x.startsWith('g:')).map(x => x.slice(2));
+        await save([...list, { id: store.uid(), studentIds: ids, groupIds }], 'Adaptation ajoutée', false);
+      } }, '+ Adaptation')),
+    h('p', { class: 'muted small' }, 'Adaptez objectif, consigne, support, quantité, modalité de réponse ou temps. Les aides déjà notées sur les fiches des élèves sont proposées : vous choisissez.'),
+    list.length ? list.map(a => {
+      const aids = store.all('aid').filter(x => (a.studentIds || []).includes(x.studentId) && x.active !== false);
+      const upd = (k) => (v) => save(store.get(s.id).adaptations.map(x => x.id === a.id ? { ...x, [k]: v } : x), `Adaptation : ${k}`);
+      return h('div', { class: 'variant', 'data-testid': 'adaptation' },
+        h('div', { class: 'linked-head' }, h('strong', {}, [...(a.groupIds || []).map(g => store.get(g)?.name).filter(Boolean), ...(a.studentIds || []).map(name)].join(', ') || 'Aucun élève'),
+          iconBtn('trash', 'Retirer l’adaptation', () => save(list.filter(x => x.id !== a.id), 'Adaptation retirée', false))),
+        aids.length ? h('div', { class: 'row small' }, h('span', { class: 'muted' }, 'Aides enregistrées :'), aids.map(ai => h('button', { class: 'btn btn-small', type: 'button', title: `Ajouter au support (${name(ai.studentId)})`,
+          onclick: () => save(store.get(s.id).adaptations.map(x => x.id === a.id ? { ...x, support: [x.support, ai.label].filter(Boolean).join(' ; ') } : x), 'Aide reprise dans l’adaptation', false) }, `${ai.label}${ai.effects?.at(-1) ? ' (' + ai.effects.at(-1).effect + ')' : ''}`))) : null,
+        h('div', { class: 'fields' }, F.map(([k, l]) => bound({ label: l, value: a[k], compact: true, onSave: upd(k) }))));
+    }) : h('p', { class: 'muted small' }, 'Aucune adaptation.'));
 }
 
 function phaseCard(s, ph, i, full) {

@@ -31,6 +31,11 @@ import * as pServices from './pages/services.js';
 import * as pProjection from './pages/projection.js';
 import * as T from './timer.js';
 import * as pTrombi from './pages/trombi.js';
+import * as pListes from './pages/listes.js';
+import * as pEvals from './pages/evaluations.js';
+import * as pLivrets from './pages/livrets.js';
+import * as pRattrapage from './pages/rattrapage.js';
+import * as pDiff from './pages/differenciation.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -61,6 +66,11 @@ const ROUTES = {
   projection: pProjection,
   ecran: { render: pProjection.renderScreen },
   trombi: pTrombi,
+  listes: pListes,
+  evaluations: pEvals,
+  livrets: pLivrets,
+  rattrapage: pRattrapage,
+  differenciation: pDiff,
 };
 
 let rendering = false;
