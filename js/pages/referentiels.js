@@ -1,13 +1,17 @@
 // Référentiels (programmes officiels) : sourcés, datés, versionnés, vérifiés avant intégration.
-// Aucun contenu officiel n'est prérempli : on importe ou on saisit, puis on valide.
+// La liste des textes en vigueur (quel programme pour quel niveau) est fournie avec ses sources ;
+// les intitulés détaillés des compétences sont importés depuis le texte officiel, vérifiés puis validés.
 import * as store from '../store.js';
 import * as model from '../model.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, download, pickFiles, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs } from '../components.js';
 import { parseCsv, toCsv } from '../csv.js';
 import { pickMany } from '../forms.js';
+import * as PR from '../programmes.js';
 
-export function render({ params }) {
+let rerenderRef = () => {};
+export function render({ params, rerender }) {
+  if (rerender) rerenderRef = rerender;
   if (params[0]) return detail(params[0]);
   const refs = store.all('referential').sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr') || (b.version || '').localeCompare(a.version || ''));
   return h('div', { class: 'page' },
@@ -17,7 +21,9 @@ export function render({ params }) {
         h('button', { class: 'btn', type: 'button', onclick: () => download('modele-referentiel.csv', toCsv([['Code', 'Domaine', 'Sous-domaine', 'Intitulé', 'Niveaux'], ['', '', '', '', 'CE1, CE2']]), 'text/csv;charset=utf-8') }, icon('download', 16), 'Modèle CSV'),
       ] }),
     subTabs(),
-    h('div', { class: 'card notice' }, h('p', {}, 'L’application ne contient aucun programme officiel prérempli, pour ne rien inventer. Importez les compétences depuis le texte en vigueur (BO, Éduscol), indiquez la source et la version, vérifiez l’aperçu, puis validez. Seuls les référentiels validés sont proposés dans les fiches.')),
+    officialCard(refs),
+    h('h2', { style: { marginTop: '18px' } }, 'Mes référentiels'),
+    h('p', { class: 'muted' }, 'Importez les compétences depuis le texte officiel (copier-coller ou CSV), vérifiez l’aperçu, puis validez. Seuls les référentiels validés sont proposés dans les fiches.'),
     refs.length ? h('div', { class: 'stack' }, refs.map(r => h('div', { class: 'card' },
       h('div', { class: 'card-head' },
         h('h2', {}, h('a', { href: `#/referentiels/${r.id}` }, r.name), ' ', badge(`v${r.version || '?'}`, 'muted'), r.status === 'validé' ? badge('validé', 'ok') : badge('à vérifier', 'warn')),
@@ -26,14 +32,15 @@ export function render({ params }) {
       : emptyState('Aucun référentiel', 'Les fiches acceptent aussi les compétences en texte libre, comme dans vos modèles. Le référentiel permet en plus de relier séances, évaluations et bilans à des compétences identifiées.'));
 }
 
-function newDialog(base = null) {
+function newDialog(base = null, pre = null) {
+  const p = pre || {};
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
-    field('Nom', h('input', { name: 'name', required: true, value: base?.name || '', placeholder: 'ex. Programme cycle 2 — mathématiques' })),
+    field('Nom', h('input', { name: 'name', required: true, value: base?.name || p.name || '', placeholder: 'ex. Programme cycle 2 — mathématiques' })),
     h('div', { class: 'grid-3' },
       field('Version', h('input', { name: 'version', value: base ? nextVersion(base.version) : '1', required: true })),
-      field('Date du texte officiel', h('input', { name: 'publishedAt', type: 'date', value: base?.publishedAt || '' })),
-      field('Niveaux (séparés par des virgules)', h('input', { name: 'levels', value: (base?.levels || []).join(', ') }))),
-    field('Source (obligatoire)', h('input', { name: 'source', required: true, value: base?.source || '', placeholder: 'ex. BO n° …, Éduscol, adresse de la page' }), 'Indiquez précisément d’où viennent les intitulés.'));
+      field('Date du texte officiel', h('input', { name: 'publishedAt', type: 'date', value: base?.publishedAt || p.publishedAt || '' })),
+      field('Niveaux (séparés par des virgules)', h('input', { name: 'levels', value: (base?.levels || p.levels || []).join(', ') }))),
+    field('Source (obligatoire)', h('input', { name: 'source', required: true, value: base?.source || p.source || '', placeholder: 'ex. BO n° …, Éduscol, adresse de la page' }), 'Indiquez précisément d’où viennent les intitulés.'));
   const errors = h('div', { class: 'form-errors', role: 'alert' });
   modal({ title: base ? `Nouvelle version de « ${base.name} »` : 'Nouveau référentiel', body: h('div', {}, form, errors, base ? h('p', { class: 'muted' }, 'Les compétences sont recopiées dans la nouvelle version (à vérifier). L’ancienne version reste intacte : les fiches qui y renvoient gardent leur référence.') : null),
     actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, onClick: async () => {
@@ -45,6 +52,36 @@ function newDialog(base = null) {
       location.hash = `#/referentiels/${r.id}`;
     } }] });
 }
+// ───── Programmes en vigueur (références officielles fournies)
+const offState = { levels: null, all: false };
+function officialCard(refs) {
+  const cls = model.currentClass();
+  const mine = model.sortLevels(cls?.levels || []);
+  const levels = offState.all || !mine.length ? model.NIVEAUX : mine;
+  const rows = PR.forLevels(levels);
+  const body = h('tbody', {}, rows.map(r => {
+    const name = `${r.subject} — ${r.levels.length > 2 ? cycleOf(r.levels) : r.levels.join(', ')}`;
+    const source = `${r.t.title}, ${r.t.bo}${r.pdf ? ` — ${r.pdf}` : ''}`;
+    const existing = refs.find(x => x.source === source);
+    return h('tr', { 'data-testid': 'official-row' },
+      h('td', {}, h('strong', {}, r.subject), r.label ? h('div', { class: 'muted small' }, r.label) : null),
+      h('td', {}, r.levels.join(', '), r.nouveauFor.length ? h('div', {}, badge(`nouveau en ${r.nouveauFor.join(', ')}`, 'info')) : null),
+      h('td', {}, h('div', {}, r.t.title), h('a', { href: r.t.boUrl, target: '_blank', rel: 'noopener' }, r.t.bo), r.t.note ? h('div', { class: 'muted small' }, r.t.note) : null, r.note ? h('div', { class: 'muted small' }, r.note) : null),
+      h('td', { class: 'nowrap' }, r.pdf ? h('a', { class: 'btn btn-small', href: r.pdf, target: '_blank', rel: 'noopener' }, icon('download', 14), 'Texte (PDF)') : null, ' ',
+        existing ? h('a', { class: 'btn btn-small', href: `#/referentiels/${existing.id}` }, 'Ouvrir le référentiel')
+          : h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'official-create', onclick: () => newDialog(null, { name, publishedAt: r.t.date, levels: r.levels, source }) }, icon('plus', 14), 'Créer le référentiel')));
+  }));
+  return h('div', { class: 'card', 'data-testid': 'official' },
+    h('div', { class: 'card-head' }, h('h2', {}, `Programmes officiels en vigueur (${PR.YEAR})`),
+      mine.length ? h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: offState.all, 'data-testid': 'official-all', onchange: (e) => { offState.all = e.target.checked; rerenderRef(); } }), 'Tous les niveaux (TPS au CM2)') : null),
+    h('p', { class: 'muted small' }, `${offState.all || !mine.length ? 'Tous les niveaux' : `Niveaux de la classe : ${mine.join(', ')}`}. Références relevées le ${model.frDate(PR.CHECKED_AT)} sur Éduscol (`,
+      ...[1, 2, 3].flatMap((c, i) => [i ? ', ' : '', h('a', { href: PR.EDUSCOL[c], target: '_blank', rel: 'noopener' }, `cycle ${c}`)]),
+      '). Les programmes changent progressivement : vérifiez sur Éduscol en début d’année.'),
+    h('div', { class: 'table-wrap' }, h('table', { class: 'table' }, h('thead', {}, h('tr', {}, h('th', {}, 'Discipline / domaine'), h('th', {}, 'Niveaux'), h('th', {}, 'Texte officiel'), h('th', {}, ''))), body)),
+    h('p', { class: 'muted small' }, '« Créer le référentiel » prépare un référentiel avec la bonne source et la bonne date ; il reste à y importer les compétences (copier-coller depuis le PDF officiel ou fichier CSV), puis à les valider.'));
+}
+function cycleOf(levels) { const c = model.cycles(levels); return c.length === 1 ? `cycle ${c[0]}` : levels.join(', '); }
+
 function nextVersion(v) { const n = parseInt(v, 10); return Number.isFinite(n) ? String(n + 1) : `${v || ''}-2`; }
 
 function detail(id) {

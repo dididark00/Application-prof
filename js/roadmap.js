@@ -46,6 +46,8 @@ export const ROADMAP = [
   R(3, '§4 Années', 'Groupes de besoin transversaux, ateliers et rotations', 'fait'),
 
   // ── §5 Préparation
+  R(3, '§5 Préparation', 'Programmes officiels en vigueur par niveau (TPS–CM2), avec liens BO et PDF, et création d’un référentiel prérempli', 'fait', 'Références relevées sur Éduscol le 22/10/2026.'),
+  R(4, '§5 Préparation', 'Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider)', 'partiel', 'Nécessite les PDF officiels (le site du ministère n’est pas accessible depuis l’environnement de développement).'),
   R(2, '§5 Préparation', 'Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions)', 'fait', 'D’après les modèles de l’enseignante ; import d’un tableau de notions.'),
   R(2, '§5 Préparation', 'Bilans de période (notions réalisées et restantes)', 'fait'),
   R(2, '§5 Préparation', 'Fiche de séquence complète', 'fait'),

@@ -307,6 +307,28 @@ await test('Apparence : thèmes et version sombre du soir', async () => {
   await page.getByTestId('theme-mode').count();
 });
 
+await test('Programmes officiels en vigueur : bons textes par niveau, référentiel prérempli', async () => {
+  await go('#/referentiels');
+  const rows = await page.getByTestId('official-row').allInnerTexts();
+  assert(rows.some(r => r.includes('Français') && r.includes('BO n° 41 du 31 octobre 2024')), 'français CE2 = BO 41 de 2024');
+  assert(rows.some(r => r.includes('Questionner le monde') && r.includes('BO n° 31 du 30 juillet 2020')), 'questionner le monde CE2 = 2020');
+  assert(rows.some(r => r.includes('Enseignement moral et civique') && r.includes('nouveau en CE2')), 'EMC nouveau en CE2');
+  assert(!rows.some(r => r.includes('BO n° 16 du 17 avril 2025')), 'pas de texte du cycle 3 pour une classe de CE2');
+  await page.getByTestId('official-all').check(); await page.waitForTimeout(150);
+  const all = await page.getByTestId('official-row').allInnerTexts();
+  assert(all.some(r => r.includes('Français') && r.includes('CM1, CM2') && r.includes('BO n° 16 du 17 avril 2025')), 'français cycle 3 = BO 16 de 2025');
+  assert(all.some(r => r.includes('Langage oral et écrit') && r.includes('BO n° 19 du 7 mai 2026')), 'maternelle = BO 19 de 2026');
+  assert(all.some(r => r.includes('Sciences et technologie') && r.includes('CM2') && r.includes('BO n° 25 du 22 juin 2023')), 'sciences CM2 = 2023');
+  await page.getByTestId('official-all').uncheck(); await page.waitForTimeout(150);
+  await page.getByTestId('official-row').filter({ has: page.locator('strong', { hasText: /^Mathématiques$/ }) }).getByTestId('official-create').click();
+  eq(await page.locator('input[name=publishedAt]').inputValue(), '2024-10-31', 'date du texte préremplie');
+  assert((await page.locator('input[name=source]').inputValue()).includes('BO n° 41'), 'source préremplie');
+  await page.getByRole('button', { name: 'Créer', exact: true }).click(); await page.waitForTimeout(250);
+  assert(/#\/referentiels\/.+/.test(await page.evaluate(() => location.hash)), 'référentiel créé et ouvert');
+  await go('#/referentiels');
+  eq(await page.getByTestId('official-row').filter({ has: page.locator('strong', { hasText: /^Mathématiques$/ }) }).getByText('Ouvrir le référentiel').count(), 1, 'lien vers le référentiel créé');
+});
+
 await test('Aucune erreur JavaScript', async () => { eq(errors.length, 0, errors.join(' | ')); });
 
 await browser.close();

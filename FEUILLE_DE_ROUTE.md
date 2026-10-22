@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (88) · 🟡 Partiel (8) · ⚙️ À configurer (1) · ⬜ À développer (36) — 133 entrées.
+Légende : ✅ Réalisé (89) · 🟡 Partiel (9) · ⚙️ À configurer (1) · ⬜ À développer (36) — 135 entrées.
 
 ## Étape 1 — Socle
 
@@ -79,6 +79,7 @@ Légende : ✅ Réalisé (88) · 🟡 Partiel (8) · ⚙️ À configurer (1) ·
 |---|---|---|---|
 | ✅ | §3 Données | Distinguer remis/rattrapé, non évalué/non acquis, inscription/présence prévue |  |
 | ✅ | §4 Années | Groupes de besoin transversaux, ateliers et rotations |  |
+| ✅ | §5 Préparation | Programmes officiels en vigueur par niveau (TPS–CM2), avec liens BO et PDF, et création d’un référentiel prérempli | Références relevées sur Éduscol le 22/10/2026. |
 | ✅ | §7 Quotidien | Appel matin/après-midi (absent, retard, départ, absence partielle), validation |  |
 | ✅ | §7 Quotidien | Cantine, étude, périscolaire : semaine type, exceptions, listes imprimables |  |
 | ✅ | §7 Quotidien | Départ seul/accompagné, personnes autorisées, exceptions |  |
@@ -119,6 +120,7 @@ Légende : ✅ Réalisé (88) · 🟡 Partiel (8) · ⚙️ À configurer (1) ·
 
 | | Section | Fonction | Note |
 |---|---|---|---|
+| 🟡 | §5 Préparation | Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider) | Nécessite les PDF officiels (le site du ministère n’est pas accessible depuis l’environnement de développement). |
 | ⬜ | §5 Préparation | OCR optionnel avec texte incertain signalé | Local et gratuit si possible ; OCR distant facultatif. |
 | ⬜ | §6 Planifier | Répartition des préparations avec la binôme |  |
 | ⬜ | §11 Fichiers | Charte visuelle enregistrée |  |
