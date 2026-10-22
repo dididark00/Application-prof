@@ -69,7 +69,7 @@ Avec les données fictives chargées :
 8. **Ma classe › Évaluations, Livrets et bilans, Différenciation, Trombinoscope.**
 9. **Ma classe › Plan de classe et groupes** : nouvelle disposition (îlots, U…), glisser les meubles, « Placer les élèves », groupes aléatoires ou manuels, « Utiliser pour une séance datée ».
 10. **Ma classe › Responsabilités** (rotation) et **Bibliothèque** (prêter, retour en un clic, retards).
-11. **Préparer › Atelier pédagogique** : Seyès, réglure, texte à compléter, droite graduée, numération, fractions, horloges ; version corrigée ; impression A4 à taille réelle (imprimer à 100 %).
+11. **Préparer › Atelier pédagogique** : **Tableau d’écriture (Seyès)** — tapez un texte, il s’écrit en attaché sur les lignes du cahier (minuscules = 1 interligne, ligne de base sur la ligne épaisse). Pour la police officielle **Marelle** (gratuite, licence libre OFL), téléchargez-la sur https://marelle.forge.apps.education.fr/, décompressez, puis « Importer une police » → `Marelle-Regular` (une fois par appareil ; elle est incluse dans la sauvegarde). « Afficher en grand » permet d’écrire par-dessus au doigt/stylet. Aussi : lignes Seyès, réglure, texte à compléter, droite graduée, numération, fractions, horloges ; version corrigée ; impression A4 à taille réelle (imprimer à 100 %).
 12. **Préparer › Diaporamas** : « Créer depuis la fiche » reprend la structure du modèle de diaporama ; « Présenter ici » ou « Projeter sur l'écran séparé » (notes présentateur jamais projetées).
 
 ## 3. Architecture retenue

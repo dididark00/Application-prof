@@ -1,6 +1,6 @@
 // Étape 3 : usage en classe — scénarios de validation (§17, §19, §20, §23) dans un vrai navigateur.
 import { chromium } from 'playwright';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { PDFDocument } from 'pdf-lib';
 
 const BASE = process.env.BASE || 'http://localhost:8080/';
@@ -256,6 +256,24 @@ await test('Téléphone : pages de l’étape 3 sans débordement horizontal', a
   await mp.evaluate(h => { location.hash = h; }, '#/appel?d=2026-11-02&h=matin'); await mp.waitForTimeout(250);
   await mp.screenshot({ path: `${OUT}etape3-mobile-appel.png` });
   await m.close();
+});
+
+await test('Tableau d’écriture Seyès : police importée, lignes de base sur les lignes épaisses, sauvegarde', async () => {
+  await go('#/atelier'); await page.getByTestId('tool-ecriture').click(); await page.waitForTimeout(150);
+  await page.getByTestId('font-file').setInputFiles({ name: 'Marelle-Regular.ttf', mimeType: 'font/ttf', buffer: readFileSync(new URL('./police-essai.ttf', import.meta.url)) });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-testid=p-police] option')].some(o => o.value === 'Marelle'));
+  eq(await page.getByTestId('p-police').inputValue(), 'Marelle', 'police sélectionnée après import');
+  await page.getByTestId('p-texte').fill('Bonjour les élèves\nOn écrit en attaché');
+  await page.waitForTimeout(150);
+  const t = await page.evaluate(() => [...document.querySelectorAll('[data-testid=atelier-preview] text[data-line]')].map(e => ({ y: +e.getAttribute('y'), fam: e.getAttribute('font-family'), txt: e.textContent, fs: +e.getAttribute('font-size') })));
+  eq(t.length, 2, 'deux lignes écrites');
+  assert(t[0].fam.includes('Marelle'), 'police Marelle appliquée');
+  eq(t[0].y, 32, '1re ligne de base sur la 2e ligne épaisse'); eq(t[1].y, 48, 'une ligne sautée (interligne 8 mm)');
+  const ratio = await page.evaluate(async () => (await import('./js/fonts.js')).xHeightRatio('Marelle'));
+  assert(Math.abs(t[0].fs * ratio - 2) < 0.05, `hauteur des minuscules ≈ 2 mm (obtenu ${(t[0].fs * ratio).toFixed(2)})`);
+  const b = await page.evaluate(async () => { const m = await import('./js/backup.js'); const s = await import('./js/store.js'); const bk = await m.buildBackup(); const f = s.getSettings().fonts[0]; return { name: f.name, inBackup: JSON.parse(bk.dataJson).blobs.some(x => x.id === f.blobId) }; });
+  eq(b.name, 'Marelle', 'police mémorisée'); assert(b.inBackup, 'police incluse dans la sauvegarde');
+  await page.screenshot({ path: `${OUT}etape3-ecriture.png` });
 });
 
 await test('Aucune erreur JavaScript', async () => { eq(errors.length, 0, errors.join(' | ')); });

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (86) · 🟡 Partiel (8) · ⚙️ À configurer (1) · ⬜ À développer (36) — 131 entrées.
+Légende : ✅ Réalisé (87) · 🟡 Partiel (8) · ⚙️ À configurer (1) · ⬜ À développer (36) — 132 entrées.
 
 ## Étape 1 — Socle
 
@@ -106,6 +106,7 @@ Légende : ✅ Réalisé (86) · 🟡 Partiel (8) · ⚙️ À configurer (1) ·
 | 🟡 | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche | Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5. |
 | ✅ | §19 Atelier | Timer de couleur persistant (widget flottant, plein écran, heure cible) | Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge). |
 | ✅ | §19 Atelier | Écriture : lignes Seyès, réglures, textes à compléter |  |
+| ✅ | §19 Atelier | Tableau d’écriture Seyès : texte tapé en cursive (police Marelle importée), calé sur les lignes, imprimable et affichable en grand avec annotation | La police Marelle (gratuite, licence libre) se télécharge sur le site du ministère puis s’importe une fois par appareil. |
 | ✅ | §19 Atelier | Maths : droites graduées, numération, fractions, horloges |  |
 | ✅ | §20 Plans | Plan de classe visuel : mobilier, modèles, dispositions nommées par période/séance |  |
 | ✅ | §20 Plans | Groupes manuels ou aléatoires, absents, rôles, rotations ; groupes de séance figés |  |

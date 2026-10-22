@@ -8,14 +8,16 @@ import * as P from '../pedago.js';
 import { h, icon, toast, modal, field } from '../ui.js';
 import { pageHeader, subTabs } from '../components.js';
 import { pickMany } from '../forms.js';
+import * as F from '../fonts.js';
 
 const PAGE = { w: 210, h: 297 };
 const TOOLS = [
-  ['seyes', 'Lignes Seyès'], ['reglure', 'Réglure simple'], ['texte', 'Texte à compléter'],
+  ['ecriture', 'Tableau d’écriture (Seyès)'], ['seyes', 'Lignes Seyès'], ['reglure', 'Réglure simple'], ['texte', 'Texte à compléter'],
   ['droite', 'Droite graduée'], ['numeration', 'Tableau de numération'], ['fractions', 'Fractions'], ['horloges', 'Horloges'],
 ];
 const state = {
-  tool: 'seyes', correction: false, title: '',
+  tool: 'ecriture', correction: false, title: '',
+  ecriture: { texte: 'Le chat dort sur le tapis.\nIl fait beau aujourd’hui.', police: '', hauteur: 1, ajuste: 100, interligne: 8, sauter: true, encre: '#1d3d6e', marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f' },
   seyes: { interligne: 8, lignes: 26, marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f', modele: '' },
   reglure: { ecart: 10, lignes: 24, couleur: '#888888' },
   texte: { source: 'Le [chat] dort sur le [tapis]. Il fait [beau] aujourd’hui.', banque: true, taille: 5 },
@@ -36,6 +38,49 @@ function page(title) {
 }
 
 const DRAW = {
+  /**
+   * Tableau d'écriture : le texte tapé est écrit dans la police choisie (ex. Marelle),
+   * la ligne de base posée sur la ligne épaisse du Seyès et la hauteur des minuscules
+   * calée sur 1 (ou 2) interligne(s) fin(s), d'après la mesure réelle de la police.
+   */
+  ecriture(o) {
+    const svg = page(state.title);
+    const il = Number(o.interligne) || 8, step = il / 4, top = 24, left = 10, right = PAGE.w - 10;
+    const font = currentFont(o);
+    const xh = step * (Number(o.hauteur) || 1);
+    const size = (xh / F.xHeightRatio(font)) * ((Number(o.ajuste) || 100) / 100);
+    const nLines = Math.floor((PAGE.h - 10 - top) / il);
+    for (let i = 0; i <= nLines; i++) {
+      const y = top + i * il;
+      svg.append(S('line', { x1: left, x2: right, y1: y, y2: y, stroke: o.couleur, 'stroke-width': 0.35 }));
+      if (i < nLines) for (let k = 1; k < 4; k++) svg.append(S('line', { x1: left, x2: right, y1: y + k * step, y2: y + k * step, stroke: o.couleur, 'stroke-width': 0.12 }));
+    }
+    const x0 = left + Number(o.marge);
+    for (let x = x0; x <= right; x += il) svg.append(S('line', { x1: x, x2: x, y1: top, y2: top + nLines * il, stroke: o.couleur, 'stroke-width': 0.12 }));
+    svg.append(S('line', { x1: x0, x2: x0, y1: top - 4, y2: top + nLines * il, stroke: o.marge_couleur, 'stroke-width': 0.4 }));
+    // Découpage en lignes selon la largeur réellement mesurée dans la police.
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.font = `${size * 10}px "${font}", cursive`;
+    const width = (t) => ctx.measureText(t).width / 10;
+    const maxW = right - x0 - 3;
+    const lines = [];
+    for (const para of String(o.texte || '').split('\n')) {
+      let cur = '';
+      for (const w of para.split(/\s+/).filter(Boolean)) {
+        const t = cur ? `${cur} ${w}` : w;
+        if (cur && width(t) > maxW) { lines.push(cur); cur = w; } else cur = t;
+      }
+      lines.push(cur);
+    }
+    const gap = o.sauter ? 2 : 1;
+    // Première ligne de base : la 2e ligne épaisse (laisse la place aux hampes).
+    lines.forEach((t, i) => {
+      const y = top + (1 + i * gap) * il;
+      if (y > top + nLines * il || !t) return;
+      svg.append(S('text', { x: x0 + 2, y, 'font-size': size, 'font-family': `"${font}", cursive`, fill: o.encre, 'data-line': i }, t));
+    });
+    return svg;
+  },
   seyes(o) {
     const svg = page(state.title);
     const il = Number(o.interligne) || 8, top = 24, left = 10, right = PAGE.w - 10;
@@ -171,6 +216,7 @@ const DRAW = {
 };
 
 const PARAMS = {
+  ecriture: [['texte', 'Texte à écrire (Entrée = nouvelle ligne)', 'textarea'], ['police', 'Police', 'font'], ['hauteur', 'Hauteur des minuscules', [['1', '1 interligne (cahier)'], ['2', '2 interlignes (grand)']]], ['ajuste', 'Ajustement de la taille (%)', 'number'], ['sauter', 'Sauter une ligne entre deux lignes écrites', 'checkbox'], ['interligne', 'Interligne (mm)', 'number'], ['marge', 'Marge (mm)', 'number'], ['encre', 'Couleur de l’écriture', 'color'], ['couleur', 'Couleur des lignes', 'color']],
   seyes: [['interligne', 'Interligne (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['marge', 'Marge (mm)', 'number'], ['couleur', 'Couleur des lignes', 'color'], ['marge_couleur', 'Couleur de la marge', 'color'], ['modele', 'Modèle d’écriture (1re ligne)', 'text']],
   reglure: [['ecart', 'Écart entre les lignes (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['couleur', 'Couleur', 'color']],
   texte: [['source', 'Texte (mettez les mots à trouver entre [crochets])', 'textarea'], ['taille', 'Taille du texte (mm)', 'number'], ['banque', 'Banque de mots', 'checkbox']],
@@ -187,9 +233,10 @@ export function render({ rerender }) {
   const params = h('div', { class: 'form' },
     field('Titre (facultatif)', h('input', { value: state.title, oninput: (e) => { state.title = e.target.value; redraw(); } })),
     PARAMS[state.tool].map(([k, label, type]) => {
-      if (Array.isArray(type)) return field(label, h('select', { onchange: (e) => { o[k] = e.target.value; redraw(); } }, type.map(v => h('option', { value: v, selected: o[k] === v }, v))));
+      if (Array.isArray(type)) return field(label, h('select', { 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.value; redraw(); } }, type.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return h('option', { value: val, selected: String(o[k]) === val }, lab); })));
+      if (type === 'font') return fontField(o, rerender);
       if (type === 'checkbox') return h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!o[k], onchange: (e) => { o[k] = e.target.checked; redraw(); } }), label);
-      if (type === 'textarea') return field(label, h('textarea', { rows: 5, oninput: (e) => { o[k] = e.target.value; redraw(); } }, o[k]));
+      if (type === 'textarea') return field(label, h('textarea', { rows: 5, 'data-testid': `p-${k}`, oninput: (e) => { o[k] = e.target.value; redraw(); } }, o[k]));
       return field(label, h('input', { type, value: o[k], step: type === 'number' ? 'any' : null, 'data-testid': `p-${k}`, oninput: (e) => { o[k] = type === 'number' ? Number(e.target.value) : e.target.value; redraw(); } }));
     }),
     ['texte', 'droite', 'numeration', 'fractions', 'horloges'].includes(state.tool) ? h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: state.correction, 'data-testid': 'correction', onchange: (e) => { state.correction = e.target.checked; redraw(); } }), 'Version corrigée') : null);
@@ -202,7 +249,26 @@ export function render({ rerender }) {
     subTabs(),
     h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Outil' }, TOOLS.map(([k, l]) => h('button', { type: 'button', class: state.tool === k ? 'on' : '', 'data-testid': `tool-${k}`, onclick: () => { state.tool = k; state.correction = false; rerender(); } }, l))),
     h('div', { class: 'atelier' }, h('section', { class: 'card' }, params), h('section', { class: 'card' }, preview)),
-    h('p', { class: 'muted small' }, 'Imprimez à 100 % (« taille réelle », sans « ajuster à la page ») pour conserver les dimensions en millimètres. Géométrie, cartes, jeux et anglais arrivent à l’étape 4.'));
+    h('p', { class: 'muted small' }, 'Imprimez à 100 % (« taille réelle », sans « ajuster à la page ») pour conserver les dimensions en millimètres. « Afficher en grand » permet d’écrire au doigt ou au stylet par-dessus (TNI, tablette). Géométrie, cartes, jeux et anglais arrivent à l’étape 4.'));
+}
+
+function currentFont(o) {
+  const names = F.available().map(f => f[0]);
+  return names.includes(o.police) ? o.police : names[0];
+}
+
+/** Choix de la police + import d'un fichier de police (Marelle, téléchargée gratuitement sur le site du ministère). */
+function fontField(o, rerender) {
+  const font = currentFont(o);
+  const hasCursive = F.BUNDLED.length || F.imported().length;
+  const input = h('input', { type: 'file', accept: '.ttf,.otf,.woff,.woff2', hidden: true, 'data-testid': 'font-file', onchange: async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { o.police = await F.importFont(f); toast(`Police « ${o.police} » installée sur cet appareil`); rerender(); } catch (err) { toast(err.message, { kind: 'error' }); }
+  } });
+  return h('div', {},
+    field('Police', h('select', { 'data-testid': 'p-police', onchange: (e) => { o.police = e.target.value; rerender(); } }, F.available().map(([v, l]) => h('option', { value: v, selected: v === font }, l)))),
+    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'font-import', onclick: () => input.click() }, icon('download', 14), 'Importer une police (.ttf, .otf, .woff2)'), input,
+    hasCursive ? null : h('p', { class: 'muted small', 'data-testid': 'font-hint' }, 'Pour l’écriture attachée officielle, téléchargez gratuitement la police Marelle (ministère de l’Éducation nationale, licence libre) sur marelle.forge.apps.education.fr, décompressez le fichier puis importez « Marelle-Regular » ici. Elle sera gardée sur l’appareil et incluse dans la sauvegarde.'));
 }
 
 function printSvg(svg) {

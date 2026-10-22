@@ -30,6 +30,7 @@ import * as pAppel from './pages/appel.js';
 import * as pServices from './pages/services.js';
 import * as pProjection from './pages/projection.js';
 import * as T from './timer.js';
+import * as F from './fonts.js';
 import * as pTrombi from './pages/trombi.js';
 import * as pListes from './pages/listes.js';
 import * as pEvals from './pages/evaluations.js';
@@ -128,6 +129,8 @@ async function start() {
   });
   await render();
   T.init();
+  // Polices d'écriture importées (ex. Marelle) : chargées puis la page est redessinée si besoin.
+  F.loadAll().then(() => { if (location.hash.startsWith('#/atelier')) render(); }).catch(() => {});
   registerServiceWorker();
   // Demande de stockage persistant : le navigateur ne videra pas les données sans action de l'utilisatrice.
   if (navigator.storage && navigator.storage.persist) {

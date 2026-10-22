@@ -151,6 +151,7 @@ export const ROADMAP = [
   // ── §19 Atelier
   R(3, '§19 Atelier', 'Timer de couleur persistant (widget flottant, plein écran, heure cible)', 'fait', 'Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge).'),
   R(3, '§19 Atelier', 'Écriture : lignes Seyès, réglures, textes à compléter', 'fait'),
+  R(3, '§19 Atelier', 'Tableau d’écriture Seyès : texte tapé en cursive (police Marelle importée), calé sur les lignes, imprimable et affichable en grand avec annotation', 'fait', 'La police Marelle (gratuite, licence libre) se télécharge sur le site du ministère puis s’importe une fois par appareil.'),
   R(3, '§19 Atelier', 'Maths : droites graduées, numération, fractions, horloges', 'fait'),
   R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections'),
   R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées'),
