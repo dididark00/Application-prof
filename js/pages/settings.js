@@ -2,6 +2,7 @@ import * as store from '../store.js';
 import * as model from '../model.js';
 import * as backup from '../backup.js';
 import * as demo from '../demo.js';
+import * as P from '../pedago.js';
 import { ROADMAP, STATUTS, RUBRIQUES } from '../roadmap.js';
 import { h, icon, toast, modal, confirmDialog, field, formData, download, pickFiles, formatSize, badge, emptyState } from '../ui.js';
 import { pageHeader, demoBadge } from '../components.js';
@@ -15,13 +16,14 @@ const TABS = [
   ['connexions', 'Connexions'],
   ['historique', 'Historique'],
   ['corbeille', 'Corbeille'],
+  ['reprise', 'Reprise d\u2019année'],
   ['demo', 'Démonstration'],
   ['feuille', 'Feuille de route'],
 ];
 
 export async function render({ params }) {
   const tab = TABS.some(t => t[0] === params[0]) ? params[0] : 'general';
-  const content = await ({ general, annees, classes, modules, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille })[tab]();
+  const content = await ({ general, annees, classes, modules, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille, reprise })[tab]();
   return h('div', { class: 'page' },
     pageHeader('Réglages', { favKey: 'reglages' }),
     h('nav', { class: 'subtabs', 'aria-label': 'Réglages' }, TABS.map(([id, label]) =>
@@ -35,16 +37,19 @@ function general() {
   const form = h('form', { class: 'card form', onsubmit: async (e) => {
     e.preventDefault();
     const d = formData(form);
-    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName });
+    const subjects = [...new Set(d.subjects.split('\n').map(x => x.trim()).filter(Boolean))];
+    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, subjects: subjects.length ? subjects : null });
     toast('Réglages enregistrés');
   } },
     h('h2', {}, 'Identité'),
     field('Nom de l’application', h('input', { name: 'appName', value: s.appName, maxlength: 40 }), 'Nom provisoire, modifiable à tout moment.'),
-    field('Votre prénom (auteur des modifications)', h('input', { name: 'userName', value: s.userName, maxlength: 60 }), 'Apparaît dans l’historique des modifications.'),
+    field('Votre prénom (auteur des modifications)', h('input', { name: 'userName', value: s.userName, maxlength: 60 }), 'Apparaît dans l’historique des modifications et dans la répartition avec la binôme.'),
+    h('h2', {}, 'Disciplines'),
+    field('Une discipline par ligne', h('textarea', { name: 'subjects', rows: 8, 'data-testid': 'subjects' }, model.subjects().join('\n')), 'Utilisées dans l’emploi du temps, les programmations, les fiches et les fichiers. Renommer une discipline ne modifie pas les fiches existantes.'),
     h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Enregistrer')));
   return h('div', { class: 'stack' }, form,
     h('div', { class: 'card' }, h('h2', {}, 'À propos'),
-      h('p', {}, `Version ${backup.APP_VERSION} — étape 1 (socle). Les données sont enregistrées dans ce navigateur, sur cet appareil.`),
+      h('p', {}, `Version ${backup.APP_VERSION} — étapes 1 (socle) et 2 (préparation et planification). Les données sont enregistrées dans ce navigateur, sur cet appareil.`),
       h('p', { class: 'muted' }, 'Service, binôme et niveaux se règlent dans l’onglet Classes. Calendrier et périodes dans Années et périodes.')));
 }
 
@@ -179,6 +184,8 @@ function classes() {
 function classDialog(c, year) {
   const editing = !!c;
   const levels = new Set(editing ? c.levels : ['CE2']);
+  const classDays = new Set(model.classDays(c));
+  const serviceDays = new Set(editing ? c.serviceDays || [] : []);
   const cyc = h('span', { class: 'muted' });
   const updCycle = () => { cyc.textContent = `Cycle déduit : ${model.cycleLabel([...levels])}`; };
   updCycle();
@@ -195,6 +202,11 @@ function classDialog(c, year) {
     h('div', { class: 'grid-2' },
       field('Binôme (prénom, nom)', h('input', { name: 'binomeName', value: editing ? c.binome?.name || '' : '' })),
       field('Jours de la binôme', h('input', { name: 'binomeDetail', value: editing ? c.binome?.detail || '' : '' }))),
+    h('fieldset', {}, h('legend', {}, 'Jours de classe'), h('div', { class: 'chips' }, [1, 2, 3, 4, 5, 6].map(d => h('label', { class: 'chip' },
+      h('input', { type: 'checkbox', checked: classDays.has(d), onchange: (e) => { e.target.checked ? classDays.add(d) : classDays.delete(d); } }), model.JOURS[d])))),
+    h('fieldset', {}, h('legend', {}, 'Mes jours dans cette classe (vide = tous)'), h('div', { class: 'chips' }, [1, 2, 3, 4, 5, 6].map(d => h('label', { class: 'chip' },
+      h('input', { type: 'checkbox', checked: serviceDays.has(d), onchange: (e) => { e.target.checked ? serviceDays.add(d) : serviceDays.delete(d); } }), model.JOURS[d]))),
+      h('small', { class: 'hint' }, 'Les autres jours sont signalés « jour de la binôme » dans le cahier journal.')),
     h('p', { class: 'muted' }, 'Le partage réel avec la binôme (compte, droits) arrive à l’étape 5. Ici, ce sont des informations de référence.'));
   const errors = h('div', { class: 'form-errors', role: 'alert' });
   modal({ title: editing ? `Modifier ${c.name}` : 'Nouvelle classe', body: h('div', {}, form, errors), wide: true, actions: [
@@ -203,7 +215,9 @@ function classDialog(c, year) {
       const d = formData(form);
       if (!d.name) { errors.textContent = 'Le nom est obligatoire.'; return false; }
       if (!levels.size) { errors.textContent = 'Choisissez au moins un niveau.'; return false; }
-      const data = { name: d.name, school: d.school, levels: model.sortLevels([...levels]), service: { type: d.serviceType, detail: d.serviceDetail }, binome: { name: d.binomeName, detail: d.binomeDetail } };
+      if (!classDays.size) { errors.textContent = 'Choisissez au moins un jour de classe.'; return false; }
+      const data = { name: d.name, school: d.school, levels: model.sortLevels([...levels]), service: { type: d.serviceType, detail: d.serviceDetail }, binome: { name: d.binomeName, detail: d.binomeDetail },
+        classDays: [...classDays].sort(), serviceDays: [...serviceDays].sort() };
       if (editing) await store.update(c.id, data, `Modification de la classe ${d.name}`);
       else {
         const created = await store.create('class', { ...data, yearId: year.id }, `Création de la classe ${d.name}`);
@@ -322,7 +336,7 @@ function connexions() {
 // ───────── Historique
 async function historique() {
   const log = await store.auditLog(300);
-  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', lot: 'Lot' };
+  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel', lot: 'Lot' };
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Les 300 dernières modifications, avec leur auteur. Le bouton « Annuler » du haut de l’écran revient sur les dernières actions de cette session.'),
     log.length ? h('div', { class: 'card' }, h('table', { class: 'table', 'data-testid': 'audit-table' },
@@ -333,8 +347,8 @@ async function historique() {
 // ───────── Corbeille
 function corbeille() {
   const items = store.trash();
-  const name = (r) => r.name || r.label || (r.firstName ? `${r.firstName} ${r.lastName || ''}` : null) || r.text?.slice(0, 40) || r.type;
-  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception' };
+  const name = (r) => r.name || r.label || r.title || (r.firstName ? `${r.firstName} ${r.lastName || ''}` : null) || r.text?.slice(0, 40) || (r.type === 'occurrence' ? `${r.subject || 'Séance'} du ${model.frShort(r.date)}` : r.type);
+  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel' };
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Les éléments supprimés restent ici jusqu’à leur suppression définitive. Ils sont exclus de la recherche et des listes.'),
     items.length ? h('div', { class: 'card' }, h('table', { class: 'table' },
@@ -354,7 +368,7 @@ function demoTab() {
   const has = demo.hasDemo();
   return h('div', { class: 'stack' }, h('div', { class: 'card' },
     h('h2', {}, 'Données fictives de démonstration'),
-    h('p', {}, 'Pour essayer l’application : une classe « CE2 (démo) » de 12 élèves aux noms inventés, responsables fictifs (téléphones 06 00 00 00 xx, adresses en .invalid), une arrivée en novembre et un départ fin octobre. Tout est marqué « Démo ».'),
+    h('p', {}, 'Pour essayer l’application : une classe « CE2 (démo) » de 12 élèves aux noms inventés, responsables fictifs (téléphones 06 00 00 00 xx, adresses en .invalid), une arrivée en novembre et un départ fin octobre ; un emploi du temps, une programmation et une séquence de maths d’exemple, deux séances au cahier journal (2 et 3 novembre), une sortie le 5 novembre qui crée un conflit, une intervention à partir du 16 novembre. Une seconde classe « CE1-CE2 (démo) » montre le multiniveau. Tout est marqué « Démo » ou « exemple ».'),
     has ? h('p', {}, badge('Chargées', 'ok')) : null,
     h('div', { class: 'row' },
       h('button', { class: 'btn btn-primary', type: 'button', disabled: has, 'data-testid': 'load-demo', onclick: async () => {
@@ -364,6 +378,29 @@ function demoTab() {
         if (!await confirmDialog('Retirer les données de démonstration ?', 'Seuls les éléments marqués « Démo » sont supprimés définitivement. Vos propres données ne sont pas touchées.', { confirmLabel: 'Retirer', danger: true })) return;
         const n = await demo.removeDemo(); toast(`${n} élément(s) de démonstration retiré(s)`);
       } }, 'Retirer les données fictives'))));
+}
+
+// ───────── Reprise d'une année précédente
+function reprise() {
+  const cls = model.currentClass();
+  if (!cls) return emptyState('Aucune classe sélectionnée', 'Créez d’abord la classe de la nouvelle année.');
+  const sources = store.all('class').filter(c => c.id !== cls.id).map(c => ({ c, y: store.get(c.yearId) })).filter(x => x.y && !x.y.deletedAt);
+  const what = { programmations: true, sequences: true, lecons: true, edt: false };
+  const src = h('select', { 'aria-label': 'Classe source', 'data-testid': 'reprise-source' }, sources.map(({ c, y }) => h('option', { value: c.id }, `${c.name} — ${y.label}`)));
+  return h('div', { class: 'stack' }, h('div', { class: 'card' },
+    h('h2', {}, `Reprendre des modèles dans ${cls.name}`),
+    h('p', {}, 'Copie les modèles d’une autre classe (autre année) dans la classe sélectionnée. Les copies sont indépendantes : modifier l’une ne change pas l’autre.'),
+    h('p', { class: 'warn' }, 'Ne sont jamais repris : élèves, cahier journal réalisé, devoirs donnés, résultats, bilans de séquence et de période, paiements, autorisations.'),
+    sources.length ? h('div', { class: 'form' },
+      field('Depuis', src),
+      h('div', { class: 'chips' }, [['programmations', 'Programmations et notions'], ['sequences', 'Séquences et fiches de séance'], ['lecons', 'Leçons (sans distributions)'], ['edt', 'Emplois du temps']].map(([k, l]) =>
+        h('label', { class: 'chip' }, h('input', { type: 'checkbox', checked: what[k], onchange: (e) => { what[k] = e.target.checked; } }), l))),
+      h('p', { class: 'muted small' }, 'Les périodes sont associées dans l’ordre (P1 → P1…). Manuels, référentiels et fichiers sont déjà communs à toutes les années.'),
+      h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'reprise-run', onclick: async () => {
+        const n = await P.copyFromClass(src.value, cls.id, what);
+        toast(n ? `${n} élément(s) repris dans ${cls.name}` : 'Rien à reprendre.', { action: n ? 'Annuler' : null, onAction: () => store.undo() });
+      } }, 'Reprendre')))
+      : h('p', { class: 'muted' }, 'Aucune autre classe : la reprise servira à la rentrée suivante, depuis la classe de cette année.')));
 }
 
 // ───────── Feuille de route

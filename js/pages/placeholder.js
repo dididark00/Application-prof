@@ -10,6 +10,7 @@ export function render({ params }) {
   const rub = RUBRIQUES.find(r => r.id === params[0]);
   const sub = rub?.sous.find(s => s.id === params[1]) || rub?.sous[0];
   if (!rub || !sub) return h('div', { class: 'page' }, pageHeader('Page inconnue'));
+  if (sub.route) { setTimeout(() => { location.replace(`#/${sub.route}`); }, 0); return h('div', { class: 'page' }, pageHeader(sub.titre), h('p', {}, h('a', { href: `#/${sub.route}` }, 'Ouvrir la page'))); }
   if (isHidden(rub.id, sub.id)) return h('div', { class: 'page' }, pageHeader(sub.titre), h('p', {}, 'Ce module est masqué. Réaffichez-le dans Réglages › Modules.'));
   const items = ROADMAP.filter(r => r.etape === sub.etape);
   return h('div', { class: 'page' },

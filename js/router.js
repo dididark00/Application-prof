@@ -22,7 +22,9 @@ export function subHref(rub, sub) {
 /** Rubrique et sous-page correspondant à la route courante. */
 export function currentLocation(route = parseHash()) {
   if (route.name === 'avenir') return { rub: route.params[0], sub: route.params[1] };
-  if (route.name === 'eleve') return { rub: 'classe', sub: 'eleves' };
+  const ALIASES = { eleve: ['classe', 'eleves'], referentiels: ['preparer', 'programmes'], programmation: ['preparer', 'programmations'], progression: ['preparer', 'progressions'],
+    sequence: ['preparer', 'sequences'], seance: ['preparer', 'preparations'] };
+  if (ALIASES[route.name] && !RUBRIQUES.some(r => r.sous.some(s => s.route === route.name))) return { rub: ALIASES[route.name][0], sub: ALIASES[route.name][1] };
   for (const r of RUBRIQUES) for (const s of r.sous) if (s.route === route.name) return { rub: r.id, sub: s.id };
   return { rub: null, sub: null };
 }

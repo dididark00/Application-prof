@@ -3,6 +3,8 @@ import * as model from '../model.js';
 import { h, icon, badge } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { allPages } from '../router.js';
+import * as PL from '../planning.js';
+import { taskDialog } from './agenda.js';
 
 export function render() {
   const s = store.getSettings();
@@ -41,6 +43,32 @@ export function render() {
       moves.length ? h('div', {}, h('h3', {}, 'Dans les 30 prochains jours'), h('ul', {}, moves.map(m => h('li', {}, `${model.frDate(m.date, { day: 'numeric', month: 'long' })} : `, h('a', { href: `#/eleve/${m.id}` }, m.text))))) : null));
   }
 
+  if (cls) {
+    const plan = PL.dayPlan(cls, today);
+    cards.unshift(h('section', { class: 'card', 'data-testid': 'today-plan' },
+      h('div', { class: 'card-head' }, h('h2', {}, 'Ma journée'), h('a', { class: 'btn btn-small', href: `#/cahier?d=${today}` }, 'Cahier journal')),
+      !plan.school.ok ? h('p', { class: 'muted' }, plan.school.reason) : !plan.myDay ? h('p', { class: 'muted' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
+      plan.warnings.length ? h('p', { class: 'warn' }, `${plan.warnings.length} conflit(s) à régler dans le cahier journal.`) : null,
+      plan.entries.length ? h('ul', { class: 'today-list' }, plan.entries.map(e => h('li', { class: `status-${e.status}` },
+        h('span', { class: 'entry-time' }, e.allDay ? 'Journée' : e.start), h('span', { class: 'dot', style: { background: model.subjectColor(e.subject) } }),
+        e.session ? h('a', { href: `#/seance/${e.session.id}` }, e.title) : h('span', {}, e.title), e.status !== 'prévue' ? h('span', { class: 'muted small' }, ` · ${e.status}`) : null)))
+        : (plan.school.ok ? h('p', { class: 'muted' }, 'Aucun créneau : créez l\u2019emploi du temps dans Planifier.') : null)));
+    const tomorrow = model.addDays(today, 1);
+    const hw = store.all('homework').filter(x => x.classId === cls.id && (x.dueDate === today || x.dueDate === tomorrow));
+    if (hw.length) cards.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Devoirs'), h('a', { class: 'btn btn-small', href: '#/devoirs' }, 'Tous')),
+      h('ul', { class: 'plain' }, hw.map(x => h('li', {}, h('strong', {}, x.dueDate === today ? 'Aujourd\u2019hui : ' : 'Demain : '), x.title)))));
+    const mats = PL.materials(cls, [today, tomorrow]).filter(r => r.kind !== 'copie' || r.status === 'à faire');
+    if (mats.length) cards.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'À préparer (aujourd\u2019hui et demain)'), h('a', { class: 'btn btn-small', href: `#/cahier?d=${today}&v=semaine` }, 'Semaine')),
+      h('ul', { class: 'plain' }, mats.slice(0, 8).map(r => h('li', {}, `${r.date === today ? '' : 'Demain · '}${r.label}${r.kind === 'copie' ? ` — ${r.count} ex.` : ''}`)))));
+  }
+  const openTasks = store.all('task').filter(t => !t.done && t.due && t.due <= today);
+  const evs = PL.eventsOn(today);
+  if (openTasks.length || evs.length) cards.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Tâches et rendez-vous'), h('a', { class: 'btn btn-small', href: '#/taches' }, 'Tout voir')),
+    evs.length ? h('ul', { class: 'plain' }, evs.map(e => h('li', {}, `${e.start || 'Journée'} · ${e.title}`))) : null,
+    openTasks.length ? h('ul', { class: 'task-list' }, openTasks.map(t => h('li', { class: 'task' },
+      h('input', { type: 'checkbox', 'aria-label': `Tâche faite : ${t.title}`, onchange: () => store.update(t.id, { done: true, doneAt: new Date().toISOString() }, 'Tâche faite') }),
+      h('button', { class: 'linklike', type: 'button', onclick: () => taskDialog(t) }, t.title), t.due < today ? h('span', { class: 'badge badge-warn' }, 'en retard') : null))) : null));
+
   const days = s.lastBackupAt ? Math.floor((Date.now() - new Date(s.lastBackupAt)) / 86400000) : null;
   const hasData = store.count() > 0;
   if (hasData && (days === null || days >= 7)) {
@@ -60,8 +88,6 @@ export function render() {
 
   cards.push(h('section', { class: 'card later-card' }, h('h2', {}, 'Bientôt sur cette page'),
     h('ul', {},
-      h('li', {}, 'Déroulé de la journée depuis l’emploi du temps et le cahier journal — étape 2'),
-      h('li', {}, 'Tâches, rendez-vous et documents à préparer — étape 2'),
       h('li', {}, 'Appel rapide matin/après-midi et services (cantine, étude) — étape 3'),
       h('li', {}, 'Projection du programme du jour et timer de couleur — étape 3'))));
 

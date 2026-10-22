@@ -84,7 +84,7 @@ export function count() { return records.size; }
 function author() { return settings.userName || 'Utilisatrice'; }
 
 /** Applique un ensemble de changements {before, after} en une transaction. */
-async function commit(changes, label, { undoable = true, action = 'modification' } = {}) {
+async function commit(changes, label, { undoable = true, action = 'modification', quiet = false } = {}) {
   const at = nowIso();
   const batch = uid();
   const puts = [];
@@ -100,7 +100,7 @@ async function commit(changes, label, { undoable = true, action = 'modification'
   for (const p of puts) records.set(p.id, clone(p));
   for (const d of dels) records.delete(d);
   if (undoable) { undoStack.push({ label, changes }); if (undoStack.length > 100) undoStack.shift(); }
-  emit({ kind: 'change', label, ids: changes.map(c => (c.after || c.before).id) });
+  emit({ kind: 'change', label, quiet, ids: changes.map(c => (c.after || c.before).id) });
 }
 
 export async function create(type, data, label) {
@@ -117,16 +117,17 @@ export async function createMany(type, list, label) {
   return recs.map(clone);
 }
 
-export async function update(id, patch, label) {
+/** opts.quiet : la page en cours d'édition n'est pas redessinée (saisie au fil de l'eau). */
+export async function update(id, patch, label, opts = {}) {
   const before = records.get(id);
   if (!before) throw new Error('Élément introuvable');
   const after = { ...clone(before), ...clone(patch), id, type: before.type, updatedAt: nowIso(), updatedBy: author() };
-  await commit([{ before: clone(before), after }], label || 'Modification');
+  await commit([{ before: clone(before), after }], label || 'Modification', { quiet: !!opts.quiet });
   return clone(after);
 }
 
 /** Plusieurs modifications groupées (une seule annulation). items = [{id, patch}] ou [{create:{type,data}}] */
-export async function batch(items, label) {
+export async function batch(items, label, opts = {}) {
   const at = nowIso();
   const changes = [];
   for (const it of items) {
@@ -139,7 +140,7 @@ export async function batch(items, label) {
       changes.push({ before: clone(before), after: { ...clone(before), ...clone(it.patch), updatedAt: at, updatedBy: author() } });
     }
   }
-  if (changes.length) await commit(changes, label);
+  if (changes.length) await commit(changes, label, { quiet: !!opts.quiet });
   return changes.map(c => clone(c.after));
 }
 
@@ -224,10 +225,10 @@ export async function getBlob(id) {
 
 // ───────── Réglages
 export function getSettings() { return clone(settings); }
-export async function setSettings(patch) {
+export async function setSettings(patch, opts = {}) {
   settings = { ...settings, ...clone(patch) };
   await persist(() => db.write({ puts: { meta: [{ key: 'settings', value: settings }] } }));
-  emit({ kind: 'settings' });
+  emit({ kind: 'settings', quiet: !!opts.quiet });
 }
 
 // ───────── Historique

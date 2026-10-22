@@ -96,7 +96,7 @@ function renderBottom() {
   const route = parseHash();
   const items = [
     { href: '#/aujourdhui', label: 'Aujourd’hui', ic: 'sun', active: loc.rub === 'aujourdhui' },
-    { href: '#/avenir/planifier/agenda', label: 'Planifier', ic: 'calendar', active: loc.rub === 'planifier' },
+    { href: '#/cahier', label: 'Planifier', ic: 'calendar', active: loc.rub === 'planifier' },
     { href: '#/eleves', label: 'Ma classe', ic: 'users', active: loc.rub === 'classe' },
     { href: '#/plus', label: 'Plus', ic: 'menu', active: !['aujourdhui', 'planifier', 'classe'].includes(loc.rub) || route.name === 'plus' },
   ];

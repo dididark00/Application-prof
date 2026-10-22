@@ -14,6 +14,18 @@ import * as pSearch from './pages/search.js';
 import * as pSettings from './pages/settings.js';
 import * as pPlaceholder from './pages/placeholder.js';
 import * as pMore from './pages/more.js';
+import * as pRefs from './pages/referentiels.js';
+import * as pProgs from './pages/programmations.js';
+import * as pProgressions from './pages/progressions.js';
+import * as pSequences from './pages/sequences.js';
+import * as pSeance from './pages/seance.js';
+import * as pManuels from './pages/manuels.js';
+import * as pLecons from './pages/lecons.js';
+import * as pEdt from './pages/edt.js';
+import * as pCahier from './pages/cahier.js';
+import * as pDevoirs from './pages/devoirs.js';
+import * as pInterv from './pages/interventions.js';
+import * as pAgenda from './pages/agenda.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -26,6 +38,19 @@ const ROUTES = {
   reglages: pSettings,
   avenir: pPlaceholder,
   plus: pMore,
+  referentiels: pRefs,
+  programmations: pProgs, programmation: pProgs,
+  progressions: pProgressions, progression: pProgressions,
+  sequences: pSequences, sequence: pSequences,
+  preparations: pSeance, seance: pSeance,
+  manuels: pManuels,
+  lecons: pLecons,
+  edt: pEdt,
+  cahier: pCahier,
+  devoirs: pDevoirs,
+  interventions: pInterv,
+  agenda: pAgenda,
+  taches: { render: pAgenda.renderTasks },
 };
 
 let rendering = false;
@@ -67,6 +92,7 @@ async function start() {
   renderShell({ navigate, onQuickAdd: openQuickAdd });
   window.addEventListener('hashchange', render);
   store.subscribe((evt) => {
+    if ((evt.kind === 'change' || evt.kind === 'settings') && evt.quiet) { refreshChrome(); return; }
     if (evt.kind === 'change' || evt.kind === 'settings' || evt.kind === 'init') { ensureSelection(); render(); }
     if (evt.kind === 'save') refreshChrome();
   });

@@ -124,3 +124,52 @@ export function age(birthIso, at = todayIso()) {
   let a = y - by; if (m < bm || (m === bm && d < bd)) a--;
   return a;
 }
+
+// ───── Matières (liste modifiable dans Réglages)
+export const DEFAULT_SUBJECTS = ['Français', 'Mathématiques', 'Questionner le monde', 'Langues vivantes', 'Arts plastiques', 'Éducation musicale', 'EPS', 'EMC', 'Autre'];
+export function subjects() {
+  const s = store.getSettings().subjects;
+  return Array.isArray(s) && s.length ? s : DEFAULT_SUBJECTS;
+}
+const PALETTE = ['#2f6f8f', '#b5532f', '#6a8f2f', '#8f2f6a', '#a3801f', '#2f8f7a', '#5a4fa3', '#8f4a2f', '#3f7f3f', '#7a5c8f'];
+export function subjectColor(name) {
+  if (!name) return '#777';
+  const i = subjects().indexOf(name);
+  if (i >= 0) return PALETTE[i % PALETTE.length];
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+// ───── Répartition des enseignements avec la binôme
+export function owners(cls = currentClass()) {
+  const me = store.getSettings().userName || 'Moi';
+  const bin = cls?.binome?.name || 'Binôme';
+  return [['moi', me], ['binome', bin], ['commun', 'Commun']];
+}
+export function ownerLabel(key, cls) { return (owners(cls).find(o => o[0] === key) || [null, ''])[1]; }
+
+// ───── Jours de classe (1 = lundi … 5 = vendredi, 6 = samedi)
+export const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+export function classDays(cls) { return cls?.classDays?.length ? cls.classDays : [1, 2, 4, 5]; }
+export function weekday(iso) { const [y, m, d] = iso.split('-').map(Number); const w = new Date(y, m - 1, d).getDay(); return w === 0 ? 7 : w; }
+export function addDays(iso, n) { const [y, m, d] = iso.split('-').map(Number); return todayIso(new Date(y, m - 1, d + n)); }
+export function mondayOf(iso) { return addDays(iso, 1 - weekday(iso)); }
+export function diffDays(a, b) { const p = (s) => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); }; return Math.round((p(b) - p(a)) / 86400000); }
+
+// ───── Périodes
+export function periodsOf(year) { return (year?.periods || []).slice().sort((a, b) => a.start.localeCompare(b.start)); }
+export function periodOfDate(year, date) { return periodsOf(year).find(p => date >= p.start && date <= p.end) || null; }
+export function periodLabel(year, periodId) {
+  const ps = periodsOf(year); const i = ps.findIndex(p => p.id === periodId);
+  return i >= 0 ? `P${i + 1}` : '';
+}
+/** Semaines d'une période : S1 = semaine contenant le premier jour. */
+export function weeksOfPeriod(p) {
+  if (!p) return [];
+  const out = []; let mon = mondayOf(p.start); let n = 1;
+  while (mon <= p.end) { out.push({ n, monday: mon, friday: addDays(mon, 4) }); mon = addDays(mon, 7); n++; }
+  return out;
+}
+export function minutes(hhmm) { if (!hhmm) return 0; const [h, m] = hhmm.split(':').map(Number); return h * 60 + (m || 0); }
+export function hhmm(min) { return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`; }
+export function durationLabel(min) { if (!min) return ''; const h = Math.floor(min / 60), m = min % 60; return h ? `${h} h${m ? ' ' + String(m).padStart(2, '0') : ''}` : `${m} min`; }

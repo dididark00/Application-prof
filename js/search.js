@@ -3,6 +3,7 @@
 import * as store from './store.js';
 import * as model from './model.js';
 import { allPages, isHidden } from './router.js';
+import * as P from './pedago.js';
 
 export const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -28,5 +29,24 @@ export function search(q) {
   if (!isHidden('organisation', 'reception')) {
     for (const i of store.all('inbox')) if (match(i.title, i.text, i.name)) out.push({ group: 'Boîte de réception', title: i.title || i.name || (i.text || '').slice(0, 60), detail: i.status, href: '#/reception' });
   }
+  const prep = [
+    ['programmes', 'referential', 'Référentiels', r => [r.name, r.source, (r.items || []).map(i => `${i.code} ${i.label}`).join(' ')], r => r.name, r => `v${r.version} · ${r.status}`, r => `#/referentiels/${r.id}`],
+    ['programmations', 'programmation', 'Programmations', r => [r.subject, r.level, (r.subdomains || []).join(' '), r.references], r => `Programmation ${r.subject} ${r.level}`, r => store.get(r.classId)?.name || '', r => `#/programmation/${r.id}`],
+    ['programmations', 'notion', 'Notions', r => [r.title, r.subdomain, r.competences, r.resources], r => r.title, r => { const p = store.get(r.programmationId); return p ? `${p.subject} ${p.level}` : ''; }, r => `#/programmation/${r.programmationId}`],
+    ['progressions', 'progression', 'Progressions', r => [r.subject, r.subdomain, (r.rows || []).map(x => `${x.title} ${x.objective} ${x.support}`).join(' ')], r => `Progression ${r.subject}`, r => r.level || '', r => `#/progression/${r.id}`],
+    ['sequences', 'sequence', 'Séquences', r => [r.title, r.subject, r.subdomain, r.objectifGeneral, r.notionsVocab], r => P.sequenceTitle(r), r => r.subject || '', r => `#/sequence/${r.id}`],
+    ['preparations', 'session', 'Fiches de séance', r => [r.title, r.subject, r.subdomain, r.objective, r.vocabulaire, r.trace, (r.phases || []).map(p => `${p.consigne || ''} ${p.exercices || ''}`).join(' ')], r => P.sessionTitle(r), r => r.subject || '', r => `#/seance/${r.id}`],
+    ['manuels', 'manual', 'Manuels', r => [r.title, r.author, r.publisher, (r.pages || []).map(p => `${p.page} ${p.note}`).join(' ')], r => r.title, r => r.publisher || '', r => `#/manuels?open=${r.id}`],
+    ['lecons', 'lesson', 'Leçons', r => [r.title, r.subject, r.content, `n° ${r.number}`], r => `${r.subject} n° ${r.number} — ${r.title}`, () => '', r => `#/lecons?open=${r.id}`],
+  ];
+  for (const [sub, type, group, fields, title, detail, href] of prep) {
+    if (isHidden('preparer', sub)) continue;
+    for (const r of store.all(type)) if (match(...fields(r))) out.push({ group, title: title(r), detail: detail(r), href: href(r) });
+  }
+  if (!isHidden('planifier', 'devoirs')) for (const r of store.all('homework')) if (match(r.title, r.details, r.subject)) out.push({ group: 'Devoirs', title: r.title, detail: `pour le ${model.frShort(r.dueDate)}`, href: '#/devoirs' });
+  if (!isHidden('planifier', 'interventions')) for (const r of store.all('intervention')) if (match(r.title, r.place, r.notes)) out.push({ group: 'Interventions', title: r.title, detail: r.status, href: '#/interventions' });
+  if (!isHidden('planifier', 'agenda')) for (const r of store.all('event')) if (match(r.title, r.notes, r.kind)) out.push({ group: 'Agenda', title: r.title, detail: model.frShort(r.date), href: `#/agenda?d=${r.date}` });
+  if (!isHidden('aujourdhui', 'taches')) for (const r of store.all('task')) if (match(r.title, r.notes)) out.push({ group: 'Tâches', title: r.title, detail: r.done ? 'faite' : (r.due ? `pour le ${model.frShort(r.due)}` : ''), href: '#/taches' });
+  if (!isHidden('planifier', 'cahier')) for (const r of store.all('occurrence')) if (match(r.note, r.title, ...Object.values(r.after || {}))) out.push({ group: 'Cahier journal', title: `${r.subject || 'Séance'} — ${r.title || (r.sessionId ? P.sessionTitle(store.get(r.sessionId)) : '')}`, detail: model.frShort(r.date), href: `#/cahier?d=${r.date}` });
   return out;
 }
