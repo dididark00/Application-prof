@@ -517,7 +517,7 @@ function feuille() {
   const etapes = { 1: 'Socle', 2: 'Préparation liée', 3: 'Usage en classe', 4: 'Organisation', 5: 'Collaboration et connexions' };
   return h('div', { class: 'stack' },
     h('p', {}, `Tout le périmètre du cahier des charges, suivi fonction par fonction : ${ROADMAP.length} entrées — `,
-      Object.entries(STATUTS).map(([k, l]) => h('span', { class: 'nowrap' }, badge(`${l} : ${counts[k] || 0}`, kind[k]), ' '))),
+      Object.entries(STATUTS).map(([k, l]) => [h('span', { class: 'nowrap' }, badge(`${l} : ${counts[k] || 0}`, kind[k])), ' '])),
     Object.entries(etapes).map(([n, t]) => h('div', { class: 'card' },
       h('h2', {}, `Étape ${n} — ${t}`),
       h('table', { class: 'table roadmap' }, h('tbody', {}, ROADMAP.filter(r => String(r.etape) === n).map(r => h('tr', {},

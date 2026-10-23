@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.3).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
+**État : les cinq étapes sont réalisées et testées (version 0.5.4).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -197,6 +197,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 **Semaine et import** — 9 scénarios (`tests/e2e-semaine.mjs`) : fiche habituelle et séance suivante de la progression proposées, jamais posées deux fois ; semaine vierge sans toucher les autres ; export d'un mois en CSV et d'une semaine (une page par jour) ; menu « Plus » dans l'écran du téléphone ; import d'une progression qui relie la séquence existante sans la dupliquer ; import du cahier journal dans les créneaux, sans écraser ; couverture des compétences ; Andika et capitales.
 
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
+
+**Exploration** (`npm run explorer`, `tests/explore.mjs`) : avec les données fictives, toutes les pages et leurs onglets (116) sur ordinateur et sur téléphone, et environ 350 boutons non destructifs cliqués ; relève les erreurs, pages vides ou « à venir » et tout ce qui dépasse de l'écran du téléphone. Résultat au 23/10/2026 : 0 problème.
 
 Pour les relancer (nécessite Node.js) :
 

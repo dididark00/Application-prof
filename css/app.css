@@ -933,3 +933,14 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 
 /* Menu « Plus » : sur téléphone, il s'ouvre dans la carte (jamais hors de l'écran). */
 @media (max-width: 700px) { details.more[open] { flex-basis: 100%; } details.more .more-menu { position: static; margin-top: 6px; min-width: 0; box-shadow: none; } details.more .more-menu .btn { width: 100%; } }
+
+/* ── Téléphone : rien ne dépasse de l'écran (relevé par l'exploration automatique) */
+@media (max-width: 700px) {
+  #main table.table { display: block; overflow-x: auto; max-width: 100%; }
+  .inline { flex-wrap: wrap; max-width: 100%; }
+  #main select, #main input:not([type=checkbox]):not([type=radio]) { max-width: 100%; min-width: 0; }
+  .trombi { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)) !important; }
+  .trombi-card { min-width: 0; }
+  .search-big { flex-wrap: wrap; } .search-big input { flex: 1 1 180px; min-width: 0; }
+  #main .row { flex-wrap: wrap; min-width: 0; }
+}
