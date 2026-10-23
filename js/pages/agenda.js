@@ -97,7 +97,8 @@ export function taskDialog(t = {}) {
   const form = h('form', { class: 'form', onsubmit: (ev) => ev.preventDefault() },
     field('Tâche', h('input', { name: 'title', required: true, value: t.title || '' })),
     h('div', { class: 'grid-2' }, field('Échéance', h('input', { name: 'due', type: 'date', value: t.due || '' })), field('Catégorie', h('select', { name: 'category' }, CATS.map(c => h('option', { value: c, selected: t.category === c }, c))))),
-    field('Notes', h('textarea', { name: 'notes', rows: 2 }, t.notes || '')));
+    field('Notes', h('textarea', { name: 'notes', rows: 2 }, t.notes || '')),
+    field('Rappel dans l’application', h('select', { name: 'remindDays' }, [[ '', 'Aucun' ], ['0', 'Le jour même'], ['1', '1 jour avant'], ['3', '3 jours avant'], ['7', '7 jours avant']].map(([value, label]) => h('option', { value, selected: String(t.remindDays ?? '') === value }, label)))));
   const actions = [{ label: 'Annuler' }];
   if (editing) {
     actions.unshift({ label: 'Supprimer', danger: true, onClick: async () => { await store.remove(t.id, 'Tâche mise à la corbeille'); toast('Tâche mise à la corbeille', { action: 'Annuler', onAction: () => store.undo() }); } });
@@ -122,6 +123,10 @@ export function renderTasks({ rerender }) {
     ['Sans échéance', open.filter(t => !t.due), 'muted'],
   ];
   const done = tasks.filter(t => t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')).slice(0, 20);
+  // Rappels locaux : visibles dans l’application, sans notification système ni transfert de données.
+  const reminders = open.filter(t => t.due && t.remindDays !== '' && t.remindDays != null &&
+    t.due >= today && t.due <= model.addDays(today, Number(t.remindDays)));
+
   const quick = h('input', { placeholder: 'Nouvelle tâche… (Entrée pour ajouter)', 'aria-label': 'Nouvelle tâche', 'data-testid': 'quick-task' });
   quick.addEventListener('keydown', async (e) => { if (e.key === 'Enter' && quick.value.trim()) { await store.create('task', { title: quick.value.trim(), due: '', category: 'autre', done: false }, 'Tâche ajoutée'); } });
   const upcoming = []; for (let k = 0; k < 14; k++) { const d = model.addDays(today, k); for (const e of PL.eventsOn(d)) if (e.date === d || k === 0) upcoming.push({ d, e }); }
@@ -132,6 +137,12 @@ export function renderTasks({ rerender }) {
     pageHeader('Tâches et rendez-vous', { favKey: 'aujourdhui/taches', actions: [h('button', { class: 'btn btn-primary', type: 'button', onclick: () => taskDialog({}) }, icon('plus', 16), 'Tâche'), h('button', { class: 'btn', type: 'button', onclick: () => eventDialog({}) }, 'Rendez-vous')] }),
     subTabs(),
     h('div', { class: 'card' }, quick),
+    reminders.length ? h('section', { class: 'card', 'data-testid': 'local-reminders' },
+      h('h2', {}, `Rappels (${reminders.length})`),
+      h('p', { class: 'muted small' }, 'Rappels affichés ici uniquement lorsque vous ouvrez l’application ; aucune notification n’est envoyée hors de l’application.'),
+      h('ul', { class: 'task-list' }, reminders.map(t => h('li', { class: 'task' },
+        h('button', { class: 'linklike', type: 'button', onclick: () => taskDialog(t) }, t.title),
+        h('span', { class: 'muted small' }, ` · ${model.frShort(t.due)}`))))) : null,
     h('div', { class: 'dash' },
       h('section', { class: 'card' }, h('h2', {}, 'Tâches'), groups.map(([t, list, k]) => list.length ? h('div', {}, h('h3', {}, t, ' ', badge(String(list.length), k)), h('ul', { class: 'task-list', 'data-testid': 'task-list' }, list.map(row))) : null),
         open.length ? null : h('p', { class: 'muted' }, 'Aucune tâche en cours.'),

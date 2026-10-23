@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (116) · 🟡 Partiel (11) · ⚙️ À configurer (1) · ⬜ À développer (18) — 146 entrées.
+Légende : ✅ Réalisé (116) · 🟡 Partiel (12) · ⚙️ À configurer (1) · ⬜ À développer (17) — 146 entrées.
 
 ## Étape 1 — Socle
 
@@ -160,7 +160,7 @@ Légende : ✅ Réalisé (116) · 🟡 Partiel (11) · ⚙️ À configurer (1) 
 | | Section | Fonction | Note |
 |---|---|---|---|
 | ⬜ | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) |  |
-| ⬜ | §6 Planifier | Notifications configurables |  |
+| 🟡 | §6 Planifier | Notifications configurables | Rappels locaux paramétrables sur les tâches, visibles lorsque l’application est ouverte ; aucune notification système ou en arrière-plan. |
 | ⬜ | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) |  |
 | ⬜ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) |  |
 | ⬜ | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour |  |
