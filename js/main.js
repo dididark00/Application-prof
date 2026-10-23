@@ -64,6 +64,7 @@ import * as pRecre from './pages/recreation.js';
 import * as pLiens from './pages/liens.js';
 import * as pArchives from './pages/archives.js';
 import * as pImporter from './pages/importer.js';
+import * as pRegistre from './pages/registre.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -124,6 +125,7 @@ const ROUTES = {
   liens: pLiens,
   archive: pArchives,
   importer: pImporter,
+  registre: pRegistre,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
   rdv: { render: pFam.renderRdv },

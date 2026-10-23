@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (132) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 151 entrées.
+Légende : ✅ Réalisé (135) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 154 entrées.
 
 ## Étape 1 — Socle
 
@@ -176,6 +176,9 @@ Légende : ✅ Réalisé (132) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §6 Planifier | Préparer la semaine : depuis l’EDT (fiches habituelles ★ et progressions) ou semaine vierge ; export du cahier journal par jour, semaine, mois, période, année ou dates |  |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants (Andika, Marelle Bâton) et écriture en capitales d’imprimerie | Andika (SIL, licence OFL) : a et g simples, conçue pour apprendre à lire. |
+| ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |
+| ✅ | §19 Atelier | Timer « feu tricolore » : vert, orange à mi-temps, rouge quand il reste peu de temps | Couleur par défaut ; les couleurs fixes restent au choix. |
+| ✅ | §7 Quotidien | Registre d’appel mensuel : statistiques (total, matin, après-midi), grille élèves × demi-journées, justification des absences, cumul des retards, alerte à 4 demi-journées injustifiées, préférences (tri, niveau, repas spécial, non pris en compte), impression et CSV |  |
 | ✅ | §21 PWA | Archiver une année terminée dans un fichier (chiffré, vérifié) pour libérer la place ; consultation en lecture seule | Réglages › Années : « Archiver dans un fichier… » sur une année archivée ; « Consulter une archive ». Les communs (référentiels, manuels, bibliothèque, fichiers, contacts) restent. |
 | ✅ | §21 PWA | Politique de rétention distante | Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer. |
 | ✅ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Organisation › Liens utiles : liens officiels vérifiés le 23/10/2026 (Éduscol, BO, apps.education.fr, IPS des écoles, Lumni…), liste modifiable. |

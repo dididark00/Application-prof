@@ -47,7 +47,7 @@ export function isSchoolDay(cls, date) {
   if (ns) return { ok: false, reason: ns.label || 'Jour sans classe' };
   return { ok: true, period: per };
 }
-export const isMyDay = (cls, date) => !cls.serviceDays?.length || cls.serviceDays.includes(model.weekday(date));
+export const isMyDay = (cls, date) => !model.hasBinome(cls) || !cls.serviceDays?.length || cls.serviceDays.includes(model.weekday(date));
 
 // ───────── Journée
 function activeInterventions(cls, date) {

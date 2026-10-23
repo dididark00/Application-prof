@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.4).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
+**État : les cinq étapes sont réalisées et testées (version 0.5.6).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -126,6 +126,12 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 4. **Préparer › Programmes et référentiels** : « À quoi ça sert ? » explique la chaîne programme → référentiel → séquences et fiches → cahier journal → évaluations ; la colonne « Travaillée » montre la couverture de chaque compétence.
 5. Polices pour les plus petits : **Andika** (script des débutants) et **Marelle Bâton** ; dans le tableau d'écriture, « Écriture : CAPITALES D'IMPRIMERIE ».
 
+## 2 decies. Registre d'appel, binôme, timer
+
+1. **Aujourd'hui › Registre d'appel** (ou « Registre du mois » depuis l'Appel) : Statistiques (présences totales, matin, après-midi, calendrier des appels faits), Registre (grille élèves × demi-journées, total), Absences (touchez une absence pour la justifier : motif légitime, autre motif, injustifiée ; cumul des retards ; alerte à 4 demi-journées non justifiées dans le mois), Préférences (tri par nom ou prénom, groupes de niveau, repas spécial, élève non pris en compte). Impression du mois et tableau CSV.
+2. **Réglages › Classes › Modifier** : « Je partage cette classe avec une binôme » à cocher ou décocher.
+3. **Timer** : pastille tricolore = vert, orange à mi-temps, rouge à la fin (couleur par défaut).
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -195,6 +201,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 **Archives** — 5 scénarios (`tests/e2e-archive.mjs`) : seuls les éléments de l'année partent (élève réinscrit, référentiels, manuels gardés ; observations de l'élève réinscrit triées par date) ; fichier chiffré ; retrait seulement après relecture du fichier et refusé si l'année a changé depuis ; place libérée (photos) ; retrait propagé aux autres appareils ; consultation sans réimport.
 
 **Semaine et import** — 9 scénarios (`tests/e2e-semaine.mjs`) : fiche habituelle et séance suivante de la progression proposées, jamais posées deux fois ; semaine vierge sans toucher les autres ; export d'un mois en CSV et d'une semaine (une page par jour) ; menu « Plus » dans l'écran du téléphone ; import d'une progression qui relie la séquence existante sans la dupliquer ; import du cahier journal dans les créneaux, sans écraser ; couverture des compétences ; Andika et capitales.
+
+**Registre** — 6 scénarios (`tests/e2e-registre.mjs`) : statistiques exactes (retards comptés présents), grille et totaux, justification et alerte à 4 demi-journées, cumul des retards, préférences appliquées à l'appel et aux statistiques, CSV et impression, téléphone sans débordement.
 
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
 

@@ -177,6 +177,9 @@ export const ROADMAP = [
   R(5, '§6 Planifier', 'Préparer la semaine : depuis l’EDT (fiches habituelles ★ et progressions) ou semaine vierge ; export du cahier journal par jour, semaine, mois, période, année ou dates', 'fait'),
   R(5, '§5 Préparation', 'Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal', 'fait'),
   R(5, '§19 Atelier', 'Polices pour les débutants (Andika, Marelle Bâton) et écriture en capitales d’imprimerie', 'fait', 'Andika (SIL, licence OFL) : a et g simples, conçue pour apprendre à lire.'),
+  R(5, '§4 Années', 'Binôme activable / désactivable par classe (fin de l’année de PES, temps plein)', 'fait', 'Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions.'),
+  R(5, '§19 Atelier', 'Timer « feu tricolore » : vert, orange à mi-temps, rouge quand il reste peu de temps', 'fait', 'Couleur par défaut ; les couleurs fixes restent au choix.'),
+  R(5, '§7 Quotidien', 'Registre d’appel mensuel : statistiques (total, matin, après-midi), grille élèves × demi-journées, justification des absences, cumul des retards, alerte à 4 demi-journées injustifiées, préférences (tri, niveau, repas spécial, non pris en compte), impression et CSV', 'fait'),
   R(5, '§21 PWA', 'Archiver une année terminée dans un fichier (chiffré, vérifié) pour libérer la place ; consultation en lecture seule', 'fait', 'Réglages › Années : « Archiver dans un fichier… » sur une année archivée ; « Consulter une archive ». Les communs (référentiels, manuels, bibliothèque, fichiers, contacts) restent.'),
   R(5, '§21 PWA', 'Politique de rétention distante', 'fait', 'Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer.'),
   R(2, '§22 Visites', 'Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal', 'fait'),
@@ -209,6 +212,7 @@ export const RUBRIQUES = [
   { id: 'aujourdhui', titre: 'Aujourd’hui', icone: 'sun', sous: [
     { id: 'journee', titre: 'Ma journée', route: 'aujourdhui' },
     { id: 'appel', titre: 'Appel', route: 'appel' },
+    { id: 'registre', titre: 'Registre d’appel', route: 'registre' },
     { id: 'services', titre: 'Cantine et services', route: 'services' },
     { id: 'taches', titre: 'Tâches et rendez-vous', route: 'taches' },
     { id: 'projection', titre: 'Projection', route: 'projection' },

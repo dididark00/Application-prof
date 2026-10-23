@@ -41,7 +41,7 @@ export function render() {
     cards.push(h('section', { class: 'card' },
       h('div', { class: 'card-head' }, h('h2', {}, cls.name, cls.demo ? badge('Démo', 'demo') : null), h('a', { class: 'btn btn-small', href: '#/eleves' }, 'Élèves')),
       h('p', { class: 'big-number' }, String(actives.length), h('span', {}, ' élève(s) inscrit(s) aujourd’hui')),
-      h('p', { class: 'muted' }, [(cls.levels || []).join(', '), model.cycleLabel(cls.levels), cls.service?.type, cls.binome?.name ? `binôme : ${cls.binome.name}` : null].filter(Boolean).join(' · ')),
+      h('p', { class: 'muted' }, [(cls.levels || []).join(', '), model.cycleLabel(cls.levels), cls.service?.type, model.hasBinome(cls) && cls.binome?.name ? `binôme : ${cls.binome.name}` : null].filter(Boolean).join(' · ')),
       moves.length ? h('div', {}, h('h3', {}, 'Dans les 30 prochains jours'), h('ul', {}, moves.map(m => h('li', {}, `${model.frDate(m.date, { day: 'numeric', month: 'long' })} : `, h('a', { href: `#/eleve/${m.id}` }, m.text))))) : null));
   }
 

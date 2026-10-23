@@ -228,7 +228,7 @@ function classes() {
           h('dt', {}, 'Niveaux'), h('dd', {}, (c.levels || []).join(', ') || '—', ' · ', model.cycleLabel(c.levels)),
           h('dt', {}, 'École'), h('dd', {}, c.school || '—'),
           h('dt', {}, 'Service'), h('dd', {}, [c.service?.type, c.service?.detail].filter(Boolean).join(' — ') || '—'),
-          h('dt', {}, 'Binôme'), h('dd', {}, [c.binome?.name, c.binome?.detail].filter(Boolean).join(' — ') || '—'),
+          h('dt', {}, 'Binôme'), h('dd', {}, model.hasBinome(c) ? [c.binome?.name, c.binome?.detail].filter(Boolean).join(' — ') || 'oui' : 'non (classe à moi seule)'),
           h('dt', {}, 'Élèves inscrits aujourd’hui'), h('dd', {}, String(n))));
     }) : emptyState('Aucune classe', 'Créez votre classe pour inscrire des élèves.'));
 }
@@ -241,6 +241,19 @@ function classDialog(c, year) {
   const cyc = h('span', { class: 'muted' });
   const updCycle = () => { cyc.textContent = `Cycle déduit : ${model.cycleLabel([...levels])}`; };
   updCycle();
+  const binOn = h('input', { type: 'checkbox', name: 'binomeActive', checked: editing ? model.hasBinome(c) : true, 'data-testid': 'binome-active' });
+  const binToggle = h('label', { class: 'inline' }, binOn, 'Je partage cette classe avec une binôme');
+  const binBox = h('div', { class: 'grid-2' },
+    field('Binôme (prénom, nom)', h('input', { name: 'binomeName', value: editing ? c.binome?.name || '' : '' })),
+    field('Jours de la binôme', h('input', { name: 'binomeDetail', value: editing ? c.binome?.detail || '' : '' })));
+  const binDays = h('div', {}, h('fieldset', {}, h('legend', {}, 'Mes jours dans cette classe (vide = tous)'), h('div', { class: 'chips' }, [1, 2, 3, 4, 5, 6].map(d => h('label', { class: 'chip' },
+      h('input', { type: 'checkbox', checked: serviceDays.has(d), onchange: (e) => { e.target.checked ? serviceDays.add(d) : serviceDays.delete(d); } }), model.JOURS[d]))),
+      h('small', { class: 'hint' }, 'Les autres jours sont signalés « jour de la binôme » dans le cahier journal.')),
+    h('p', { class: 'muted' }, 'Pour échanger avec la binôme : Organisation › Transmissions (copie, impression, ou dépôt dans un dossier Nuage partagé avec elle).'));
+  const syncBin = () => { binBox.hidden = !binOn.checked; binDays.hidden = !binOn.checked; };
+  binOn.addEventListener('change', syncBin); syncBin();
+  // Temps plein : pas de binôme par défaut ; mi-temps ou temps partiel : binôme proposée.
+  queueMicrotask(() => form.querySelector('[name=serviceType]')?.addEventListener('change', (e) => { binOn.checked = e.target.value !== 'temps plein'; syncBin(); }));
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
     field('Nom de la classe', h('input', { name: 'name', required: true, maxlength: 60, value: editing ? c.name : '', placeholder: 'ex. CE2 B' })),
     h('fieldset', {}, h('legend', {}, 'Niveaux (plusieurs possibles pour une classe multiniveau)'),
@@ -251,15 +264,11 @@ function classDialog(c, year) {
     h('div', { class: 'grid-2' },
       field('Service', h('select', { name: 'serviceType' }, ['temps plein', 'mi-temps', 'temps partiel', 'complément de service', 'autre'].map(t => h('option', { value: t, selected: (editing ? c.service?.type : 'mi-temps') === t }, t)))),
       field('Jours ou détails du service', h('input', { name: 'serviceDetail', value: editing ? c.service?.detail || '' : '', placeholder: 'ex. lundi, mardi' }))),
-    h('div', { class: 'grid-2' },
-      field('Binôme (prénom, nom)', h('input', { name: 'binomeName', value: editing ? c.binome?.name || '' : '' })),
-      field('Jours de la binôme', h('input', { name: 'binomeDetail', value: editing ? c.binome?.detail || '' : '' }))),
+    binToggle,
+    binBox,
     h('fieldset', {}, h('legend', {}, 'Jours de classe'), h('div', { class: 'chips' }, [1, 2, 3, 4, 5, 6].map(d => h('label', { class: 'chip' },
       h('input', { type: 'checkbox', checked: classDays.has(d), onchange: (e) => { e.target.checked ? classDays.add(d) : classDays.delete(d); } }), model.JOURS[d])))),
-    h('fieldset', {}, h('legend', {}, 'Mes jours dans cette classe (vide = tous)'), h('div', { class: 'chips' }, [1, 2, 3, 4, 5, 6].map(d => h('label', { class: 'chip' },
-      h('input', { type: 'checkbox', checked: serviceDays.has(d), onchange: (e) => { e.target.checked ? serviceDays.add(d) : serviceDays.delete(d); } }), model.JOURS[d]))),
-      h('small', { class: 'hint' }, 'Les autres jours sont signalés « jour de la binôme » dans le cahier journal.')),
-    h('p', { class: 'muted' }, 'Informations de référence. Pour échanger avec la binôme : Organisation › Transmissions (copie, impression, ou dépôt dans un dossier Nuage partagé avec elle).'));
+    binDays);
   const errors = h('div', { class: 'form-errors', role: 'alert' });
   modal({ title: editing ? `Modifier ${c.name}` : 'Nouvelle classe', body: h('div', {}, form, errors), wide: true, actions: [
     { label: 'Annuler' },
@@ -268,7 +277,7 @@ function classDialog(c, year) {
       if (!d.name) { errors.textContent = 'Le nom est obligatoire.'; return false; }
       if (!levels.size) { errors.textContent = 'Choisissez au moins un niveau.'; return false; }
       if (!classDays.size) { errors.textContent = 'Choisissez au moins un jour de classe.'; return false; }
-      const data = { name: d.name, school: d.school, levels: model.sortLevels([...levels]), service: { type: d.serviceType, detail: d.serviceDetail }, binome: { name: d.binomeName, detail: d.binomeDetail },
+      const data = { name: d.name, school: d.school, levels: model.sortLevels([...levels]), service: { type: d.serviceType, detail: d.serviceDetail }, binome: { name: d.binomeName, detail: d.binomeDetail, active: !!binOn.checked },
         classDays: [...classDays].sort(), serviceDays: [...serviceDays].sort() };
       if (editing) await store.update(c.id, data, `Modification de la classe ${d.name}`);
       else {

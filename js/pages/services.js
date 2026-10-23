@@ -6,6 +6,7 @@ import * as V from '../vie.js';
 import { h, icon, toast, modal, field, formData, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { printDocument, printTable } from '../print.js';
+import { prefsOf } from './registre.js';
 
 let tab = 'jour';
 
@@ -44,7 +45,7 @@ function day(cls, date) {
         h('div', { class: 'card-head' }, h('h2', {}, svc),
           h('div', { class: 'row' }, badge(`${rows.length} inscrit(s)`, 'info'), badge(`${expected} présence(s) prévue(s)`, 'ok'),
             h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Imprimer la liste ${svc}`, onclick: () => printDocument(doc()) }, icon('print', 16)))),
-        rows.length ? h('ul', { class: 'plain' }, rows.map(r => h('li', { class: r.expected ? '' : 'muted' }, `${r.student.firstName} ${r.student.lastName}`,
+        rows.length ? h('ul', { class: 'plain' }, rows.map(r => h('li', { class: r.expected ? '' : 'muted' }, `${r.student.firstName} ${r.student.lastName}`, /cantine/i.test(svc) && prefsOf(cls).meal.includes(r.student.id) ? badge('repas spécial', 'info') : null,
           r.absentAll ? badge('absent', 'warn') : r.absentSome ? badge('absence partielle', 'warn') : null,
           r.exception ? badge(r.exception.note || 'exception du jour', 'info') : null))) : h('p', { class: 'muted' }, 'Personne.'),
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'svc-exception', onclick: () => exceptionDialog(cls, date, svc) }, 'Exception pour ce jour…'));

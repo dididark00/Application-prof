@@ -7,7 +7,7 @@ import { h } from './ui.js';
 const KEY = 'classeur-timer';
 const ALERT_KEY = 'classeur-timer-alerted';
 export const COLORS = ['#d9534f', '#2f6f8f', '#3f8f3f', '#e0a020', '#7a4a9a', '#1f2a27'];
-const DEF = { duration: 300, endAt: null, remaining: 300, running: false, color: COLORS[0], sound: true, open: false, min: false, big: false, x: null, y: null, size: 180, label: '' };
+const DEF = { duration: 300, endAt: null, remaining: 300, running: false, color: 'auto', sound: true, open: false, min: false, big: false, x: null, y: null, size: 180, label: '' };
 
 let state = load();
 let el = null;
@@ -87,6 +87,15 @@ function ensureTick() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { maybeAlert(); draw(); if (state.running) ensureTick(); } });
 
+// ───── Couleur « feu tricolore » : vert tant qu'il reste plus de la moitié du temps,
+// orange à partir de la moitié, rouge quand il reste moins d'un cinquième.
+export const TRAFFIC = { green: '#3f9b4f', orange: '#f08c1e', red: '#d64545' };
+export function colorOf(s = state) {
+  if (s.color !== 'auto') return s.color;
+  const frac = s.duration ? remaining(s) / s.duration : 0;
+  return frac > 0.5 ? TRAFFIC.green : frac > 0.2 ? TRAFFIC.orange : TRAFFIC.red;
+}
+
 // ───── Dessin du disque
 export function disk(size, s = state) {
   const r = remaining(s); const frac = s.duration ? Math.min(1, r / s.duration) : 0;
@@ -94,7 +103,7 @@ export function disk(size, s = state) {
   const a = frac * 2 * Math.PI;
   const x = c + rad * Math.sin(a), y = c - rad * Math.cos(a);
   const large = a > Math.PI ? 1 : 0;
-  const path = frac >= 0.9999 ? `<circle cx="${c}" cy="${c}" r="${rad}" fill="${s.color}"/>` : frac <= 0 ? '' : `<path d="M${c},${c} L${c},${c - rad} A${rad},${rad} 0 ${large} 1 ${x},${y} Z" fill="${s.color}"/>`;
+  const path = frac >= 0.9999 ? `<circle cx="${c}" cy="${c}" r="${rad}" fill="${colorOf(s)}"/>` : frac <= 0 ? '' : `<path d="M${c},${c} L${c},${c - rad} A${rad},${rad} 0 ${large} 1 ${x},${y} Z" fill="${colorOf(s)}"/>`;
   return `<svg viewBox="0 0 ${size} ${size}" width="100%" height="100%" role="img" aria-label="Temps restant ${fmt(r)}"><circle cx="${c}" cy="${c}" r="${rad}" fill="#fff" stroke="#c9c2b4" stroke-width="2"/>${path}</svg>`;
 }
 
@@ -139,7 +148,7 @@ function controls(compact) {
     compact ? null : h('div', { class: 'row' }, [1, 2, 3, 5, 10, 15, 20].map(m => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': `timer-${m}`, onclick: () => setDuration(m * 60) }, `${m} min`))),
     compact ? null : h('div', { class: 'row' },
       h('label', { class: 'inline small' }, 'Durée', h('input', { type: 'number', min: 1, max: 360, value: Math.round(state.duration / 60), 'aria-label': 'Durée en minutes', style: { width: '64px' }, onchange: (e) => setDuration((Number(e.target.value) || 1) * 60) }), 'min'),
-      h('div', { class: 'swatches', role: 'group', 'aria-label': 'Couleur' }, COLORS.map(c => h('button', { type: 'button', class: `swatch ${state.color === c ? 'on' : ''}`, style: { background: c }, 'aria-label': `Couleur ${c}`, onclick: () => set({ color: c }) }))),
+      h('div', { class: 'swatches', role: 'group', 'aria-label': 'Couleur' }, h('button', { type: 'button', class: `swatch swatch-auto ${state.color === 'auto' ? 'on' : ''}`, 'aria-label': 'Feu tricolore : vert, puis orange à mi-temps, rouge à la fin', title: 'Vert, puis orange à mi-temps, rouge quand il reste peu de temps', 'data-testid': 'timer-auto', onclick: () => set({ color: 'auto' }) }), COLORS.map(c => h('button', { type: 'button', class: `swatch ${state.color === c ? 'on' : ''}`, style: { background: c }, 'aria-label': `Couleur ${c}`, onclick: () => set({ color: c }) }))),
       h('label', { class: 'inline small' }, h('input', { type: 'checkbox', checked: state.sound, onchange: (e) => set({ sound: e.target.checked }) }), 'Son')));
 }
 

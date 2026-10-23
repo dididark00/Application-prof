@@ -143,6 +143,28 @@ await test('Polices des débutants (Andika) et capitales d’imprimerie dans le 
   assert(txt.some(t => t.includes('LE CHAT DORT')), `texte en capitales : ${txt.slice(0, 3).join(' / ')}`);
 });
 
+await test('Binôme désactivable : plus de « jour de la binôme », transmissions masquées, réactivable', async () => {
+  await go('#/reglages/classes');
+  await page.locator('[data-testid=class-card]').filter({ has: page.locator('h2', { hasText: /^CE2 \(démo\)/ }) }).first().getByRole('button', { name: /Modifier/ }).first().click();
+  const box = page.getByTestId('binome-active');
+  assert(await box.isChecked(), 'binôme actif au départ (classe de démo à mi-temps)');
+  await box.uncheck(); await page.locator('.modal-foot button', { hasText: 'Enregistrer' }).click(); await page.waitForTimeout(300);
+  const r = await S(`const cls = store.get(a.cls); return { jeudi: PL.isMyDay(cls, '2026-11-12'), owners: model.owners(cls).map(o => o[0]) };`, ids);
+  eq(r.jeudi, true, 'le jeudi est un jour à moi'); assert(!r.owners.includes('binome'), 'plus de choix « binôme » pour les documents');
+  await go('#/cahier?d=2026-11-12');
+  assert(!(await page.locator('.page').innerText()).includes('Jour de classe de'), 'plus de bandeau « jour de la binôme »');
+  assert(!(await page.locator('nav').first().innerText()).includes('Transmissions'), 'transmissions masquées dans le menu');
+  await go('#/reglages/classes');
+  await page.locator('[data-testid=class-card]').filter({ has: page.locator('h2', { hasText: /^CE2 \(démo\)/ }) }).first().getByRole('button', { name: /Modifier/ }).first().click();
+  await page.getByTestId('binome-active').check(); await page.locator('.modal-foot button', { hasText: 'Enregistrer' }).click(); await page.waitForTimeout(300);
+  eq(await S(`return PL.isMyDay(store.get(a.cls), '2026-11-12');`, ids), false, 'réactivée : le jeudi redevient le jour de la binôme');
+});
+
+await test('Timer feu tricolore : vert, orange à mi-temps, rouge à la fin', async () => {
+  const c = await page.evaluate(async () => { const T = await import('./js/timer.js'); const st = (rem) => ({ color: 'auto', duration: 600, remaining: rem, running: false, endAt: null }); return [T.colorOf(st(500)), T.colorOf(st(300)), T.colorOf(st(200)), T.colorOf(st(60)), T.colorOf({ ...st(60), color: '#2f6f8f' })]; });
+  eq(c.join(','), '#3f9b4f,#f08c1e,#f08c1e,#d64545,#2f6f8f', 'couleurs selon le temps restant');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-semaine.txt`, results.join('\n'));

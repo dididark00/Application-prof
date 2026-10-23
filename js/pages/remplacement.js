@@ -99,7 +99,7 @@ export function build(cls, rec) {
       parts.push(H2(label), h('ul', {},
         h('li', {}, `${cls.name}${cls.school ? ' — ' + cls.school : ''} · ${model.sortLevels(cls.levels || []).join(', ')}`),
         h('li', {}, `Jours de classe : ${model.classDays(cls).map(d => model.JOURS[d]).join(', ')} · matin ${hd('matin')}, après-midi ${hd('après-midi')}`),
-        h('li', {}, `Enseignante : ${store.getSettings().userName || '—'}${cls.binome?.name ? ` · binôme : ${cls.binome.name}${cls.binome.detail ? ' (' + cls.binome.detail + ')' : ''}` : ''}`),
+        h('li', {}, `Enseignante : ${store.getSettings().userName || '—'}${model.hasBinome(cls) && cls.binome?.name ? ` · binôme : ${cls.binome.name}${cls.binome.detail ? ' (' + cls.binome.detail + ')' : ''}` : ''}`),
         h('li', {}, `${students.length} élève(s)`)));
     } else if (id === 'effectif') {
       const by = {}; for (const x of students) by[x.enrollment?.level || '?'] = (by[x.enrollment?.level || '?'] || 0) + 1;

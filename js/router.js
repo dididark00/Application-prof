@@ -31,7 +31,9 @@ export function currentLocation(route = parseHash()) {
 
 /** Modules masqués : identifiants « rubrique » ou « rubrique/sous-page ». */
 export function isHidden(rubId, subId) {
-  const hidden = store.getSettings().hiddenModules || [];
+  const s = store.getSettings(); const hidden = s.hiddenModules || [];
+  // Transmissions binôme : masquées tant que la classe affichée n'a pas de binôme.
+  if (rubId === 'organisation' && subId === 'transmissions') { const c = s.currentClassId && store.get(s.currentClassId); if (c && (c.binome?.active === false || !(c.binome?.name || c.serviceDays?.length))) return true; }
   return hidden.includes(rubId) || (subId && hidden.includes(`${rubId}/${subId}`));
 }
 export function visibleRubriques() {

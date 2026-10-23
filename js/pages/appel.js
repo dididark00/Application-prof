@@ -5,6 +5,7 @@ import * as V from '../vie.js';
 import * as PL from '../planning.js';
 import { h, icon, toast, confirmDialog, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs, needClass, avatar } from '../components.js';
+import { orderedStudents, prefsOf } from './registre.js';
 
 export function render({ query }) {
   const cls = model.currentClass();
@@ -16,7 +17,8 @@ export function render({ query }) {
   const rec = V.attendanceOf(cls.id, date, half);
   const marks = rec?.marks || {};
   const locked = !!rec?.validated;
-  const students = model.studentsOfClass(cls.id, { date });
+  const pr = prefsOf(cls);
+  const students = orderedStudents(cls, date).filter(x => !pr.excluded.includes(x.student.id));
   const school = PL.isSchoolDay(cls, date);
   const counts = {}; for (const { student: s } of students) { const st = marks[s.id]?.status || 'non pointé'; counts[st] = (counts[st] || 0) + 1; }
   const t = V.halfTimes(cls, half);
@@ -37,7 +39,7 @@ export function render({ query }) {
     list.replaceChildren(...students.map(({ student: s }) => row(s, mk[s.id] || {})));
   };
   const row = (s, m) => h('div', { class: `appel-row st-${m.status || 'none'}`, 'data-testid': 'appel-row' },
-    avatar(s, 40), h('div', { class: 'appel-name' }, h('a', { href: `#/eleve/${s.id}` }, `${s.firstName} ${s.lastName}`)),
+    avatar(s, 40), h('div', { class: 'appel-name' }, h('a', { href: `#/eleve/${s.id}` }, pr.sort === 'nom' ? `${(s.lastName || '').toUpperCase()} ${s.firstName}` : `${s.firstName} ${s.lastName}`), pr.meal.includes(s.id) ? badge('repas spécial', 'info') : null),
     h('div', { class: 'appel-btns', role: 'group', 'aria-label': `Présence de ${s.firstName}` }, V.MARKS.map(([k, l, short]) =>
       h('button', { type: 'button', class: `mark mark-${k} ${m.status === k ? 'on' : ''}`, title: l, 'aria-label': `${l} : ${s.firstName}`, 'aria-pressed': m.status === k ? 'true' : 'false', disabled: locked, 'data-testid': `mark-${k}`,
         onclick: () => setMark(s.id, { status: m.status === k ? null : k, ...(k === 'retard' && !m.time ? { time: model.hhmm(model.minutes(t.start) + 10) } : {}), ...(k === 'départ' && !m.time ? { time: model.hhmm(model.minutes(t.end) - 30) } : {}), ...(k === 'partiel' && !m.from ? { from: t.start, to: model.hhmm(model.minutes(t.start) + 60) } : {}) }) }, short))),
@@ -49,7 +51,7 @@ export function render({ query }) {
   queueMicrotask(refresh);
 
   return h('div', { class: 'page' },
-    pageHeader('Appel', { favKey: 'aujourdhui/appel', subtitle: `${cls.name} · ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' })} · ${half} (${t.start}–${t.end})` }),
+    pageHeader('Appel', { favKey: 'aujourdhui/appel', subtitle: `${cls.name} · ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' })} · ${half} (${t.start}–${t.end})`, actions: [h('a', { class: 'btn', href: `#/registre?m=${date.slice(0, 7)}`, 'data-testid': 'to-registre' }, 'Registre du mois')] }),
     subTabs(),
     h('div', { class: 'daynav' },
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Jour précédent', onclick: () => go(model.addDays(date, -1)) }, icon('chevleft')),

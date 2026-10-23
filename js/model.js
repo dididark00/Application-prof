@@ -144,11 +144,13 @@ export function subjectColor(name) {
 export function owners(cls = currentClass()) {
   const me = store.getSettings().userName || 'Moi';
   const bin = cls?.binome?.name || 'Binôme';
-  return [['moi', me], ['binome', bin], ['commun', 'Commun']];
+  return hasBinome(cls) ? [['moi', me], ['binome', bin], ['commun', 'Commun']] : [['moi', me], ['commun', 'Commun']];
 }
 export function ownerLabel(key, cls) { return (owners(cls).find(o => o[0] === key) || [null, ''])[1]; }
 
 // ───── Jours de classe (1 = lundi … 5 = vendredi, 6 = samedi)
+/** Classe partagée avec une binôme ? (désactivable : année de PES terminée, temps plein…) */
+export function hasBinome(cls) { return !!cls && cls.binome?.active !== false && !!(cls.binome?.name || cls.serviceDays?.length); }
 export const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 export function classDays(cls) { return cls?.classDays?.length ? cls.classDays : [1, 2, 4, 5]; }
 export function weekday(iso) { const [y, m, d] = iso.split('-').map(Number); const w = new Date(y, m - 1, d).getDay(); return w === 0 ? 7 : w; }
