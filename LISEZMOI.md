@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.2).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
+**État : les cinq étapes sont réalisées et testées (version 0.5.3).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -118,6 +118,14 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 
 **Réglages › Années** : « Archiver » une année terminée, puis « Archiver dans un fichier… » : taille affichée, mot de passe conseillé, création du fichier (à ranger dans Nuage), **vérification du fichier relu**, puis seulement « Retirer l'année de l'appareil ». L'archive se rouvre en lecture seule avec « Consulter une archive » (élèves, bilans, évaluations, cahier journal). Restent toujours : référentiels, manuels, bibliothèque, contacts, fichiers communs, et les élèves réinscrits l'année suivante.
 
+## 2 nonies. Semaine, export, import de tableaux, compétences (10 minutes)
+
+1. **Planifier › Cahier journal** : « Préparer la semaine » → « avec l'emploi du temps » (les créneaux reçoivent leur **fiche habituelle ★** et les séances suivantes de vos **progressions**) ou « semaine vierge » (vous ajoutez vos activités). Fiche habituelle : dans un créneau, « Plus » › « ★ Fiche habituelle de ce créneau ».
+2. **« Exporter… »** : jour, semaine, mois, période, année ou dates choisies ; détaillé (une page par jour), compact (une page par semaine) ou tableau CSV.
+3. **Préparer › Importer un tableau** : téléchargez le modèle (programmation, progression, séquences et séances, cahier journal), remplissez-le dans votre tableur, importez : aperçu et erreurs ligne par ligne, puis tout est relié (séquences retrouvées par leur titre, créneaux de l'EDT, compétences des référentiels).
+4. **Préparer › Programmes et référentiels** : « À quoi ça sert ? » explique la chaîne programme → référentiel → séquences et fiches → cahier journal → évaluations ; la colonne « Travaillée » montre la couverture de chaque compétence.
+5. Polices pour les plus petits : **Andika** (script des débutants) et **Marelle Bâton** ; dans le tableau d'écriture, « Écriture : CAPITALES D'IMPRIMERIE ».
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -152,7 +160,7 @@ Ajoutées à l'étape 3 : `attendance` (appel par demi-journée, validé ou non)
 
 Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Ajoutées à l'étape 5 : `publication` (brouillon privé / publié, photos et élèves visibles), `rdvslot` (créneaux, réservation unique). Réglages propres à l'appareil (identité, mot de passe mémorisé, dossier Nuage, rappels déjà affichés) dans une petite base séparée `classeur-appareil`, jamais synchronisée.
 
-Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, licence OFL).
+Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle et Andika, licence OFL).
 
 **Fichiers du projet**
 
@@ -185,6 +193,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 **Compléments** — 10 scénarios (`tests/e2e-complements.mjs`) : **60 mots courants coupés comme à l'école** ; couleurs alternées et lettres muettes ; **corrigé des calculs vérifié**, sans retenue, même graine = même fiche ; problèmes, dictée, fluence (cumul des mots) ; surveillances équilibrées qui respectent les jours de présence ; adresse de lien dangereuse refusée ; **dictée vocale inactive sans accord** ; IA cachée quand le navigateur ne la propose pas.
 
 **Archives** — 5 scénarios (`tests/e2e-archive.mjs`) : seuls les éléments de l'année partent (élève réinscrit, référentiels, manuels gardés ; observations de l'élève réinscrit triées par date) ; fichier chiffré ; retrait seulement après relecture du fichier et refusé si l'année a changé depuis ; place libérée (photos) ; retrait propagé aux autres appareils ; consultation sans réimport.
+
+**Semaine et import** — 9 scénarios (`tests/e2e-semaine.mjs`) : fiche habituelle et séance suivante de la progression proposées, jamais posées deux fois ; semaine vierge sans toucher les autres ; export d'un mois en CSV et d'une semaine (une page par jour) ; menu « Plus » dans l'écran du téléphone ; import d'une progression qui relie la séquence existante sans la dupliquer ; import du cahier journal dans les créneaux, sans écraser ; couverture des compétences ; Andika et capitales.
 
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
 

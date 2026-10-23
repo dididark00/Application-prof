@@ -14,6 +14,7 @@ export function render({ query, rerender }) {
   const missing = needClass();
   if (missing) return h('div', { class: 'page' }, pageHeader('Cantine et services'), subTabs(), missing);
   if (query.t) tab = query.t;
+  else if (!Object.keys(V.planOf(cls.id)?.plans || {}).length) tab = 'semaine';
   const date = /^\d{4}-\d{2}-\d{2}$/.test(query.d || '') ? query.d : model.todayIso();
   const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, [['jour', 'Jour'], ['semaine', 'Semaine type'], ['sorties', 'Sorties']].map(([k, l]) =>
     h('button', { type: 'button', class: tab === k ? 'on' : '', 'data-testid': `svc-tab-${k}`, onclick: () => { tab = k; rerender(); } }, l)));
@@ -78,7 +79,7 @@ function weekPlan(cls) {
     await store.update(p.id, { plans: cur }, `Semaine type : ${svc}`, { quiet: true });
   };
   return h('div', { class: 'stack' },
-    h('p', { class: 'muted' }, 'Cochez les jours habituels. Les changements ponctuels se notent dans la vue « Jour », sans modifier la semaine type.'),
+    h('p', { class: 'card notice' }, 'C’est ici que l’on inscrit les élèves : cochez, pour chaque service, les jours habituels de chaque élève (ou « tous »). Les changements ponctuels (un jour sans cantine, une sortie…) se notent ensuite dans la vue « Jour », sans toucher à la semaine type. Liste des services (cantine, étude, garderie…) modifiable dans Réglages › Documents et confidentialité.'),
     V.services().map(svc => h('section', { class: 'card' }, h('h2', {}, svc),
       h('div', { class: 'table-wrap' }, h('table', { class: 'table svc-grid' },
         h('thead', {}, h('tr', {}, h('th', {}, 'Élève'), days.map(d => h('th', {}, model.JOURS[d].slice(0, 3))), h('th', {}, ''))),

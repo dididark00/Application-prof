@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-d41df17e043d';
+const CACHE = 'classeur-94495b63df6d';
 const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = [
   "./",
@@ -35,10 +35,13 @@ const ASSETS = [
   "data/programmes/st2023.json",
   "data/programmes/st2026c2.json",
   "data/programmes/st2026c3.json",
+  "fonts/Andika-Bold.woff2",
+  "fonts/Andika-Regular.woff2",
   "fonts/Marelle-Regular.ttf",
   "fonts/Marelle2-Regular.ttf",
   "fonts/MarelleBaton-Regular.ttf",
   "fonts/MarelleBaton2-Regular.ttf",
+  "fonts/OFL-Andika.txt",
   "fonts/OFL.txt",
   "icons/icon-192.png",
   "icons/icon-512.png",
@@ -48,6 +51,7 @@ const ASSETS = [
   "js/archive.js",
   "js/atelier-tools.js",
   "js/backup.js",
+  "js/cahier-plus.js",
   "js/components.js",
   "js/confidential.js",
   "js/csv.js",
@@ -62,6 +66,7 @@ const ASSETS = [
   "js/forms.js",
   "js/groups.js",
   "js/ia.js",
+  "js/importcsv.js",
   "js/infos.js",
   "js/instruments.js",
   "js/jeux.js",
@@ -90,6 +95,7 @@ const ASSETS = [
   "js/pages/familles.js",
   "js/pages/files.js",
   "js/pages/heures.js",
+  "js/pages/importer.js",
   "js/pages/inbox.js",
   "js/pages/infos.js",
   "js/pages/interventions.js",

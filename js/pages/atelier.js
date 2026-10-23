@@ -24,7 +24,7 @@ const WITH_CORRECTION = ['texte', 'droite', 'numeration', 'fractions', 'horloges
 const newSeed = () => Math.floor(Math.random() * 9000) + 1000;
 const state = {
   tool: 'ecriture', correction: false, title: '',
-  ecriture: { texte: 'Le chat dort sur le tapis.\nIl fait beau aujourd’hui.', police: '', hauteur: 1, ajuste: 100, interligne: 8, sauter: true, encre: '#1d3d6e', marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f' },
+  ecriture: { texte: 'Le chat dort sur le tapis.\nIl fait beau aujourd’hui.', police: '', casse: 'minuscules', hauteur: 1, ajuste: 100, interligne: 8, sauter: true, encre: '#1d3d6e', marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f' },
   seyes: { interligne: 8, lignes: 26, marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f', modele: '' },
   reglure: { ecart: 10, lignes: 24, couleur: '#888888' },
   texte: { source: 'Le [chat] dort sur le [tapis]. Il fait [beau] aujourd’hui.', banque: true, taille: 5 },
@@ -67,7 +67,9 @@ const DRAW = {
     const il = Number(o.interligne) || 8, step = il / 4, top = 24, left = 10, right = PAGE.w - 10;
     const font = currentFont(o);
     const xh = step * (Number(o.hauteur) || 1);
-    const size = (xh / F.xHeightRatio(font)) * ((Number(o.ajuste) || 100) / 100);
+    // Capitales : elles occupent 2 interlignes × la hauteur choisie (repère des grandes lettres en maternelle).
+    const caps = o.casse === 'capitales';
+    const size = (caps ? (2 * xh) / F.capHeightRatio(font) : xh / F.xHeightRatio(font)) * ((Number(o.ajuste) || 100) / 100);
     const nLines = Math.floor((PAGE.h - 10 - top) / il);
     for (let i = 0; i <= nLines; i++) {
       const y = top + i * il;
@@ -83,7 +85,7 @@ const DRAW = {
     const width = (t) => ctx.measureText(t).width / 10;
     const maxW = right - x0 - 3;
     const lines = [];
-    for (const para of String(o.texte || '').split('\n')) {
+    for (const para of (caps ? String(o.texte || '').toLocaleUpperCase('fr') : String(o.texte || '')).split('\n')) {
       let cur = '';
       for (const w of para.split(/\s+/).filter(Boolean)) {
         const t = cur ? `${cur} ${w}` : w;
@@ -243,7 +245,7 @@ const PARAMS = {
   carte: [['carte', 'Carte', ['Planisphère', 'Continents', 'France : régions', 'France : départements']], ['legendee', 'Version légendée (noms écrits)', 'checkbox'], ['numeros', 'Version à compléter : numéros + légende', 'checkbox'], ['couleurs', 'Couleurs', 'checkbox'],
     ['continents_noms', 'Continents (planisphère)', 'checkbox'], ['oceans', 'Océans (planisphère)', 'checkbox'], ['lignes', 'Équateur, tropiques, méridien (planisphère)', 'checkbox'],
     ['unites', 'Régions / départements (France)', 'checkbox'], ['fleuves', 'Fleuves', 'checkbox'], ['relief', 'Massifs montagneux (France)', 'checkbox'], ['villes', 'Grandes villes (France)', 'checkbox']],
-  ecriture: [['texte', 'Texte à écrire (Entrée = nouvelle ligne)', 'textarea'], ['police', 'Police', 'font'], ['hauteur', 'Hauteur des minuscules', [['1', '1 interligne (cahier)'], ['2', '2 interlignes (grand)']]], ['ajuste', 'Ajustement de la taille (%)', 'number'], ['sauter', 'Sauter une ligne entre deux lignes écrites', 'checkbox'], ['interligne', 'Interligne (mm)', 'number'], ['marge', 'Marge (mm)', 'number'], ['encre', 'Couleur de l’écriture', 'color'], ['couleur', 'Couleur des lignes', 'color']],
+  ecriture: [['texte', 'Texte à écrire (Entrée = nouvelle ligne)', 'textarea'], ['police', 'Police', 'font'], ['casse', 'Écriture', [['minuscules', 'normale (minuscules et majuscules)'], ['capitales', 'CAPITALES D’IMPRIMERIE (maternelle)']]], ['hauteur', 'Hauteur des minuscules', [['1', '1 interligne (cahier)'], ['2', '2 interlignes (grand)']]], ['ajuste', 'Ajustement de la taille (%)', 'number'], ['sauter', 'Sauter une ligne entre deux lignes écrites', 'checkbox'], ['interligne', 'Interligne (mm)', 'number'], ['marge', 'Marge (mm)', 'number'], ['encre', 'Couleur de l’écriture', 'color'], ['couleur', 'Couleur des lignes', 'color']],
   seyes: [['interligne', 'Interligne (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['marge', 'Marge (mm)', 'number'], ['couleur', 'Couleur des lignes', 'color'], ['marge_couleur', 'Couleur de la marge', 'color'], ['modele', 'Modèle d’écriture (1re ligne)', 'text']],
   reglure: [['ecart', 'Écart entre les lignes (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['couleur', 'Couleur', 'color']],
   texte: [['source', 'Texte (mettez les mots à trouver entre [crochets])', 'textarea'], ['taille', 'Taille du texte (mm)', 'number'], ['banque', 'Banque de mots', 'checkbox']],

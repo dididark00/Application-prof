@@ -63,6 +63,7 @@ import * as pExos from './pages/exercices.js';
 import * as pRecre from './pages/recreation.js';
 import * as pLiens from './pages/liens.js';
 import * as pArchives from './pages/archives.js';
+import * as pImporter from './pages/importer.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -122,6 +123,7 @@ const ROUTES = {
   recreation: pRecre,
   liens: pLiens,
   archive: pArchives,
+  importer: pImporter,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
   rdv: { render: pFam.renderRdv },
@@ -130,9 +132,11 @@ const ROUTES = {
 };
 
 let rendering = false;
+let pending = false;
 export async function render() {
-  if (rendering) return;
-  rendering = true;
+  // Une navigation pendant un affichage en cours (page asynchrone) n'est jamais perdue : on réaffiche ensuite.
+  if (rendering) { pending = true; return; }
+  rendering = true; pending = false;
   try {
     const route = parseHash();
     const page = ROUTES[route.name] || pToday;
@@ -150,7 +154,7 @@ export async function render() {
     document.getElementById('main').replaceChildren(h('div', { class: 'card error' },
       h('h2', {}, 'Une erreur est survenue'), h('p', {}, e.message || String(e)),
       h('p', {}, 'Vos données enregistrées ne sont pas affectées. Rechargez la page ; si le problème persiste, exportez une sauvegarde depuis Réglages.')));
-  } finally { rendering = false; }
+  } finally { rendering = false; if (pending) { pending = false; render(); } }
 }
 
 async function start() {

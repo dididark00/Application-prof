@@ -11,6 +11,10 @@ export const BUNDLED = [
   { name: 'Marelle 2', label: 'Marelle 2 — attaché (variante)', file: 'fonts/Marelle2-Regular.ttf' },
   { name: 'Marelle Baton', label: 'Marelle Bâton — script', file: 'fonts/MarelleBaton-Regular.ttf' },
   { name: 'Marelle Baton 2', label: 'Marelle Bâton 2 — script (variante)', file: 'fonts/MarelleBaton2-Regular.ttf' },
+  // Andika : © SIL Global — SIL OFL 1.1 (fonts/OFL-Andika.txt). Police conçue pour les lecteurs débutants :
+  // « a » et « g » simples, I / l / 1 bien distincts. Fichiers web d'origine non modifiés.
+  { name: 'Andika', label: 'Andika — script des débutants (maternelle, CP)', file: 'fonts/Andika-Regular.woff2' },
+  { name: 'Andika Gras', label: 'Andika gras — capitales et grandes lettres', file: 'fonts/Andika-Bold.woff2' },
 ];
 export const FALLBACKS = [['cursive', 'Cursive du système (approximative)'], ['Arial', 'Script (Arial)']];
 
@@ -45,6 +49,10 @@ export async function importFont(file) {
 }
 
 /** Rapport hauteur des minuscules (x) / taille de police, mesuré pour aligner sur le Seyès. */
+/** Hauteur des capitales rapportée à la taille de la police. */
+export function capHeightRatio(name) {
+  try { const c = document.createElement('canvas').getContext('2d'); c.font = `100px "${name}", cursive`; const r = (c.measureText('HEMIT').actualBoundingBoxAscent || 0) / 100; return r > 0.3 && r < 1 ? r : 0.7; } catch { return 0.7; }
+}
 export function xHeightRatio(name) {
   try {
     const c = document.createElement('canvas').getContext('2d');

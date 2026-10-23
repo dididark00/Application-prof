@@ -20,6 +20,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         '.js': 'text/javascript',
         '.ttf': 'font/ttf',
         '.otf': 'font/otf',
+        '.woff2': 'font/woff2',
         '.wasm': 'application/wasm',
         '.traineddata': 'application/octet-stream',
         '.mjs': 'text/javascript',

@@ -15,6 +15,9 @@ import { homeworkDialog } from './devoirs.js';
 import { addFiles } from './files.js';
 import { printDocument } from '../print.js';
 import { printDay, printWeek, printMaterials, printWeekDossier } from '../printdocs.js';
+import * as CP from '../cahier-plus.js';
+import { competencyIndex, competencyLabel } from './referentiels.js';
+import { download } from '../ui.js';
 
 let rerender = () => {};
 
@@ -56,7 +59,9 @@ function dayView(cls, date, nav) {
     pageHeader('Cahier journal', { favKey: 'planifier/cahier', subtitle: `${cls.name} · ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${per ? ` · P${model.periodsOf(year).indexOf(per) + 1}${wk ? ` S${wk.n}` : ''}` : ''}`,
       actions: [
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => adhocDialog(cls, date) }, icon('plus', 16), 'Activité'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDocument(printDay(cls, date)) }, icon('print', 16), 'Imprimer')] }),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDocument(printDay(cls, date)) }, icon('print', 16), 'Imprimer'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…')] }),
     subTabs(), nav,
     !plan.school.ok ? h('p', { class: 'banner' }, plan.school.reason) : null,
     plan.school.ok && !plan.myDay ? h('p', { class: 'banner info' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
@@ -115,6 +120,9 @@ function entryCard(cls, e, inConflict) {
     e.occ?.postponedFrom ? badge(`report du ${model.frShort(store.get(e.occ.postponedFrom)?.date)}`, 'info') : null);
 
   const body = [];
+  // Compétences officielles de la fiche (et de sa séquence) : le lien programme → cahier journal reste visible.
+  const comps = shown ? [...new Set([...(shown.competencyIds || []), ...(store.get(shown.sequenceId)?.competencyIds || [])])] : [];
+  if (comps.length) { const idx = competencyIndex(); body.push(h('p', { class: 'small entry-comps', 'data-testid': 'entry-comps', title: comps.map(c => competencyLabel(c, idx)).join('\n') }, '🎯 ', comps.slice(0, 3).map(c => { const x = idx.get(c); return x ? (x.code || x.label.slice(0, 60)) : ''; }).filter(Boolean).join(' · '), comps.length > 3 ? ` (+${comps.length - 3})` : '')); }
   if (e.status === 'reportée') {
     const to = e.occ?.postponedTo && store.get(e.occ.postponedTo);
     body.push(h('p', { class: 'small' }, 'Reportée', to ? [' au ', h('a', { href: `#/cahier?d=${to.date}` }, `${model.frDate(to.date)} ${to.start}`)] : '', '. Les supports restent attachés à la fiche.'));
@@ -143,8 +151,10 @@ function entryCard(cls, e, inConflict) {
     active ? [['faite', 'Faite'], ['partielle', 'Partielle']].map(([st, l]) => h('button', { class: `btn btn-small ${e.status === st ? 'btn-primary' : ''}`, type: 'button', 'data-testid': `status-${st}`, onclick: () => PL.setStatus(e, cls, e.status === st ? 'prévue' : st) }, l)) : null,
     active && e.status !== 'faite' ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'postpone', onclick: () => postponeDialog(cls, e) }, 'Reporter…') : null,
     active ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => PL.setStatus(e, cls, e.status === 'annulée' ? 'prévue' : 'annulée') }, e.status === 'annulée' ? 'Rétablir' : 'Annuler') : null,
-    h('details', { class: 'more' }, h('summary', { class: 'btn btn-small' }, 'Plus'), h('div', { class: 'more-menu' },
+    h('details', { class: 'more' }, h('summary', { class: 'btn btn-small', 'data-testid': 'entry-more' }, 'Plus'), h('div', { class: 'more-menu', onclick: (ev) => { if (ev.target.closest('button')) ev.currentTarget.parentElement.open = false; } },
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => adjustDialog(cls, e) }, 'Modifier pour ce jour'),
+      s && (e.slot?.id || e.occ?.slotId) ? (() => { const slotId = e.slot?.id || e.occ.slotId; const isHab = store.get(cls.id).habitual?.[slotId] === s.id;
+        return h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'set-habitual', title: 'Cette fiche sera proposée sur ce créneau chaque semaine par « Pré-remplir la semaine »', onclick: () => CP.setHabitual(cls, slotId, isHab ? null : s.id).then(() => toast(isHab ? 'Fiche habituelle retirée' : `★ Fiche habituelle du créneau ${model.JOURS[model.weekday(e.date)].toLowerCase()} ${e.start}`)) }, isHab ? '☆ Ne plus en faire la fiche habituelle' : '★ Fiche habituelle de ce créneau'); })() : null,
       s && active ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'detach', title: 'Crée une copie de la fiche utilisée seulement à cette date', onclick: async () => {
         const c = await P.duplicateSession(s.id);
         await PL.patchEntry(e, cls, { sessionId: c.id }, `Fiche détachée pour le ${model.frShort(e.date)}`);
@@ -262,7 +272,9 @@ function weekView(cls, date, nav) {
   const rows = PL.materials(cls, days);
   return h('div', { class: 'page' },
     pageHeader('Cahier journal — semaine', { favKey: 'planifier/cahier', subtitle: `${cls.name} · semaine du ${model.frDate(monday)}`,
-      actions: [h('button', { class: 'btn', type: 'button', 'data-testid': 'print-week', onclick: () => printDocument(printWeek(cls, monday), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer la semaine'),
+      actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, monday) }, 'Préparer la semaine'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, monday) }, icon('download', 16), 'Exporter…'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-week', onclick: () => printDocument(printWeek(cls, monday), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-dossier', onclick: () => printDocument(printWeekDossier(cls, monday)) }, icon('print', 16), 'Dossier de la semaine')] }),
     subTabs(), nav,
     h('div', { class: 'week', style: { gridTemplateColumns: `repeat(${days.length}, minmax(160px, 1fr))` }, 'data-testid': 'week' }, days.map(d => {
@@ -279,4 +291,64 @@ function weekView(cls, date, nav) {
         h('tbody', {}, rows.map(r => h('tr', {}, h('td', {}, model.frDate(r.date, { weekday: 'short', day: 'numeric' })), h('td', {}, `${r.entry.start} ${r.entry.title}`), h('td', {}, r.label), h('td', {}, r.kind === 'copie' ? String(r.count) : ''),
           h('td', {}, r.kind === 'copie' ? bound({ type: 'select', value: r.status, options: ['à faire', 'imprimé', 'prêt'], onSave: (v) => PL.patchEntry(r.entry, cls, { copyStatus: { ...(r.entry.occ ? store.get(r.entry.occ.id).copyStatus : {}), [r.id]: v } }, `Photocopie : ${v}`) }) : ''))))))
         : h('p', { class: 'muted' }, 'Rien à préparer : les rubriques « À préparer », « À imprimer », « À projeter » et les photocopies des fiches programmées cette semaine apparaissent ici.')));
+}
+
+// ───────── Préparer la semaine : depuis l'EDT (fiches habituelles + progressions) ou semaine vierge
+function prefillDialog(cls, date) {
+  const monday = model.mondayOf(date);
+  let mode = PL.isBlankWeek(cls, monday) ? 'vierge' : 'edt';
+  const props = CP.weekProposals(cls, monday);
+  const chosen = new Set(props.map((_, i) => i));
+  const asDefault = h('input', { type: 'checkbox', 'data-testid': 'week-mode-default' });
+  const list = props.length ? h('div', { class: 'stack' },
+    h('p', { class: 'muted small' }, 'Créneaux de l’emploi du temps encore vides : la fiche habituelle du créneau (★), sinon la séance suivante de votre progression pour cette semaine. Décochez ce que vous ne voulez pas. Ce qui est déjà rempli, fait, reporté ou annulé n’est pas touché.'),
+    h('table', { class: 'table', 'data-testid': 'prefill-list' }, h('tbody', {}, props.map((p, i) => h('tr', {},
+      h('td', {}, h('input', { type: 'checkbox', checked: true, 'aria-label': 'Garder', onchange: (ev) => { ev.target.checked ? chosen.add(i) : chosen.delete(i); } })),
+      h('td', { class: 'nowrap' }, model.frDate(p.entry.date, { weekday: 'short', day: 'numeric' }), ' ', p.entry.start),
+      h('td', {}, p.entry.subject || ''),
+      h('td', {}, P.sessionTitle(store.get(p.sessionId))),
+      h('td', {}, badge(p.source === 'habituelle' ? '★ habituelle' : 'progression', p.source === 'habituelle' ? 'info' : 'muted')))))))
+    : h('div', { class: 'small' }, h('p', {}, 'Aucune fiche à proposer : les créneaux de l’EDT seront posés vides, à remplir à la main.'), h('ul', {},
+      h('li', {}, 'Fiches habituelles : dans un créneau qui a une fiche, menu « Plus » › « ★ Fiche habituelle de ce créneau » (rituels, lecture quotidienne…).'),
+      h('li', {}, 'Progressions : Préparer › Progressions, lignes de la semaine reliées à une séquence ou une séance.')));
+  const vierge = h('p', { class: 'small' }, 'La semaine part de zéro : l’emploi du temps n’est pas posé. Ajoutez vos activités avec « + Activité » dans la vue Jour. Les séances déjà notées cette semaine restent.');
+  const zone = h('div');
+  const draw = () => zone.replaceChildren(mode === 'edt' ? list : vierge);
+  const radio = (v, label) => h('label', { class: 'inline' }, h('input', { type: 'radio', name: 'weekmode', value: v, checked: mode === v, 'data-testid': `week-mode-${v}`, onchange: () => { mode = v; draw(); } }), label);
+  draw();
+  modal({ title: `Préparer la semaine du ${model.frDate(monday)}`, wide: true, body: h('div', { class: 'stack' },
+    h('div', { class: 'stack' }, radio('edt', 'Construire la semaine avec l’emploi du temps (et pré-remplir les fiches)'), radio('vierge', 'Partir d’une semaine vierge')),
+    h('label', { class: 'inline small' }, asDefault, 'Faire de ce choix le réglage par défaut pour les semaines suivantes'),
+    zone),
+  actions: [{ label: 'Annuler' }, { label: 'Valider', primary: true, testid: 'prefill-apply', onClick: async () => {
+    await PL.setWeekMode(cls, monday, mode);
+    if (asDefault.checked) await store.update(cls.id, { journalMode: mode }, 'Mode par défaut du cahier journal');
+    if (mode === 'edt') {
+      const n = await CP.applyProposals(cls, props.filter((_, i) => chosen.has(i)));
+      toast(n ? `${n} créneau(x) rempli(s). Annulable.` : 'Semaine construite depuis l’emploi du temps.', { action: n ? 'Annuler' : null, onAction: () => store.undo() });
+    } else toast('Semaine vierge : ajoutez vos activités avec « + Activité ».');
+  } }] });
+}
+
+// ───────── Exporter : jour, semaine, mois, période, année ou dates choisies
+function exportDialog(cls, date) {
+  const kind = h('select', { 'data-testid': 'export-kind' }, [['jour', 'Le jour affiché'], ['semaine', 'La semaine'], ['mois', 'Le mois'], ['periode', 'La période (entre deux vacances)'], ['annee', 'Toute l’année'], ['dates', 'Des dates choisies']].map(([v, l]) => h('option', { value: v, selected: v === 'semaine' }, l)));
+  const from = h('input', { type: 'date', value: date, 'aria-label': 'Du' }), to = h('input', { type: 'date', value: model.addDays(date, 6), 'aria-label': 'Au' });
+  const datesRow = h('div', { class: 'row', hidden: true }, 'Du', from, 'au', to);
+  const format = h('select', { 'data-testid': 'export-format' }, [['detail', 'Détaillé : une page par jour (PDF / impression)'], ['semaines', 'Compact : une page par semaine (PDF / impression)'], ['csv', 'Tableau (CSV, pour Excel ou LibreOffice)']].map(([v, l]) => h('option', { value: v }, l)));
+  const info = h('p', { class: 'muted small', 'data-testid': 'export-info' });
+  const upd = () => { datesRow.hidden = kind.value !== 'dates'; const [a, b] = CP.rangeOf(kind.value, date, cls, from.value, to.value); const n = CP.schoolDaysBetween(cls, a, b).length; info.textContent = `Du ${model.frShort(a)} au ${model.frShort(b)} : ${n} jour(s) de classe.${n > 40 && format.value === 'detail' ? ' Document long : préférez « Compact » ou « Tableau ».' : ''}`; };
+  [kind, from, to, format].forEach(x => x.addEventListener('change', upd)); upd();
+  modal({ title: 'Exporter le cahier journal', body: h('div', { class: 'form' }, field('Période', kind), datesRow, field('Format', format), info,
+    h('p', { class: 'muted small' }, 'Pour un PDF : choisissez « Enregistrer au format PDF » dans la fenêtre d’impression.')),
+  actions: [{ label: 'Annuler' }, { label: 'Exporter', primary: true, testid: 'export-go', onClick: () => {
+    const [a, b] = CP.rangeOf(kind.value, date, cls, from.value, to.value);
+    if (b < a) { toast('La date de fin précède la date de début.', { kind: 'error' }); return false; }
+    const days = CP.schoolDaysBetween(cls, a, b);
+    if (!days.length) { toast('Aucun jour de classe sur ces dates.', { kind: 'error' }); return false; }
+    if (format.value === 'csv') { download(`cahier-journal-${a}-${b}.csv`, CP.csvOf(cls, days), 'text/csv;charset=utf-8'); return; }
+    if (format.value === 'detail') { printDocument(h('div', {}, days.map((d, i) => h('div', { class: i ? 'page-break' : '' }, printDay(cls, d))))); return; }
+    const mondays = [...new Set(days.map(d => model.mondayOf(d)))];
+    printDocument(h('div', {}, mondays.map((m, i) => h('div', { class: i ? 'page-break' : '' }, printWeek(cls, m)))), { orientation: 'landscape' });
+  } }] });
 }

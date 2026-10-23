@@ -21,6 +21,14 @@ export function render({ params, rerender }) {
         h('button', { class: 'btn', type: 'button', onclick: () => download('modele-referentiel.csv', toCsv([['Code', 'Domaine', 'Sous-domaine', 'Intitulé', 'Niveaux'], ['', '', '', '', 'CE1, CE2']]), 'text/csv;charset=utf-8') }, icon('download', 16), 'Modèle CSV'),
       ] }),
     subTabs(),
+    h('details', { class: 'card how', 'data-testid': 'ref-how', open: !refs.length }, h('summary', {}, h('strong', {}, 'À quoi ça sert ? Comment tout est relié')),
+      h('ol', {},
+        h('li', {}, h('strong', {}, 'Importer les compétences : '), 'dans « Programmes en vigueur » ci-dessous, le bouton « Importer les compétences » d’une ligne (ex. Mathématiques CE2) recopie la liste officielle des compétences du programme (BO) dans l’application. C’est votre « référentiel ».'),
+        h('li', {}, h('strong', {}, 'Relire et valider : '), 'ouvrez-le, relisez (la page du PDF officiel est indiquée), puis « Valider ». Seuls les référentiels validés sont proposés ensuite.'),
+        h('li', {}, h('strong', {}, 'Relier : '), 'dans une programmation (notions), une séquence ou une fiche de séance, le bouton « Compétences officielles… » permet de cocher les compétences travaillées.'),
+        h('li', {}, h('strong', {}, 'Le reste suit tout seul : '), 'le cahier journal reprend les fiches (donc leurs compétences), les évaluations peuvent viser les mêmes compétences, les livrets s’appuient sur les résultats.'),
+        h('li', {}, h('strong', {}, 'Vérifier la couverture : '), 'dans chaque référentiel, la colonne « Travaillée » montre où et quand chaque compétence a été travaillée (fiches, séquences, jours faits au cahier journal, évaluations) et celles qui ne le sont pas encore.')),
+      h('p', { class: 'muted small' }, 'Facultatif : vous pouvez aussi écrire les compétences en texte libre dans vos fiches, comme dans vos modèles.')),
     officialCard(refs),
     h('h2', { style: { marginTop: '18px' } }, 'Mes référentiels'),
     h('p', { class: 'muted' }, 'Importez les compétences depuis le texte officiel (copier-coller ou CSV), vérifiez l’aperçu, puis validez. Seuls les référentiels validés sont proposés dans les fiches.'),
@@ -106,6 +114,7 @@ function detail(id) {
   if (!r || r.deletedAt) return h('div', { class: 'page' }, pageHeader('Référentiel introuvable'), h('a', { href: '#/referentiels' }, '← Référentiels'));
   const locked = r.status === 'validé';
   const used = usage(r);
+  const cov = coverage();
   const items = (r.items || []).slice().sort((a, b) => (a.code || '').localeCompare(b.code || '', 'fr', { numeric: true }));
   return h('div', { class: 'page' },
     h('p', {}, h('a', { href: '#/referentiels', class: 'back' }, '← Référentiels')),
@@ -128,15 +137,39 @@ function detail(id) {
     locked ? h('p', { class: 'muted' }, `Validé le ${model.frDateTime(r.validatedAt)}. Non modifiable : créez une nouvelle version pour corriger.`) : h('div', { class: 'card notice' }, h('p', {}, 'À vérifier : relisez chaque intitulé par rapport au texte officiel avant de valider.'),
       r.extracted ? h('p', { class: 'small' }, `${r.extracted.how} ${items.filter(i => i.check).length} intitulé(s) à relire en priorité. `, r.pdf ? h('a', { href: r.pdf, target: '_blank', rel: 'noopener' }, 'Ouvrir le texte officiel (PDF)') : null) : null),
     h('div', { class: 'card' }, items.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table', 'data-testid': 'ref-items' },
-      h('thead', {}, h('tr', {}, h('th', {}, 'Code'), h('th', {}, 'Domaine'), h('th', {}, 'Sous-domaine'), h('th', {}, 'Intitulé'), h('th', {}, 'Niveaux'), r.extracted ? h('th', {}, 'Page') : null, locked ? null : h('th', {}, ''))),
+      h('thead', {}, h('tr', {}, h('th', {}, 'Code'), h('th', {}, 'Domaine'), h('th', {}, 'Sous-domaine'), h('th', {}, 'Intitulé'), h('th', {}, 'Niveaux'), r.extracted ? h('th', {}, 'Page') : null, h('th', {}, 'Travaillée'), locked ? null : h('th', {}, ''))),
       h('tbody', {}, items.map(i => h('tr', { class: i.check && !locked ? 'to-check' : '', 'data-testid': 'ref-item' }, h('td', {}, i.code), h('td', {}, i.domain), h('td', {}, i.subdomain), h('td', {}, i.label, i.check && !locked ? h('div', {}, badge('à relire', 'warn')) : null), h('td', {}, (i.levels || []).join(', ')),
         r.extracted ? h('td', {}, i.page ? (r.pdf ? h('a', { href: `${r.pdf}#page=${i.page}`, target: '_blank', rel: 'noopener' }, `p. ${i.page}`) : `p. ${i.page}`) : '') : null,
+        h('td', { 'data-testid': 'ref-coverage' }, covCell(cov.get(i.id))),
         locked ? null : h('td', { class: 'row' },
           h('button', { class: 'btn btn-small', type: 'button', onclick: () => itemDialog(r, i) }, 'Modifier'),
           h('button', { class: 'btn btn-small btn-ghost-danger', type: 'button', onclick: async () => {
             await store.update(r.id, { items: store.get(r.id).items.filter(x => x.id !== i.id) }, 'Compétence retirée');
             toast('Compétence retirée', { action: 'Annuler', onAction: () => store.undo() });
           } }, 'Retirer'))))))) : emptyState('Aucune compétence', 'Importez des lignes (copier-coller depuis un tableur) ou ajoutez-les une à une.')));
+}
+
+/** Où chaque compétence est travaillée : notions, séquences, fiches, jours du cahier journal, évaluations. */
+export function coverage() {
+  const out = new Map();
+  const add = (cid, k, v) => { if (!out.has(cid)) out.set(cid, { notion: new Set(), sequence: new Set(), session: new Set(), day: new Set(), evaluation: new Set() }); out.get(cid)[k].add(v); };
+  for (const t of ['notion', 'sequence', 'session']) for (const x of store.all(t)) for (const c of x.competencyIds || []) add(c, t, x.id);
+  const sessComps = new Map(store.all('session').map(x => [x.id, x.competencyIds || []]));
+  const seqComps = new Map(store.all('sequence').map(x => [x.id, x.competencyIds || []]));
+  for (const o of store.all('occurrence')) {
+    if (!o.sessionId || !['faite', 'partielle'].includes(o.status)) continue;
+    const se = store.get(o.sessionId);
+    for (const c of new Set([...(sessComps.get(o.sessionId) || []), ...(seqComps.get(se?.sequenceId) || [])])) add(c, 'day', o.date);
+  }
+  for (const e of store.all('evaluation')) for (const it of e.items || []) for (const c of [it.competencyId, ...(it.competencyIds || [])].filter(Boolean)) add(c, 'evaluation', e.id);
+  for (const e of store.all('evaluation')) for (const c of e.competencyIds || []) add(c, 'evaluation', e.id);
+  return out;
+}
+function covCell(cv) {
+  if (!cv) return h('span', { class: 'muted small' }, 'pas encore reliée');
+  const parts = [['session', 'fiche'], ['sequence', 'séquence'], ['notion', 'notion'], ['day', 'jour fait'], ['evaluation', 'évaluation']].filter(([k]) => cv[k].size).map(([k, l]) => `${cv[k].size} ${l}${cv[k].size > 1 ? 's' : ''}`);
+  const days = [...cv.day].sort();
+  return h('span', { class: 'small', title: days.length ? `Travaillée les : ${days.map(model.frShort).join(', ')}` : '' }, parts.join(' · '), days.length ? h('div', { class: 'muted' }, `dernière fois : ${model.frShort(days.at(-1))}`) : null);
 }
 
 function usage(r) {

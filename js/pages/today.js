@@ -93,8 +93,8 @@ export function render() {
     const svc = V.services().map(sv => ({ sv, n: V.serviceDay(cls, today, sv).filter(r => r.expected).length })).filter(x => x.n);
     cards.unshift(h('section', { class: 'card', 'data-testid': 'today-class' }, h('h2', {}, 'En classe'),
       h('div', { class: 'row' }, halves.map(x => h('a', { class: `btn ${x.a?.validated ? '' : 'btn-primary'}`, href: `#/appel?d=${today}&h=${encodeURIComponent(x.k)}` }, `Appel ${x.l.toLowerCase()}`, x.a?.validated ? badge(`validé · ${x.absents} absent(s) ou retard(s)`, 'ok') : x.a ? badge('en cours', 'warn') : null))),
-      svc.length ? h('p', { class: 'small' }, svc.map(x => `${x.sv} : ${x.n}`).join(' · '), ' ', h('a', { href: '#/services' }, 'détails')) : null,
-      h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'))));
+      svc.length ? h('p', { class: 'small' }, svc.map(x => `${x.sv} : ${x.n}`).join(' · ')) : null,
+      h('div', { class: 'row' }, h('a', { class: 'btn btn-small', href: V.planOf(cls.id) ? '#/services' : '#/services?t=semaine', 'data-testid': 'today-services' }, 'Cantine, étude, garderie'), h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'))));
   }
 
   return h('div', { class: 'page' },

@@ -430,7 +430,7 @@ textarea.saved, input.saved, select.saved { box-shadow: 0 0 0 2px var(--ok-line)
 details.more { position: relative; }
 details.more summary { list-style: none; }
 details.more summary::-webkit-details-marker { display: none; }
-.more-menu { position: absolute; z-index: 5; right: 0; top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
+.more-menu { position: absolute; z-index: 5; left: 0; top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
 .more-menu .btn { justify-content: flex-start; }
 details.after summary { cursor: pointer; font-weight: 600; font-size: .9rem; margin: 6px 0; }
 .parallel { display: flex; flex-direction: column; gap: 10px; }
@@ -930,3 +930,6 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .page-break { break-before: page; }
 .recre-table td, .recre-table th { text-align: center; } .recre-table select { max-width: 11em; }
 [hidden] { display: none !important; }
+
+/* Menu « Plus » : sur téléphone, il s'ouvre dans la carte (jamais hors de l'écran). */
+@media (max-width: 700px) { details.more[open] { flex-basis: 100%; } details.more .more-menu { position: static; margin-top: 6px; min-width: 0; box-shadow: none; } details.more .more-menu .btn { width: 100%; } }

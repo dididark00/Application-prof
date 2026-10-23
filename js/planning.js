@@ -69,7 +69,16 @@ function entryFromOcc(o, slot = null) {
 }
 
 /** Construit la journée d'une classe : EDT en vigueur + séances datées + interventions + événements. */
-export function dayPlan(cls, date) {
+/** Semaine vierge : choix par semaine, sinon réglage par défaut de la classe. */
+export function isBlankWeek(cls, date) {
+  const c = store.get(cls.id) || cls; const m = model.mondayOf(date);
+  return c.weekMode?.[m] ? c.weekMode[m] === 'vierge' : c.journalMode === 'vierge';
+}
+export async function setWeekMode(cls, monday, mode) {
+  const cur = { ...(store.get(cls.id).weekMode || {}) }; cur[monday] = mode;
+  return store.update(cls.id, { weekMode: cur }, mode === 'vierge' ? 'Semaine partie de zéro' : 'Semaine construite depuis l’emploi du temps');
+}
+export function dayPlan(cls, date, { ignoreBlank = false } = {}) {
   const school = isSchoolDay(cls, date);
   const wd = model.weekday(date);
   const occs = store.all('occurrence').filter(o => o.classId === cls.id && o.date === date);
@@ -77,7 +86,9 @@ export function dayPlan(cls, date) {
   const entries = [];
   if (school.ok) {
     const { version } = timetableForDate(cls, date);
-    for (const slot of (version?.slots || []).filter(s => s.day === wd)) {
+    // Semaine « vierge » : l'EDT n'est pas posé, seules les activités ajoutées à la main apparaissent.
+    const blank = !ignoreBlank && isBlankWeek(cls, date);
+    for (const slot of (blank ? [] : version?.slots || []).filter(s => s.day === wd)) {
       const o = occs.find(x => x.slotId === slot.id);
       if (o) { usedOcc.add(o.id); entries.push(entryFromOcc(o, slot)); }
       else entries.push({ key: `s:${date}:${slot.id}`, kind: 'slot', date, start: slot.start, end: slot.end, subject: slot.subject, title: slot.label || slot.subject || 'Créneau',
