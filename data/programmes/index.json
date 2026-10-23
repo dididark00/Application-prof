@@ -1,0 +1,258 @@
+[
+{
+"id": "fr2024",
+"title": "Français — cycle 2 (CP, CE1, CE2)",
+"subject": "Français",
+"count": 176,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "ma2024",
+"title": "Mathématiques — cycle 2 (CP, CE1, CE2)",
+"subject": "Mathématiques",
+"count": 226,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "fr2025",
+"title": "Français — cycle 3 (CM1, CM2)",
+"subject": "Français",
+"count": 157,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "ma2025",
+"title": "Mathématiques — cycle 3 (CM1, CM2)",
+"subject": "Mathématiques",
+"count": 226,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "hg2026c2",
+"title": "Histoire-géographie — cycle 2 (2026)",
+"subject": "Histoire-géographie",
+"count": 45,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "hg2026c3",
+"title": "Histoire-géographie — cycle 3 (2026)",
+"subject": "Histoire-géographie",
+"count": 49,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "eps2026c2",
+"title": "EPS — cycle 2 (2026)",
+"subject": "EPS",
+"count": 75,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "eps2026c3",
+"title": "EPS — cours moyen (2026)",
+"subject": "EPS",
+"count": 24,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "st2026c2",
+"title": "Sciences et technologie — cycle 2 (2026)",
+"subject": "Sciences et technologie",
+"count": 76,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "st2026c3",
+"title": "Sciences et technologie — cycle 3 (2026)",
+"subject": "Sciences et technologie",
+"count": 76,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "lv2026c2",
+"title": "Langues vivantes — cycle 2 (2026)",
+"subject": "Langues vivantes",
+"count": 133,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "lv2026c3",
+"title": "Langues vivantes — cours moyen (2026)",
+"subject": "Langues vivantes",
+"count": 149,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "emc2024",
+"title": "Enseignement moral et civique (2024)",
+"subject": "Enseignement moral et civique",
+"count": 52,
+"levels": [
+"CP",
+"CE1",
+"CE2",
+"CM1",
+"CM2"
+]
+},
+{
+"id": "evar2025",
+"title": "Éducation à la vie affective et relationnelle (2025)",
+"subject": "Vie affective et relationnelle",
+"count": 85,
+"levels": [
+"CP",
+"CE1",
+"CE2",
+"CM1",
+"CM2"
+]
+},
+{
+"id": "mat2026",
+"title": "École maternelle — six domaines (2024-2026)",
+"subject": "Maternelle",
+"count": 394,
+"levels": [
+"TPS",
+"PS",
+"MS",
+"GS"
+]
+},
+{
+"id": "qlm2020",
+"title": "Questionner le monde — cycle 2 (2020)",
+"subject": "Questionner le monde",
+"count": 15,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "arts2020c2",
+"title": "Enseignements artistiques — cycle 2 (2020)",
+"subject": "Enseignements artistiques",
+"count": 9,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "eps2020c2",
+"title": "EPS — cycle 2 (2020)",
+"subject": "EPS",
+"count": 10,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "lv2020c2",
+"title": "Langues vivantes — cycle 2 (2020)",
+"subject": "Langues vivantes",
+"count": 3,
+"levels": [
+"CP",
+"CE1",
+"CE2"
+]
+},
+{
+"id": "lv2020c3",
+"title": "Langues vivantes — cycle 3 (2020)",
+"subject": "Langues vivantes",
+"count": 10,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "arts2020c3",
+"title": "Arts plastiques, éducation musicale, histoire des arts — cycle 3 (2020)",
+"subject": "Enseignements artistiques",
+"count": 23,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "eps2020c3",
+"title": "EPS — cycle 3 (2020)",
+"subject": "EPS",
+"count": 17,
+"levels": [
+"CM1",
+"CM2"
+]
+},
+{
+"id": "hg2020c3",
+"title": "Histoire-géographie — CM2 (2020)",
+"subject": "Histoire-géographie",
+"count": 19,
+"levels": [
+"CM2"
+]
+},
+{
+"id": "st2023",
+"title": "Sciences et technologie — cycle 3 (2023)",
+"subject": "Sciences et technologie",
+"count": 31,
+"levels": [
+"CM2"
+]
+}
+]

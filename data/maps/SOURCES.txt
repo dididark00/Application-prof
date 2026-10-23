@@ -1,0 +1,6 @@
+Cartes de l’Atelier pédagogique
+
+- monde.json : Natural Earth (https://www.naturalearthdata.com), domaine public. Pays 1:110m, fleuves 1:110m. Projection Equal Earth.
+- france.json : régions et départements (millésime 2018) issus d’IGN Admin Express COG / INSEE, Licence ouverte Etalab, via https://github.com/gregoiredavid/france-geojson ; fleuves, massifs, villes et pays voisins : Natural Earth, domaine public.
+
+Fichiers générés une fois (tracés simplifiés) ; aucun contour n’a été dessiné à la main. Seules les positions des noms de continents et d’océans ont été choisies pour la lisibilité.

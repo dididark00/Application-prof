@@ -333,6 +333,40 @@ await test('Charte visuelle enregistrée et utilisée par défaut', async () => 
   await S(`await store.setSettings({ charte: { ...store.getSettings().charte, font: 'Marelle' } })`);
 });
 
+await test('Atelier géométrie : symétrie exacte, figures aux dimensions réelles, angles corrigés', async () => {
+  await go('#/atelier'); await page.getByTestId('tool-symetrie').click(); await page.waitForTimeout(150);
+  await page.getByTestId('p-graine').fill('1234'); await page.waitForTimeout(100);
+  await page.getByTestId('correction').check(); await page.waitForTimeout(150);
+  const sym = await page.evaluate(() => [...document.querySelectorAll('[data-testid=atelier-preview] [data-testid=exercise]')].map(g => ({ fig: JSON.parse(g.getAttribute('data-figure')), cor: JSON.parse(g.querySelector('[data-role=correction]').getAttribute('data-points')) })));
+  eq(sym.length, 4, '4 exercices');
+  for (const e of sym) assert(e.fig.every(([c, l], i) => e.cor[i][0] === 16 - c && e.cor[i][1] === l), 'correction = symétrique exact par rapport à l’axe vertical');
+  const first = JSON.stringify(sym[0].fig);
+  await page.getByTestId('p-graine').fill('1234'); await page.waitForTimeout(150);
+  eq(await page.evaluate(() => document.querySelector('[data-testid=exercise]').getAttribute('data-figure')), first, 'même numéro → même fiche');
+  await page.getByTestId('tool-figures').click(); await page.waitForTimeout(150);
+  const dims = await page.evaluate(() => [...document.querySelectorAll('[data-testid=figure] [data-mm]')].map(e => e.getAttribute('data-mm')));
+  eq(dims.join(' | '), '70 | 60x30 | 40x40 | 50x30 | 25', 'segment 7 cm, rectangle 6 × 3, carré 4, triangle 5 × 3, cercle r = 2,5 cm');
+  await page.getByTestId('tool-angles').click(); await page.getByTestId('correction').check(); await page.waitForTimeout(150);
+  const ang = await page.evaluate(() => [...document.querySelectorAll('[data-testid=angle]')].map(g => [Number(g.getAttribute('data-deg')), g.textContent]));
+  assert(ang.length === 9 && ang.every(([d, t]) => t.includes(d < 90 ? 'aigu' : d === 90 ? 'droit' : 'obtus')), 'type d’angle corrigé correctement');
+});
+
+await test('Atelier cartes : planisphère et France sourcés, version vierge numérotée et corrigée', async () => {
+  await go('#/atelier'); await page.getByTestId('tool-carte').click();
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid=map] path[data-continent]').length > 100);
+  const w = await page.evaluate(() => { const svg = document.querySelector('[data-testid=atelier-preview] svg'); return { w: svg.getAttribute('width'), countries: svg.querySelectorAll('path[data-continent]').length, nums: svg.querySelectorAll('[data-testid=map-number]').length, legend: svg.querySelectorAll('[data-testid=legend-line]').length, src: svg.textContent.includes('Natural Earth') }; });
+  eq(w.w, '297mm', 'planisphère en A4 paysage'); assert(w.countries >= 170, 'pays issus des données Natural Earth');
+  assert(w.nums >= 7 && w.nums === w.legend, 'numéros sur la carte = lignes de légende à compléter'); assert(w.src, 'source affichée sur la carte');
+  await page.getByTestId('p-carte').selectOption('France : régions');
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid=map] path[data-code]').length >= 13);
+  await page.getByTestId('p-fleuves').check(); await page.getByTestId('correction').check(); await page.waitForTimeout(200);
+  const fr = await page.evaluate(() => { const svg = document.querySelector('[data-testid=atelier-preview] svg'); return { regions: svg.querySelectorAll('path[data-code]').length, names: [...svg.querySelectorAll('[data-name]')].map(t => t.getAttribute('data-name')), w: svg.getAttribute('width'), src: svg.textContent.includes('IGN') }; });
+  eq(fr.regions, 13, '13 régions métropolitaines'); eq(fr.w, '210mm', 'France en A4 portrait');
+  for (const n of ['Bretagne', 'Occitanie', 'Loire', 'Seine', 'Alpes', 'Pyrénées']) assert(fr.names.includes(n), `nom présent dans la correction : ${n}`);
+  assert(fr.src, 'source IGN affichée');
+  await page.screenshot({ path: `${OUT}etape4-carte.png` });
+});
+
 await test('Captures', async () => {
   for (const [r, n] of [[`#/reunions/${meetingId}`, 'reunion'], ['#/heures', 'heures'], ['#/heures?t=apc', 'apc'], ['#/transmissions', 'transmissions'], ['#/pes', 'pes'], ['#/remplacement', 'remplacement'], ['#/argent', 'argent'], ['#/argent?t=journal', 'journal'], ['#/materiel', 'materiel'], ['#/etiquettes?t=generer', 'etiquettes'], ['#/etiquettes?t=academies', 'academies']]) { await go(r); await page.screenshot({ path: `${OUT}etape4-${n}.png`, fullPage: true }); }
 });

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (100) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (24) — 135 entrées.
+Légende : ✅ Réalisé (102) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (22) — 135 entrées.
 
 ## Étape 1 — Socle
 
@@ -120,7 +120,7 @@ Légende : ✅ Réalisé (100) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 
 | | Section | Fonction | Note |
 |---|---|---|---|
-| 🟡 | §5 Préparation | Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider) | Nécessite les PDF officiels (le site du ministère n’est pas accessible depuis l’environnement de développement). |
+| ✅ | §5 Préparation | Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider) | 2 080 intitulés extraits des PDF officiels (TPS–CM2), page indiquée, contrôle automatique mot à mot ; EVAR maternelle non extrait. |
 | ⬜ | §5 Préparation | OCR optionnel avec texte incertain signalé | Local et gratuit si possible ; OCR distant facultatif. |
 | ✅ | §6 Planifier | Répartition des préparations avec la binôme | Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme). |
 | ✅ | §11 Fichiers | Charte visuelle enregistrée | Réglages › Charte visuelle : police, couleurs, bordure. |
@@ -135,8 +135,8 @@ Légende : ✅ Réalisé (100) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | ✅ | §12 Organisation | Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année | Comptes par année avec solde initial/report explicites ; export CSV et impression ; aucun paiement en ligne. |
 | ✅ | §12 Organisation | Projets transdisciplinaires ; matériel (stocks, achats, prêts) | Achat de matériel → une seule dépense au journal financier. |
 | ⬜ | §14 Exports | Dossier de semaine ; finances ; étiquettes à taille réelle |  |
-| ⬜ | §19 Atelier | Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections |  |
-| ⬜ | §19 Atelier | Cartes monde/continents/France à partir de données sourcées |  |
+| 🟡 | §19 Atelier | Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections | Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, avec corrections. Instruments virtuels : en cours. |
+| ✅ | §19 Atelier | Cartes monde/continents/France à partir de données sourcées | Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée. |
 | ⬜ | §19 Atelier | Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes |  |
 | ⬜ | §19 Atelier | Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé |  |
 | ⬜ | §19 Atelier | Modes concevoir/animer plein écran, annotation, tactile |  |

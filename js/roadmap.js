@@ -47,7 +47,7 @@ export const ROADMAP = [
 
   // ── §5 Préparation
   R(3, '§5 Préparation', 'Programmes officiels en vigueur par niveau (TPS–CM2), avec liens BO et PDF, et création d’un référentiel prérempli', 'fait', 'Références relevées sur Éduscol le 22/10/2026.'),
-  R(4, '§5 Préparation', 'Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider)', 'partiel', 'Nécessite les PDF officiels (le site du ministère n’est pas accessible depuis l’environnement de développement).'),
+  R(4, '§5 Préparation', 'Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider)', 'fait', '2 080 intitulés extraits des PDF officiels (TPS–CM2), page indiquée, contrôle automatique mot à mot ; EVAR maternelle non extrait.'),
   R(2, '§5 Préparation', 'Programmations annuelles et progressions (ajouter, déplacer, ordonner, suivre les notions)', 'fait', 'D’après les modèles de l’enseignante ; import d’un tableau de notions.'),
   R(2, '§5 Préparation', 'Bilans de période (notions réalisées et restantes)', 'fait'),
   R(2, '§5 Préparation', 'Fiche de séquence complète', 'fait'),
@@ -156,8 +156,8 @@ export const ROADMAP = [
   R(3, '§19 Atelier', 'Écriture : lignes Seyès, réglures, textes à compléter', 'fait'),
   R(3, '§19 Atelier', 'Tableau d’écriture Seyès : texte tapé en cursive (police Marelle importée), calé sur les lignes, imprimable et affichable en grand avec annotation', 'fait', 'La police Marelle (gratuite, licence libre) se télécharge sur le site du ministère puis s’importe une fois par appareil.'),
   R(3, '§19 Atelier', 'Maths : droites graduées, numération, fractions, horloges', 'fait'),
-  R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections'),
-  R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées'),
+  R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections', 'partiel', 'Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, avec corrections. Instruments virtuels : en cours.'),
+  R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées', 'fait', 'Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée.'),
   R(4, '§19 Atelier', 'Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes'),
   R(4, '§19 Atelier', 'Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé'),
   R(4, '§19 Atelier', 'Modes concevoir/animer plein écran, annotation, tactile'),

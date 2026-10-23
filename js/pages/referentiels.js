@@ -62,13 +62,15 @@ function officialCard(refs) {
   const body = h('tbody', {}, rows.map(r => {
     const name = `${r.subject} — ${r.levels.length > 2 ? cycleOf(r.levels) : r.levels.join(', ')}`;
     const source = `${r.t.title}, ${r.t.bo}${r.pdf ? ` — ${r.pdf}` : ''}`;
-    const existing = refs.find(x => x.source === source);
+    const key = `${r.text}|${r.pack || ''}|${r.domain || ''}|${r.sub || ''}|${r.levels.join(',')}`;
+    const existing = refs.find(x => x.officialKey === key) || refs.find(x => !x.officialKey && x.source === source);
     return h('tr', { 'data-testid': 'official-row' },
       h('td', {}, h('strong', {}, r.subject), r.label ? h('div', { class: 'muted small' }, r.label) : null),
       h('td', {}, r.levels.join(', '), r.nouveauFor.length ? h('div', {}, badge(`nouveau en ${r.nouveauFor.join(', ')}`, 'info')) : null),
       h('td', {}, h('div', {}, r.t.title), h('a', { href: r.t.boUrl, target: '_blank', rel: 'noopener' }, r.t.bo), r.t.note ? h('div', { class: 'muted small' }, r.t.note) : null, r.note ? h('div', { class: 'muted small' }, r.note) : null),
       h('td', { class: 'nowrap' }, r.pdf ? h('a', { class: 'btn btn-small', href: r.pdf, target: '_blank', rel: 'noopener' }, icon('download', 14), 'Texte (PDF)') : null, ' ',
         existing ? h('a', { class: 'btn btn-small', href: `#/referentiels/${existing.id}` }, 'Ouvrir le référentiel')
+          : r.pack ? h('button', { class: 'btn btn-small btn-primary', type: 'button', 'data-testid': 'official-import', onclick: (e) => importOfficial(r, name, source, key, e.currentTarget) }, icon('download', 14), 'Importer les compétences')
           : h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'official-create', onclick: () => newDialog(null, { name, publishedAt: r.t.date, levels: r.levels, source }) }, icon('plus', 14), 'Créer le référentiel')));
   }));
   return h('div', { class: 'card', 'data-testid': 'official' },
@@ -78,7 +80,22 @@ function officialCard(refs) {
       ...[1, 2, 3].flatMap((c, i) => [i ? ', ' : '', h('a', { href: PR.EDUSCOL[c], target: '_blank', rel: 'noopener' }, `cycle ${c}`)]),
       '). Les programmes changent progressivement : vérifiez sur Éduscol en début d’année.'),
     h('div', { class: 'table-wrap' }, h('table', { class: 'table' }, h('thead', {}, h('tr', {}, h('th', {}, 'Discipline / domaine'), h('th', {}, 'Niveaux'), h('th', {}, 'Texte officiel'), h('th', {}, ''))), body)),
-    h('p', { class: 'muted small' }, '« Créer le référentiel » prépare un référentiel avec la bonne source et la bonne date ; il reste à y importer les compétences (copier-coller depuis le PDF officiel ou fichier CSV), puis à les valider.'));
+    h('p', { class: 'muted small' }, '« Importer les compétences » crée un référentiel « à vérifier » à partir des textes officiels (extraction automatique des PDF du ministère, avec la page de chaque intitulé). Relisez-le, puis validez-le : seuls les référentiels validés sont proposés dans les fiches.'));
+}
+
+/** Importe les compétences extraites du texte officiel pour une ligne du tableau (une seule fois). */
+async function importOfficial(r, name, source, key, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Import…'; }
+  try {
+    const items = await PR.packItems(r, r.levels);
+    if (!items.length) { toast('Aucune compétence extraite pour ces niveaux.', { kind: 'error' }); return; }
+    const ref = await store.create('referential', { name, version: '1', publishedAt: r.t.date, source, levels: r.levels, officialKey: key, pdf: r.pdf || r.t.pdf || '', status: 'à vérifier', previousVersionId: null,
+      extracted: { at: PR.CHECKED_AT, how: 'Extraction automatique du PDF officiel, contrôlée mot à mot contre le texte ; intitulés signalés « à relire » quand le contrôle n’est pas concluant.' },
+      items: items.map(i => ({ id: store.uid(), code: i.code, domain: i.domain, subdomain: i.subdomain, label: i.label, levels: i.levels.filter(l => r.levels.includes(l)), page: i.page, check: !!i.check })) }, `Référentiel officiel « ${name} » importé`);
+    toast(`${items.length} compétence(s) importée(s) — à relire puis valider`);
+    location.hash = `#/referentiels/${ref.id}`;
+  } catch (e) { toast(`Import impossible : ${e.message}`, { kind: 'error' }); }
+  finally { if (btn) { btn.disabled = false; } }
 }
 function cycleOf(levels) { const c = model.cycles(levels); return c.length === 1 ? `cycle ${c[0]}` : levels.join(', '); }
 
@@ -108,10 +125,12 @@ function detail(id) {
           if (used && !await confirmDialog('Référentiel utilisé', `${used} fiche(s) y font référence. Elles garderont l’identifiant mais n’afficheront plus l’intitulé tant que le référentiel est à la corbeille.`, { confirmLabel: 'Mettre à la corbeille', danger: true })) return;
           await store.remove(r.id, `Référentiel ${r.name} mis à la corbeille`); location.hash = '#/referentiels';
         } }, icon('trash', 16))] }),
-    locked ? h('p', { class: 'muted' }, `Validé le ${model.frDateTime(r.validatedAt)}. Non modifiable : créez une nouvelle version pour corriger.`) : h('div', { class: 'card notice' }, h('p', {}, 'À vérifier : relisez chaque intitulé par rapport au texte officiel avant de valider.')),
+    locked ? h('p', { class: 'muted' }, `Validé le ${model.frDateTime(r.validatedAt)}. Non modifiable : créez une nouvelle version pour corriger.`) : h('div', { class: 'card notice' }, h('p', {}, 'À vérifier : relisez chaque intitulé par rapport au texte officiel avant de valider.'),
+      r.extracted ? h('p', { class: 'small' }, `${r.extracted.how} ${items.filter(i => i.check).length} intitulé(s) à relire en priorité. `, r.pdf ? h('a', { href: r.pdf, target: '_blank', rel: 'noopener' }, 'Ouvrir le texte officiel (PDF)') : null) : null),
     h('div', { class: 'card' }, items.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table', 'data-testid': 'ref-items' },
-      h('thead', {}, h('tr', {}, h('th', {}, 'Code'), h('th', {}, 'Domaine'), h('th', {}, 'Sous-domaine'), h('th', {}, 'Intitulé'), h('th', {}, 'Niveaux'), locked ? null : h('th', {}, ''))),
-      h('tbody', {}, items.map(i => h('tr', {}, h('td', {}, i.code), h('td', {}, i.domain), h('td', {}, i.subdomain), h('td', {}, i.label), h('td', {}, (i.levels || []).join(', ')),
+      h('thead', {}, h('tr', {}, h('th', {}, 'Code'), h('th', {}, 'Domaine'), h('th', {}, 'Sous-domaine'), h('th', {}, 'Intitulé'), h('th', {}, 'Niveaux'), r.extracted ? h('th', {}, 'Page') : null, locked ? null : h('th', {}, ''))),
+      h('tbody', {}, items.map(i => h('tr', { class: i.check && !locked ? 'to-check' : '', 'data-testid': 'ref-item' }, h('td', {}, i.code), h('td', {}, i.domain), h('td', {}, i.subdomain), h('td', {}, i.label, i.check && !locked ? h('div', {}, badge('à relire', 'warn')) : null), h('td', {}, (i.levels || []).join(', ')),
+        r.extracted ? h('td', {}, i.page ? (r.pdf ? h('a', { href: `${r.pdf}#page=${i.page}`, target: '_blank', rel: 'noopener' }, `p. ${i.page}`) : `p. ${i.page}`) : '') : null,
         locked ? null : h('td', { class: 'row' },
           h('button', { class: 'btn btn-small', type: 'button', onclick: () => itemDialog(r, i) }, 'Modifier'),
           h('button', { class: 'btn btn-small btn-ghost-danger', type: 'button', onclick: async () => {
@@ -133,7 +152,7 @@ function itemDialog(r, item = null) {
   modal({ title: item ? 'Modifier la compétence' : 'Ajouter une compétence', body: form, actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, onClick: async () => {
     const d = formData(form);
     if (!d.label) return false;
-    const rec = { id: item?.id || store.uid(), code: d.code, domain: d.domain, subdomain: d.subdomain, label: d.label, levels: d.levels.split(',').map(x => x.trim().toUpperCase()).filter(l => model.NIVEAUX.includes(l)) };
+    const rec = { id: item?.id || store.uid(), code: d.code, domain: d.domain, subdomain: d.subdomain, label: d.label, levels: d.levels.split(',').map(x => x.trim().toUpperCase()).filter(l => model.NIVEAUX.includes(l)), page: item?.page || null, check: false };
     const cur = store.get(r.id).items || [];
     await store.update(r.id, { items: item ? cur.map(x => x.id === item.id ? rec : x) : [...cur, rec] }, item ? 'Compétence modifiée' : 'Compétence ajoutée');
   } }] });

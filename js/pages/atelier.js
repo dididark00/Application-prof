@@ -9,12 +9,18 @@ import { h, icon, toast, modal, field } from '../ui.js';
 import { pageHeader, subTabs } from '../components.js';
 import { pickMany } from '../forms.js';
 import * as F from '../fonts.js';
+import * as T from '../atelier-tools.js';
 
 const PAGE = { w: 210, h: 297 };
 const TOOLS = [
   ['ecriture', 'Tableau d’écriture (Seyès)'], ['seyes', 'Lignes Seyès'], ['reglure', 'Réglure simple'], ['texte', 'Texte à compléter'],
   ['droite', 'Droite graduée'], ['numeration', 'Tableau de numération'], ['fractions', 'Fractions'], ['horloges', 'Horloges'],
+  ['quadrillage', 'Quadrillages'], ['symetrie', 'Symétrie'], ['reproduction', 'Reproduction'], ['figures', 'Figures (mesurer, tracer)'], ['angles', 'Angles'],
+  ['carte', 'Cartes'],
 ];
+const FAMILIES = [['Écriture', ['ecriture', 'seyes', 'reglure', 'texte']], ['Nombres', ['droite', 'numeration', 'fractions', 'horloges']], ['Géométrie', ['quadrillage', 'symetrie', 'reproduction', 'figures', 'angles']], ['Espace', ['carte']]];
+const WITH_CORRECTION = ['texte', 'droite', 'numeration', 'fractions', 'horloges', 'symetrie', 'reproduction', 'figures', 'angles', 'carte'];
+const newSeed = () => Math.floor(Math.random() * 9000) + 1000;
 const state = {
   tool: 'ecriture', correction: false, title: '',
   ecriture: { texte: 'Le chat dort sur le tapis.\nIl fait beau aujourd’hui.', police: '', hauteur: 1, ajuste: 100, interligne: 8, sauter: true, encre: '#1d3d6e', marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f' },
@@ -25,6 +31,12 @@ const state = {
   numeration: { classes: 'milliers,unités', lignes: 6, nombres: '' },
   fractions: { liste: '1/2, 1/3, 3/4, 2/5, 5/8', forme: 'barre', colorier: true },
   horloges: { heures: '08:00, 09:30, 10:15, 11:45, 14:20, 16:05', aiguilles: true, numeros: true },
+  quadrillage: { type: 'carreaux', pas: 5, couleur: '#7a9cc6' },
+  symetrie: { axe: 'vertical', exercices: 4, difficulte: 'moyen', pas: 5, graine: newSeed() },
+  reproduction: { exercices: 3, difficulte: 'moyen', pas: 5, graine: newSeed() },
+  figures: { mode: 'mesurer', liste: 'segment 7\nrectangle 6 x 3\ncarré 4\ntriangle rectangle 5 x 3\ncercle 2,5' },
+  angles: { mode: 'classer', nombre: 9, droits: true, graine: newSeed() },
+  carte: { carte: 'Planisphère', legendee: false, numeros: true, couleurs: true, oceans: true, lignes: true, fleuves: false, relief: true, villes: false, continents_noms: true, unites: true },
 };
 
 // ───── Petits outils de dessin SVG (unités : mm)
@@ -38,6 +50,12 @@ function page(title) {
 }
 
 const DRAW = {
+  quadrillage: (o) => T.quadrillage(o, state.title),
+  symetrie: (o, corr) => T.symetrie(o, corr, state.title),
+  reproduction: (o, corr) => T.reproduction(o, corr, state.title),
+  figures: (o, corr) => T.figures(o, corr, state.title),
+  angles: (o, corr) => T.angles(o, corr, state.title),
+  carte: (o, corr) => T.carte(o, corr, state.title),
   /**
    * Tableau d'écriture : le texte tapé est écrit dans la police choisie (ex. Marelle),
    * la ligne de base posée sur la ligne épaisse du Seyès et la hauteur des minuscules
@@ -216,6 +234,14 @@ const DRAW = {
 };
 
 const PARAMS = {
+  quadrillage: [['type', 'Type', ['carreaux', 'points', 'isométrique', 'millimétré']], ['pas', 'Pas (mm)', 'number'], ['couleur', 'Couleur', 'color']],
+  symetrie: [['axe', 'Axe de symétrie', ['vertical', 'horizontal', 'oblique']], ['difficulte', 'Difficulté', ['facile', 'moyen', 'difficile']], ['exercices', 'Exercices par page (1 à 6)', 'number'], ['pas', 'Carreaux (mm)', 'number'], ['graine', 'Numéro de fiche', 'seed']],
+  reproduction: [['difficulte', 'Difficulté', ['facile', 'moyen', 'difficile']], ['exercices', 'Exercices par page (1 à 4)', 'number'], ['pas', 'Carreaux (mm)', 'number'], ['graine', 'Numéro de fiche', 'seed']],
+  figures: [['mode', 'Consigne', [['mesurer', 'Mesurer les figures'], ['tracer', 'Tracer les figures']]], ['liste', T.FIGURE_HELP, 'textarea']],
+  angles: [['mode', 'Consigne', [['classer', 'Aigu, droit ou obtus'], ['mesurer', 'Mesurer au rapporteur']]], ['nombre', 'Nombre d’angles (1 à 12)', 'number'], ['droits', 'Inclure des angles droits', 'checkbox'], ['graine', 'Numéro de fiche', 'seed']],
+  carte: [['carte', 'Carte', ['Planisphère', 'Continents', 'France : régions', 'France : départements']], ['legendee', 'Version légendée (noms écrits)', 'checkbox'], ['numeros', 'Version à compléter : numéros + légende', 'checkbox'], ['couleurs', 'Couleurs', 'checkbox'],
+    ['continents_noms', 'Continents (planisphère)', 'checkbox'], ['oceans', 'Océans (planisphère)', 'checkbox'], ['lignes', 'Équateur, tropiques, méridien (planisphère)', 'checkbox'],
+    ['unites', 'Régions / départements (France)', 'checkbox'], ['fleuves', 'Fleuves', 'checkbox'], ['relief', 'Massifs montagneux (France)', 'checkbox'], ['villes', 'Grandes villes (France)', 'checkbox']],
   ecriture: [['texte', 'Texte à écrire (Entrée = nouvelle ligne)', 'textarea'], ['police', 'Police', 'font'], ['hauteur', 'Hauteur des minuscules', [['1', '1 interligne (cahier)'], ['2', '2 interlignes (grand)']]], ['ajuste', 'Ajustement de la taille (%)', 'number'], ['sauter', 'Sauter une ligne entre deux lignes écrites', 'checkbox'], ['interligne', 'Interligne (mm)', 'number'], ['marge', 'Marge (mm)', 'number'], ['encre', 'Couleur de l’écriture', 'color'], ['couleur', 'Couleur des lignes', 'color']],
   seyes: [['interligne', 'Interligne (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['marge', 'Marge (mm)', 'number'], ['couleur', 'Couleur des lignes', 'color'], ['marge_couleur', 'Couleur de la marge', 'color'], ['modele', 'Modèle d’écriture (1re ligne)', 'text']],
   reglure: [['ecart', 'Écart entre les lignes (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['couleur', 'Couleur', 'color']],
@@ -229,17 +255,22 @@ const PARAMS = {
 export function render({ rerender }) {
   const o = state[state.tool];
   const preview = h('div', { class: 'atelier-preview', 'data-testid': 'atelier-preview' });
-  const redraw = () => preview.replaceChildren(DRAW[state.tool](o, state.correction));
+  const redraw = () => {
+    preview.replaceChildren(DRAW[state.tool](o, state.correction));
+    if (state.tool === 'carte') { const name = String(o.carte).startsWith('France') ? 'france' : 'monde'; if (!T.mapReady(name)) T.loadMap(name).then(redraw).catch(() => toast('Carte indisponible', { kind: 'error' })); }
+  };
   const params = h('div', { class: 'form' },
     field('Titre (facultatif)', h('input', { value: state.title, oninput: (e) => { state.title = e.target.value; redraw(); } })),
     PARAMS[state.tool].map(([k, label, type]) => {
       if (Array.isArray(type)) return field(label, h('select', { 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.value; redraw(); } }, type.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return h('option', { value: val, selected: String(o[k]) === val }, lab); })));
       if (type === 'font') return fontField(o, rerender);
-      if (type === 'checkbox') return h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!o[k], onchange: (e) => { o[k] = e.target.checked; redraw(); } }), label);
+      if (type === 'seed') return field(label, h('div', { class: 'row' }, h('input', { type: 'number', value: o[k], 'data-testid': 'p-graine', style: { width: '7em' }, oninput: (e) => { o[k] = Number(e.target.value) || 1; redraw(); } }),
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'new-sheet', onclick: () => { o[k] = newSeed(); rerender(); } }, 'Nouvelle fiche')), 'Gardez ce numéro pour réimprimer exactement la même fiche (et sa correction).');
+      if (type === 'checkbox') return h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!o[k], 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.checked; redraw(); } }), label);
       if (type === 'textarea') return field(label, h('textarea', { rows: 5, 'data-testid': `p-${k}`, oninput: (e) => { o[k] = e.target.value; redraw(); } }, o[k]));
       return field(label, h('input', { type, value: o[k], step: type === 'number' ? 'any' : null, 'data-testid': `p-${k}`, oninput: (e) => { o[k] = type === 'number' ? Number(e.target.value) : e.target.value; redraw(); } }));
     }),
-    ['texte', 'droite', 'numeration', 'fractions', 'horloges'].includes(state.tool) ? h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: state.correction, 'data-testid': 'correction', onchange: (e) => { state.correction = e.target.checked; redraw(); } }), 'Version corrigée') : null);
+    WITH_CORRECTION.includes(state.tool) ? h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: state.correction, 'data-testid': 'correction', onchange: (e) => { state.correction = e.target.checked; redraw(); } }), 'Version corrigée') : null);
   redraw();
   return h('div', { class: 'page' },
     pageHeader('Atelier pédagogique', { favKey: 'preparer/atelier', subtitle: 'Supports imprimables à taille réelle, avec correction séparée', actions: [
@@ -247,9 +278,10 @@ export function render({ rerender }) {
       h('button', { class: 'btn', type: 'button', 'data-testid': 'atelier-save', onclick: () => saveSupport(o) }, icon('download', 16), 'Enregistrer comme support'),
       h('button', { class: 'btn', type: 'button', onclick: () => animate(DRAW[state.tool](o, state.correction)) }, 'Afficher en grand')] }),
     subTabs(),
-    h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Outil' }, TOOLS.map(([k, l]) => h('button', { type: 'button', class: state.tool === k ? 'on' : '', 'data-testid': `tool-${k}`, onclick: () => { state.tool = k; state.correction = false; rerender(); } }, l))),
+    h('div', { class: 'tool-families' }, FAMILIES.map(([fam, keys]) => h('div', { class: 'tool-family' }, h('span', { class: 'muted small' }, fam),
+      h('div', { class: 'seg wrap', role: 'group', 'aria-label': fam }, keys.map(k => h('button', { type: 'button', class: state.tool === k ? 'on' : '', 'data-testid': `tool-${k}`, onclick: () => { state.tool = k; state.correction = false; rerender(); } }, TOOLS.find(t => t[0] === k)[1])))))),
     h('div', { class: 'atelier' }, h('section', { class: 'card' }, params), h('section', { class: 'card' }, preview)),
-    h('p', { class: 'muted small' }, 'Imprimez à 100 % (« taille réelle », sans « ajuster à la page ») pour conserver les dimensions en millimètres. « Afficher en grand » permet d’écrire au doigt ou au stylet par-dessus (TNI, tablette). Géométrie, cartes, jeux et anglais arrivent à l’étape 4.'));
+    h('p', { class: 'muted small' }, 'Imprimez à 100 % (« taille réelle », sans « ajuster à la page ») pour conserver les dimensions en millimètres. « Afficher en grand » permet d’écrire au doigt ou au stylet par-dessus (TNI, tablette). Jeux et anglais : Préparer › Jeux et anglais. Schémas d’EPS : Préparer › Schémas EPS.'));
 }
 
 function currentFont(o) {
@@ -274,7 +306,7 @@ function fontField(o, rerender) {
 function printSvg(svg) {
   const root = document.getElementById('print-root');
   document.getElementById('page-style')?.remove();
-  document.head.append(h('style', { id: 'page-style' }, '@page { size: A4 portrait; margin: 0; }'));
+  document.head.append(h('style', { id: 'page-style' }, `@page { size: A4 ${svg.getAttribute('data-landscape') ? 'landscape' : 'portrait'}; margin: 0; }`));
   root.replaceChildren(h('div', { class: 'atelier-print' }, svg));
   document.body.classList.add('printing');
   const cleanup = () => { document.body.classList.remove('printing'); root.replaceChildren(); window.removeEventListener('afterprint', cleanup); };
@@ -285,7 +317,7 @@ function printSvg(svg) {
 async function saveSupport(o) {
   const name = `${TOOLS.find(t => t[0] === state.tool)[1]}${state.title ? ' — ' + state.title : ''}`;
   const blobs = [[name, DRAW[state.tool](o, false)]];
-  if (['texte', 'droite', 'numeration', 'fractions', 'horloges'].includes(state.tool)) blobs.push([`${name} (correction)`, DRAW[state.tool](o, true)]);
+  if (WITH_CORRECTION.includes(state.tool)) blobs.push([`${name} (correction)`, DRAW[state.tool](o, true)]);
   const cls = model.currentClass();
   const sessions = cls ? P.ofClass('session', cls.id) : [];
   const sel = sessions.length ? await pickMany({ title: 'Lier à une fiche de séance ? (facultatif : « Valider » sans choix pour seulement enregistrer)', single: true, items: sessions.map(s => ({ id: s.id, label: P.sessionTitle(s), detail: s.subject })), emptyText: '' }) : [];

@@ -320,13 +320,21 @@ await test('Programmes officiels en vigueur : bons textes par niveau, référent
   assert(all.some(r => r.includes('Langage oral et écrit') && r.includes('BO n° 19 du 7 mai 2026')), 'maternelle = BO 19 de 2026');
   assert(all.some(r => r.includes('Sciences et technologie') && r.includes('CM2') && r.includes('BO n° 25 du 22 juin 2023')), 'sciences CM2 = 2023');
   await page.getByTestId('official-all').uncheck(); await page.waitForTimeout(150);
-  await page.getByTestId('official-row').filter({ has: page.locator('strong', { hasText: /^Mathématiques$/ }) }).getByTestId('official-create').click();
-  eq(await page.locator('input[name=publishedAt]').inputValue(), '2024-10-31', 'date du texte préremplie');
-  assert((await page.locator('input[name=source]').inputValue()).includes('BO n° 41'), 'source préremplie');
-  await page.getByRole('button', { name: 'Créer', exact: true }).click(); await page.waitForTimeout(250);
-  assert(/#\/referentiels\/.+/.test(await page.evaluate(() => location.hash)), 'référentiel créé et ouvert');
+  await page.getByTestId('official-row').filter({ has: page.locator('strong', { hasText: /^Mathématiques$/ }) }).getByTestId('official-import').click();
+  await page.waitForFunction(() => /#\/referentiels\/.+/.test(location.hash)); await page.waitForTimeout(250);
+  const ref = await page.evaluate(async () => { const s = await import('./js/store.js'); const r = s.all('referential').find(x => x.name.startsWith('Mathématiques')); return { n: r.items.length, lv: [...new Set(r.items.flatMap(i => i.levels))], st: r.status, date: r.publishedAt, src: r.source, labels: r.items.map(i => i.label), pages: r.items.every(i => i.page > 0) }; });
+  assert(ref.n > 25, `compétences de maths CE2 importées (${ref.n})`); eq(ref.lv.join(), 'CE2', 'uniquement les niveaux de la classe');
+  eq(ref.st, 'à vérifier', 'référentiel à vérifier avant validation'); eq(ref.date, '2024-10-31', 'date du texte'); assert(ref.src.includes('BO n° 41'), 'source BO');
+  assert(ref.labels.includes('Dénombrer des collections.'), 'intitulé officiel présent tel quel');
+  assert(ref.labels.includes('Compléter, sur une feuille quadrillée ou pointée, une figure simple pour la rendre symétrique par rapport à un axe donné.'), 'intitulé de géométrie présent');
+  assert(ref.pages, 'page du PDF indiquée pour chaque intitulé');
+  assert((await page.getByTestId('ref-item').count()) === ref.n, 'tableau des compétences affiché');
   await go('#/referentiels');
-  eq(await page.getByTestId('official-row').filter({ has: page.locator('strong', { hasText: /^Mathématiques$/ }) }).getByText('Ouvrir le référentiel').count(), 1, 'lien vers le référentiel créé');
+  eq(await page.getByTestId('official-row').filter({ has: page.locator('strong', { hasText: /^Mathématiques$/ }) }).getByText('Ouvrir le référentiel').count(), 1, 'lien vers le référentiel importé (pas de doublon)');
+  // Tous les paquets annoncés existent et se chargent.
+  const packs = await page.evaluate(async () => { const P = await import('./js/programmes.js'); const ids = [...new Set(Object.values(P.APPLY).flat().map(r => r.pack).filter(Boolean))]; const out = {}; for (const id of ids) out[id] = (await P.loadPack(id)).items.length; return out; });
+  for (const [id, n] of Object.entries(packs)) assert(n > 0, `paquet ${id} vide`);
+  assert(Object.keys(packs).length >= 20, `paquets reliés : ${Object.keys(packs).length}`);
 });
 
 await test('Aucune erreur JavaScript', async () => { eq(errors.length, 0, errors.join(' | ')); });

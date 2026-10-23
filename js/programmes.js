@@ -48,52 +48,65 @@ const PDF = {
 
 const e = (subject, text, pdf, extra = {}) => ({ subject, text, pdf: pdf || TEXTS[text].pdf, ...extra });
 
+const M = (subject, domain, label) => e(subject, 'mat2026', null, { label, pack: 'mat2026', domain });
 const MATERNELLE = [
-  e('Langage oral et écrit', 'mat2026', null, { label: 'Mobiliser le langage dans toutes ses dimensions (oral et écrit)' }),
-  e('Premiers outils mathématiques', 'mat2026'),
-  e('Activités physiques', 'mat2026', null, { label: 'Agir, s’exprimer, comprendre à travers les activités physiques' }),
-  e('Activités artistiques', 'mat2026'),
-  e('Se repérer dans le temps et l’espace', 'mat2026'),
-  e('Découvrir le vivant, la matière et les objets', 'mat2026'),
-  e('Vie affective et relationnelle', 'evar2025', null, { note: 'Le programme d’EVAR comprend des objectifs pour l’école maternelle : à vérifier dans le texte.' }),
+  M('Langage oral et écrit', 'Le développement et la structuration du langage oral et écrit', 'Le développement et la structuration du langage oral et écrit'),
+  M('Premiers outils mathématiques', 'L’acquisition des premiers outils mathématiques'),
+  M('Activités physiques', 'Agir, s’exprimer, comprendre à travers les activités physiques', 'Agir, s’exprimer, comprendre à travers les activités physiques'),
+  M('Activités artistiques', 'Agir, s’exprimer, comprendre à travers les activités artistiques', 'Agir, s’exprimer, comprendre à travers les activités artistiques'),
+  M('Se repérer dans le temps et l’espace', 'Se repérer dans le temps et l’espace'),
+  M('Découvrir le vivant, la matière et les objets', 'Découvrir le monde du vivant, de la matière et des objets', 'Découvrir le monde du vivant, de la matière et des objets'),
+  e('Vie affective et relationnelle', 'evar2025', null, { note: 'Objectifs de maternelle présentés dans un tableau du programme : non extraits automatiquement, à saisir depuis le texte.' }),
 ];
-const COMMUN_ELEM = [e('Enseignement moral et civique', 'emc2024'), e('Vie affective et relationnelle', 'evar2025')];
+const COMMUN_ELEM = [e('Enseignement moral et civique', 'emc2024', null, { pack: 'emc2024' }), e('Vie affective et relationnelle', 'evar2025', null, { pack: 'evar2025' })];
 
 /** Pour chaque niveau : discipline → texte en vigueur en 2026-2027. */
 export const APPLY = {
   TPS: MATERNELLE, PS: MATERNELLE, MS: MATERNELLE, GS: MATERNELLE,
   CP: [
-    e('Français', 'fm2024', PDF.fr_c2), e('Mathématiques', 'fm2024', PDF.ma_c2), ...COMMUN_ELEM,
-    e('Histoire-géographie', 'eps_hg2026', PDF.hg_c2, { nouveau: true }), e('Sciences et technologie', 'sciences2026', PDF.st_c2, { nouveau: true }),
-    e('Langues vivantes', 'lv2026', PDF.lv_c2, { nouveau: true }), e('EPS', 'eps_hg2026', PDF.eps_c2, { nouveau: true }),
-    e('Arts plastiques et éducation musicale', 'c2_2020'),
+    e('Français', 'fm2024', PDF.fr_c2, { pack: 'fr2024' }), e('Mathématiques', 'fm2024', PDF.ma_c2, { pack: 'ma2024' }), ...COMMUN_ELEM,
+    e('Histoire-géographie', 'eps_hg2026', PDF.hg_c2, { nouveau: true, pack: 'hg2026c2' }), e('Sciences et technologie', 'sciences2026', PDF.st_c2, { nouveau: true, pack: 'st2026c2' }),
+    e('Langues vivantes', 'lv2026', PDF.lv_c2, { nouveau: true, pack: 'lv2026c2' }), e('EPS', 'eps_hg2026', PDF.eps_c2, { nouveau: true, pack: 'eps2026c2' }),
+    e('Arts plastiques et éducation musicale', 'c2_2020', null, { pack: 'arts2020c2' }),
   ],
   CE1: null, CE2: null,
   CM1: [
-    e('Français', 'fm2025', PDF.fr_c3), e('Mathématiques', 'fm2025', PDF.ma_c3), ...COMMUN_ELEM,
-    e('Histoire-géographie', 'eps_hg2026', PDF.hg_c3, { nouveau: true }), e('Sciences et technologie', 'sciences2026', PDF.st_c3, { nouveau: true }),
-    e('Langues vivantes', 'lv2026', PDF.lv_c3, { nouveau: true }), e('EPS', 'eps_hg2026', PDF.eps_c3, { nouveau: true }),
-    e('Arts plastiques, éducation musicale, histoire des arts', 'c3_2020'),
+    e('Français', 'fm2025', PDF.fr_c3, { pack: 'fr2025' }), e('Mathématiques', 'fm2025', PDF.ma_c3, { pack: 'ma2025' }), ...COMMUN_ELEM,
+    e('Histoire-géographie', 'eps_hg2026', PDF.hg_c3, { nouveau: true, pack: 'hg2026c3' }), e('Sciences et technologie', 'sciences2026', PDF.st_c3, { nouveau: true, pack: 'st2026c3' }),
+    e('Langues vivantes', 'lv2026', PDF.lv_c3, { nouveau: true, pack: 'lv2026c3' }), e('EPS', 'eps_hg2026', PDF.eps_c3, { nouveau: true, pack: 'eps2026c3' }),
+    e('Arts plastiques, éducation musicale, histoire des arts', 'c3_2020', null, { pack: 'arts2020c3' }),
   ],
   CM2: [
-    e('Français', 'fm2025', PDF.fr_c3, { nouveau: true }), e('Mathématiques', 'fm2025', PDF.ma_c3, { nouveau: true }), ...COMMUN_ELEM,
-    e('Histoire-géographie', 'c3_2020'), e('Sciences et technologie', 'sciences2023'),
-    e('Langues vivantes', 'c3_2020'), e('EPS', 'c3_2020'),
-    e('Arts plastiques, éducation musicale, histoire des arts', 'c3_2020'),
+    e('Français', 'fm2025', PDF.fr_c3, { nouveau: true, pack: 'fr2025' }), e('Mathématiques', 'fm2025', PDF.ma_c3, { nouveau: true, pack: 'ma2025' }), ...COMMUN_ELEM,
+    e('Histoire-géographie', 'c3_2020', null, { pack: 'hg2020c3' }), e('Sciences et technologie', 'sciences2023', null, { pack: 'st2023' }),
+    e('Langues vivantes', 'c3_2020', null, { pack: 'lv2020c3' }), e('EPS', 'c3_2020', null, { pack: 'eps2020c3' }),
+    e('Arts plastiques, éducation musicale, histoire des arts', 'c3_2020', null, { pack: 'arts2020c3' }),
   ],
 };
 APPLY.CE1 = APPLY.CE2 = [
-  e('Français', 'fm2024', PDF.fr_c2), e('Mathématiques', 'fm2024', PDF.ma_c2), ...COMMUN_ELEM,
-  e('Questionner le monde — l’espace et le temps', 'c2_2020'), e('Questionner le monde — le vivant, la matière et les objets', 'c2_2020'),
-  e('Langues vivantes', 'c2_2020'), e('EPS', 'c2_2020'), e('Arts plastiques et éducation musicale', 'c2_2020'),
+  e('Français', 'fm2024', PDF.fr_c2, { pack: 'fr2024' }), e('Mathématiques', 'fm2024', PDF.ma_c2, { pack: 'ma2024' }), ...COMMUN_ELEM,
+  e('Questionner le monde — l’espace et le temps', 'c2_2020', null, { pack: 'qlm2020', sub: 'Questionner l’espace et le temps' }), e('Questionner le monde — le vivant, la matière et les objets', 'c2_2020', null, { pack: 'qlm2020', sub: 'Questionner le monde du vivant, de la matière et des objets' }),
+  e('Langues vivantes', 'c2_2020', null, { pack: 'lv2020c2' }), e('EPS', 'c2_2020', null, { pack: 'eps2020c2' }), e('Arts plastiques et éducation musicale', 'c2_2020', null, { pack: 'arts2020c2' }),
 ];
 APPLY.CE2 = APPLY.CE2.map(x => (x.text === 'emc2024' ? { ...x, nouveau: true } : x));
+
+/** Compétences extraites des textes officiels (data/programmes), chargées à la demande. */
+const PACKS = {};
+export async function loadPack(id) {
+  if (!PACKS[id]) { const r = await fetch(`data/programmes/${id}.json`); if (!r.ok) throw new Error('Programme indisponible'); PACKS[id] = await r.json(); }
+  return PACKS[id];
+}
+/** Compétences d'une ligne du tableau pour les niveaux donnés. */
+export async function packItems(row, levels) {
+  const p = await loadPack(row.pack);
+  return p.items.filter(i => i.levels.some(l => levels.includes(l)) && (!row.domain || i.domain === row.domain) && (!row.sub || i.subdomain === row.sub));
+}
 
 /** Lignes (discipline, texte, niveaux concernés) pour une liste de niveaux, en regroupant les niveaux identiques. */
 export function forLevels(levels) {
   const rows = new Map();
   for (const lvl of levels) for (const x of APPLY[lvl] || []) {
-    const key = `${x.subject}|${x.text}|${x.pdf}`;
+    const key = `${x.subject}|${x.text}|${x.pdf}|${x.pack || ''}|${x.sub || ''}`;
     const r = rows.get(key) || { ...x, t: TEXTS[x.text], levels: [], nouveauFor: [] };
     r.levels.push(lvl); if (x.nouveau) r.nouveauFor.push(lvl);
     rows.set(key, r);

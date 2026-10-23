@@ -713,3 +713,6 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .label-edit input[type=color] { padding: 2px; min-height: 34px; width: 44px; }
 .emblem-preview { display: inline-flex; width: 44px; height: 44px; }
 .charte-preview svg { max-width: 100%; height: auto; box-shadow: var(--shadow); background: #fff; }
+.tool-families { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 6px 0 12px; }
+.tool-family { display: flex; flex-direction: column; gap: 4px; }
+.table tr.to-check td { background: var(--warn-soft); }
