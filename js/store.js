@@ -12,6 +12,7 @@ const records = new Map();
 const listeners = new Set();
 const undoStack = [];
 let settings = {};
+let tombstones = {}; // éléments supprimés définitivement : {id: date}, pour que la synchronisation ne les fasse pas revenir
 let saveState = { status: 'saved', at: null, error: null };
 
 const DEFAULT_SETTINGS = {
@@ -41,6 +42,7 @@ export async function init() {
   for (const r of all) records.set(r.id, r);
   const s = meta.find(m => m.key === 'settings');
   settings = { ...DEFAULT_SETTINGS, ...(s ? s.value : {}) };
+  tombstones = meta.find(m => m.key === 'tombstones')?.value || {};
   const sv = meta.find(m => m.key === 'schemaVersion');
   if (!sv) await db.write({ puts: { meta: [{ key: 'schemaVersion', value: SCHEMA_VERSION }] } });
   undoStack.length = 0;
@@ -167,7 +169,8 @@ export async function purge(id) {
   const blobIds = blobIdsOf(before);
   const audit = [{ at: nowIso(), author: author(), label: 'Suppression définitive', action: 'suppression définitive',
     batch: uid(), recordId: id, recordType: before.type, before: null, after: null }];
-  await persist(() => db.write({ puts: { audit }, deletes: { records: [id], blobs: blobIds } }));
+  tombstones = { ...tombstones, [id]: nowIso() };
+  await persist(() => db.write({ puts: { audit, meta: [{ key: 'tombstones', value: tombstones }] }, deletes: { records: [id], blobs: blobIds } }));
   records.delete(id);
   // Les annulations ne doivent plus viser cet élément.
   for (let i = undoStack.length - 1; i >= 0; i--) if (undoStack[i].changes.some(c => (c.after || c.before).id === id)) undoStack.splice(i, 1);
@@ -181,7 +184,8 @@ export async function purgeWhere(pred, label) {
   const ids = victims.map(v => v.id);
   const blobIds = victims.flatMap(blobIdsOf);
   const audit = [{ at: nowIso(), author: author(), label, action: 'suppression définitive', batch: uid(), recordId: null, recordType: 'lot', before: null, after: { count: ids.length } }];
-  await persist(() => db.write({ puts: { audit }, deletes: { records: ids, blobs: blobIds } }));
+  const at = nowIso(); tombstones = { ...tombstones }; for (const id of ids) tombstones[id] = at;
+  await persist(() => db.write({ puts: { audit, meta: [{ key: 'tombstones', value: tombstones }] }, deletes: { records: ids, blobs: blobIds } }));
   for (const id of ids) records.delete(id);
   const set = new Set(ids);
   for (let i = undoStack.length - 1; i >= 0; i--) if (undoStack[i].changes.some(c => set.has((c.after || c.before).id))) undoStack.splice(i, 1);
@@ -226,7 +230,10 @@ export async function getBlob(id) {
 // ───────── Réglages
 export function getSettings() { return clone(settings); }
 export async function setSettings(patch, opts = {}) {
-  settings = { ...settings, ...clone(patch) };
+  const at = nowIso();
+  const keyAt = { ...(settings._keyAt || {}) };
+  for (const k of Object.keys(patch || {})) keyAt[k] = at;
+  settings = { ...settings, ...clone(patch), _keyAt: keyAt };
   await persist(() => db.write({ puts: { meta: [{ key: 'settings', value: settings }] } }));
   emit({ kind: 'settings', quiet: !!opts.quiet });
 }
@@ -236,6 +243,33 @@ export async function auditLog(limit = 200) {
   const all = await db.getAll('audit');
   return all.slice(-limit).reverse();
 }
+
+// ───────── Synchronisation : application de changements venus d'un autre appareil
+export function getTombstones() { return { ...tombstones }; }
+export function rawRecords() { return [...records.values()].map(clone); }
+
+/**
+ * Écrit des enregistrements reçus d'un autre appareil (tels quels, dates comprises),
+ * supprime ceux supprimés définitivement là-bas, ajoute les contenus binaires manquants.
+ * Chaque changement est tracé dans l'historique (avant/après) ; pas d'annulation (c'est une fusion).
+ */
+export async function applyExternal({ puts = [], deletes = [], blobs = [], tomb = {}, settingsPatch = null, keyAt = null, note = [] }, label) {
+  const at = nowIso(); const b = uid();
+  const audit = [
+    ...puts.map(r => ({ at, author: label, label, action: 'synchronisation', batch: b, recordId: r.id, recordType: r.type, before: clone(records.get(r.id)) || null, after: clone(r) })),
+    ...deletes.map(id => ({ at, author: label, label, action: 'suppression définitive (synchronisation)', batch: b, recordId: id, recordType: records.get(id)?.type || '', before: clone(records.get(id)) || null, after: null })),
+    ...note.map(n => ({ at, author: label, label: n.label, action: 'version écartée (synchronisation)', batch: b, recordId: n.record.id, recordType: n.record.type, before: clone(n.record), after: null })),
+  ];
+  tombstones = { ...tombstones, ...tomb };
+  const meta = [{ key: 'tombstones', value: tombstones }];
+  if (settingsPatch) { settings = { ...settings, ...clone(settingsPatch), _keyAt: { ...(settings._keyAt || {}), ...(keyAt || {}) } }; meta.push({ key: 'settings', value: settings }); }
+  await persist(() => db.write({ puts: { records: puts, audit, blobs, meta }, deletes: { records: deletes } }));
+  for (const r of puts) records.set(r.id, clone(r));
+  for (const id of deletes) records.delete(id);
+  if (puts.length || deletes.length) emit({ kind: 'change', label, ids: [...puts.map(r => r.id), ...deletes] });
+  if (settingsPatch) emit({ kind: 'settings' });
+}
+export async function blobIds() { const db_ = await db.getAll('blobs'); return new Set(db_.map(x => x.id)); }
 
 // Utilisé par la sauvegarde et les tests
 export async function reloadFromDb() { await init(); }

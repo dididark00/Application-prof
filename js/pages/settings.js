@@ -12,6 +12,7 @@ import * as V from '../vie.js';
 import { ROADMAP, STATUTS, RUBRIQUES } from '../roadmap.js';
 import { h, icon, toast, modal, confirmDialog, field, formData, download, pickFiles, formatSize, badge, emptyState } from '../ui.js';
 import { pageHeader, demoBadge } from '../components.js';
+import { synchroTab } from './synchro.js';
 
 const TABS = [
   ['general', 'Général'],
@@ -20,6 +21,7 @@ const TABS = [
   ['modules', 'Modules'],
   ['charte', 'Charte visuelle'],
   ['sauvegarde', 'Sauvegarde'],
+  ['synchro', 'Synchronisation (Nuage)'],
   ['connexions', 'Connexions'],
   ['historique', 'Historique'],
   ['corbeille', 'Corbeille'],
@@ -31,7 +33,7 @@ const TABS = [
 
 export async function render({ params }) {
   const tab = TABS.some(t => t[0] === params[0]) ? params[0] : 'general';
-  const content = await ({ general, annees, classes, modules, charte: charteTab, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
+  const content = await ({ general, annees, classes, modules, charte: charteTab, sauvegarde, synchro: synchroTab, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
   return h('div', { class: 'page' },
     pageHeader('Réglages', { favKey: 'reglages' }),
     h('nav', { class: 'subtabs', 'aria-label': 'Réglages' }, TABS.map(([id, label]) =>
@@ -347,8 +349,8 @@ async function sauvegarde() {
       h('p', {}, 'Un seul fichier .json contenant toutes les données, les fichiers déposés et l’historique, avec une empreinte de contrôle. Il peut être restauré sur cet appareil ou un autre.'),
       h('div', { class: 'row' }, exportBtn, restoreBtn)),
     h('div', { class: 'card' },
-      h('h2', {}, 'Sauvegarde en ligne et synchronisation'),
-      h('p', {}, badge('Non configurée', 'warn'), ' La synchronisation automatique entre appareils demande un service en ligne (base de données et authentification). Elle est prévue à l’étape 5, après comparaison des offres gratuites (limites, hébergement des données d’élèves) soumise à votre accord. Aucun service n’est souscrit.')),
+      h('h2', {}, 'Synchronisation entre appareils'),
+      h('p', {}, 'Par Nuage (apps.education.fr, gratuit, serveurs du ministère), avec un fichier chiffré par mot de passe : ', h('a', { href: '#/reglages/synchro' }, 'Réglages › Synchronisation (Nuage)'), '. Aucun service payant, aucun serveur propre à l’application.')),
     h('div', { class: 'card danger-zone' },
       h('h2', {}, 'Tout effacer sur cet appareil'),
       h('p', {}, 'Supprime définitivement toutes les données de l’application dans ce navigateur.'),
@@ -363,7 +365,7 @@ async function sauvegarde() {
 // ───────── Connexions
 function connexions() {
   const rows = [
-    ['Sauvegarde en ligne / synchronisation', 'À configurer (étape 5)', 'warn', 'Export/restauration manuels d’une sauvegarde complète (Réglages › Sauvegarde).'],
+    ['Synchronisation entre appareils', 'Par Nuage (apps.education.fr)', 'ok', 'Fichier chiffré par appareil, fusion élément par élément (Réglages › Synchronisation).'],
     ['Google Drive', 'Non développé', 'muted', 'Les liens Drive s’enregistrent et s’ouvrent depuis Fichiers, sans connexion.'],
     ['Canva', 'Non développé', 'muted', 'Les liens Canva s’enregistrent et s’ouvrent depuis Fichiers.'],
     ['Agendas externes', 'Non développé', 'muted', 'Prévu : import/export de fichiers .ics (étape 2).'],

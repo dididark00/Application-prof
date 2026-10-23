@@ -164,6 +164,8 @@ async function start() {
   // Polices d'écriture importées (ex. Marelle) : chargées puis la page est redessinée si besoin.
   F.loadAll().then(() => { if (location.hash.startsWith('#/atelier')) render(); }).catch(() => {});
   registerServiceWorker();
+  // Synchronisation automatique par le dossier Nuage, si elle a été configurée sur cet appareil.
+  import('./sync.js').then(SY => SY.startAuto((msg, err) => toast(msg, { kind: err ? 'error' : 'success', timeout: 8000 }))).catch(() => {});
   // Demande de stockage persistant : le navigateur ne videra pas les données sans action de l'utilisatrice.
   if (navigator.storage && navigator.storage.persist) {
     try { await navigator.storage.persist(); } catch { /* ignoré : statut affiché dans Réglages */ }
