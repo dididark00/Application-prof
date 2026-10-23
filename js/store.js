@@ -182,7 +182,10 @@ export async function purgeWhere(pred, label) {
   const victims = [...records.values()].filter(pred);
   if (!victims.length) return 0;
   const ids = victims.map(v => v.id);
-  const blobIds = victims.flatMap(blobIdsOf);
+  const idSet = new Set(ids);
+  // Un contenu binaire encore utilisé par un élément conservé n'est pas supprimé.
+  const stillUsed = new Set([...records.values()].filter(r => !idSet.has(r.id)).flatMap(blobIdsOf));
+  const blobIds = [...new Set(victims.flatMap(blobIdsOf))].filter(id => !stillUsed.has(id));
   const audit = [{ at: nowIso(), author: author(), label, action: 'suppression définitive', batch: uid(), recordId: null, recordType: 'lot', before: null, after: { count: ids.length } }];
   const at = nowIso(); tombstones = { ...tombstones }; for (const id of ids) tombstones[id] = at;
   await persist(() => db.write({ puts: { audit, meta: [{ key: 'tombstones', value: tombstones }] }, deletes: { records: ids, blobs: blobIds } }));

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (127) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 146 entrées.
+Légende : ✅ Réalisé (128) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 147 entrées.
 
 ## Étape 1 — Socle
 
@@ -172,5 +172,6 @@ Légende : ✅ Réalisé (127) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §15 Fiabilité | Synchronisation, file de modifications et conflits explicites | Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées. |
 | ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Famille : ENT de l’école. |
 | ✅ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone. |
+| ✅ | §21 PWA | Archiver une année terminée dans un fichier (chiffré, vérifié) pour libérer la place ; consultation en lecture seule | Réglages › Années : « Archiver dans un fichier… » sur une année archivée ; « Consulter une archive ». Les communs (référentiels, manuels, bibliothèque, fichiers, contacts) restent. |
 | ✅ | §21 PWA | Politique de rétention distante | Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer. |
 | ✅ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Organisation › Liens utiles : liens officiels vérifiés le 23/10/2026 (Éduscol, BO, apps.education.fr, IPS des écoles, Lumni…), liste modifiable. |

@@ -173,6 +173,7 @@ export const ROADMAP = [
   R(1, '§21 PWA', 'Application web installable (manifeste, icônes, fonctionnement hors ligne)', 'fait'),
   R(1, '§21 PWA', 'Sauvegarde téléchargeable (données + fichiers), restauration vérifiée, versions', 'fait'),
   R(5, '§21 PWA', 'Sauvegarde automatique en ligne et synchronisation entre appareils', 'fait', 'Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone.'),
+  R(5, '§21 PWA', 'Archiver une année terminée dans un fichier (chiffré, vérifié) pour libérer la place ; consultation en lecture seule', 'fait', 'Réglages › Années : « Archiver dans un fichier… » sur une année archivée ; « Consulter une archive ». Les communs (référentiels, manuels, bibliothèque, fichiers, contacts) restent.'),
   R(5, '§21 PWA', 'Politique de rétention distante', 'fait', 'Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer.'),
   R(2, '§22 Visites', 'Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal', 'fait'),
   R(2, '§22 Visites', 'Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge', 'fait'),

@@ -13,6 +13,7 @@ import { ROADMAP, STATUTS, RUBRIQUES } from '../roadmap.js';
 import { h, icon, toast, modal, confirmDialog, field, formData, download, pickFiles, formatSize, badge, emptyState } from '../ui.js';
 import { pageHeader, demoBadge } from '../components.js';
 import { synchroTab } from './synchro.js';
+import { archiveDialog, openArchiveDialog } from './archives.js';
 
 const TABS = [
   ['general', 'Général'],
@@ -105,7 +106,9 @@ function charteTab() {
 function annees() {
   const ys = model.years();
   return h('div', { class: 'stack' },
-    h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => yearDialog(null) }, icon('plus', 16), 'Nouvelle année scolaire')),
+    h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => yearDialog(null) }, icon('plus', 16), 'Nouvelle année scolaire'),
+      h('button', { class: 'btn', type: 'button', 'data-testid': 'archive-consult', onclick: () => openArchiveDialog() }, 'Consulter une archive')),
+    h('p', { class: 'muted small' }, 'Fin d’année : « Archiver » range l’année de côté (elle reste consultable ici). Pour libérer la place, « Archiver dans un fichier » enregistre toute l’année dans un fichier vérifié, puis la retire de l’appareil.'),
     ys.length ? ys.map(y => h('div', { class: 'card', 'data-testid': 'year-card' },
       h('div', { class: 'card-head' },
         h('h2', {}, y.label, ' ', demoBadge(y), y.archived ? badge('Archivée', 'muted') : null, y.zone ? badge(`Zone ${y.zone}`) : null),
@@ -114,6 +117,7 @@ function annees() {
           h('button', { class: 'btn', type: 'button', onclick: async () => {
             await store.update(y.id, { archived: !y.archived }, y.archived ? 'Désarchivage d’une année' : 'Archivage d’une année');
           } }, y.archived ? 'Désarchiver' : 'Archiver'),
+          y.archived ? h('button', { class: 'btn', type: 'button', 'data-testid': 'archive-file', onclick: () => archiveDialog(y) }, icon('download', 16), 'Archiver dans un fichier…') : null,
           h('button', { class: 'btn btn-ghost-danger', type: 'button', onclick: async () => {
             const n = model.classesOfYear(y.id).length;
             if (!await confirmDialog('Mettre l’année à la corbeille ?', `${y.label}${n ? ` contient ${n} classe(s), qui resteront dans la base mais ne seront plus accessibles depuis le sélecteur.` : ''} Vous pourrez la restaurer depuis la corbeille.`, { confirmLabel: 'Mettre à la corbeille', danger: true })) return;
