@@ -119,8 +119,8 @@ export const ROADMAP = [
   R(4, '§12 Organisation', 'APC : objectifs, élèves, séances, présences, bilan, comptage unique', 'fait'),
   R(4, '§12 Organisation', 'Module PES : échéances INSPE, visites, objectifs, retours', 'fait'),
   R(4, '§12 Organisation', 'Dossiers remplacement/visite personnalisables', 'fait'),
-  R(4, '§12 Organisation', 'Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année'),
-  R(4, '§12 Organisation', 'Projets transdisciplinaires ; matériel (stocks, achats, prêts)'),
+  R(4, '§12 Organisation', 'Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année', 'fait', 'Comptes par année avec solde initial/report explicites ; export CSV et impression ; aucun paiement en ligne.'),
+  R(4, '§12 Organisation', 'Projets transdisciplinaires ; matériel (stocks, achats, prêts)', 'fait', 'Achat de matériel → une seule dépense au journal financier.'),
 
   // ── §13 Familles et connexions
   R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)'),
@@ -240,8 +240,8 @@ export const RUBRIQUES = [
     { id: 'reunions', titre: 'Réunions et notes', route: 'reunions' },
     { id: 'heures', titre: '108 h et APC', route: 'heures' },
     { id: 'transmissions', titre: 'Transmissions binôme', route: 'transmissions' },
-    { id: 'argent', titre: 'Argent et projets', etape: 4 },
-    { id: 'materiel', titre: 'Matériel', etape: 4 },
+    { id: 'argent', titre: 'Argent et projets', route: 'argent' },
+    { id: 'materiel', titre: 'Matériel', route: 'materiel' },
     { id: 'contacts', titre: 'Contacts', route: 'contacts' },
     { id: 'remplacement', titre: 'Dossiers remplacement et visite', route: 'remplacement' },
     { id: 'pes', titre: 'PES et visites', route: 'pes' },

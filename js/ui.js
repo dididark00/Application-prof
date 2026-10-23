@@ -79,6 +79,8 @@ export function toast(message, { action, onAction, kind = 'info', timeout = 6000
   }
   t.append(h('button', { class: 'icon-btn', 'aria-label': 'Fermer', onclick: () => t.remove() }, icon('x', 16)));
   host.append(t);
+  // Trois messages au plus : les plus anciens laissent la place.
+  while (host.children.length > 3) host.firstElementChild.remove();
   if (timeout) setTimeout(() => t.remove(), timeout);
   return t;
 }
@@ -93,7 +95,7 @@ export function modal({ title, body, actions = [], wide = false, onClose }) {
       h('button', { class: 'icon-btn', 'aria-label': 'Fermer', onclick: close }, icon('x'))),
     h('div', { class: 'modal-body' }, body),
     actions.length ? h('footer', { class: 'modal-foot' }, actions.map(a =>
-      h('button', { class: `btn ${a.primary ? 'btn-primary' : ''} ${a.danger ? 'btn-danger' : ''}`, type: 'button',
+      h('button', { class: `btn ${a.primary ? 'btn-primary' : ''} ${a.danger ? 'btn-danger' : ''}`, type: 'button', 'data-testid': a.testid || null,
         onclick: async () => { const r = await a.onClick?.(); if (r !== false) close(); } }, a.label))) : null);
   backdrop.append(box);
   backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(); });

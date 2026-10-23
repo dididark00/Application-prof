@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (96) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (28) — 135 entrées.
+Légende : ✅ Réalisé (98) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (26) — 135 entrées.
 
 ## Étape 1 — Socle
 
@@ -132,8 +132,8 @@ Légende : ✅ Réalisé (96) · 🟡 Partiel (10) · ⚙️ À configurer (1) �
 | ✅ | §12 Organisation | APC : objectifs, élèves, séances, présences, bilan, comptage unique |  |
 | ✅ | §12 Organisation | Module PES : échéances INSPE, visites, objectifs, retours |  |
 | ✅ | §12 Organisation | Dossiers remplacement/visite personnalisables |  |
-| ⬜ | §12 Organisation | Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année |  |
-| ⬜ | §12 Organisation | Projets transdisciplinaires ; matériel (stocks, achats, prêts) |  |
+| ✅ | §12 Organisation | Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année | Comptes par année avec solde initial/report explicites ; export CSV et impression ; aucun paiement en ligne. |
+| ✅ | §12 Organisation | Projets transdisciplinaires ; matériel (stocks, achats, prêts) | Achat de matériel → une seule dépense au journal financier. |
 | ⬜ | §14 Exports | Dossier de semaine ; finances ; étiquettes à taille réelle |  |
 | ⬜ | §19 Atelier | Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections |  |
 | ⬜ | §19 Atelier | Cartes monde/continents/France à partir de données sourcées |  |

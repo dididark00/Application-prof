@@ -25,7 +25,7 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 const ready = () => page.waitForFunction(() => window.__classeurReady === true);
 const go = async (hash) => { await page.evaluate(h => { location.hash = h; }, hash); await page.waitForTimeout(220); };
 const S = (fn, arg) => page.evaluate(async ([src, a]) => {
-  const m = { store: await import('./js/store.js'), model: await import('./js/model.js'), PL: await import('./js/planning.js'), P: await import('./js/pedago.js'), O: await import('./js/orga.js') };
+  const m = { store: await import('./js/store.js'), model: await import('./js/model.js'), PL: await import('./js/planning.js'), P: await import('./js/pedago.js'), O: await import('./js/orga.js'), FI: await import('./js/finance.js') };
   return (new Function(...Object.keys(m), 'a', `return (async () => { ${src} })()`))(...Object.values(m), a);
 }, [fn, arg]);
 const modalBtn = (name) => page.locator('.modal-foot button', { hasText: name });
@@ -38,7 +38,7 @@ const ids = await S(`const cls = store.all('class').find(c => c.name === 'CE2 (d
   return { cls: cls.id, lou: st('Lou'), nino: st('Nino'), year: cls.yearId };`);
 
 await test('Pages de l’organisation sans erreur ni faux bouton', async () => {
-  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes']) {
+  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel']) {
     await go(r);
     assert(!(await page.locator('.page').innerText()).includes('à venir à l’étape'), `${r} affiche encore « à venir »`);
   }
@@ -164,8 +164,97 @@ await test('Dossier de remplacement : rubriques auto + texte, aucune donnée con
   await page.getByTestId('dossier-print').click(); await page.waitForTimeout(300);
 });
 
+await test('§17 Deux versements : total correct dans le projet et le journal, sans double compte', async () => {
+  const p = await S(`return store.all('project').find(x => x.title === 'Sortie au musée (exemple)').id`);
+  await go(`#/argent/projet/${p}`);
+  eq(await page.getByTestId('project-received').innerText(), '13,00 €', 'démo : 8 € + 5 € reçus');
+  // Deux nouveaux versements pour Jade : 3 € puis 5 € (paiement partiel puis solde).
+  const jadeRow = page.getByTestId('project-row').filter({ hasText: 'Jade' });
+  for (const amount of ['3', '5']) {
+    await jadeRow.getByTestId('pay').click();
+    await page.getByTestId('mv-amount').fill(amount);
+    await page.getByTestId('mv-save').click(); await page.waitForTimeout(200);
+  }
+  eq(await page.getByTestId('project-received').innerText(), '21,00 €', 'reçu = 13 + 3 + 5');
+  assert((await page.getByTestId('project-row').filter({ hasText: 'Jade' }).innerText()).includes('réglé'), 'Jade a réglé ses 8 €');
+  const db = await S(`const all = FI.movements({ projectId: a }); return { n: all.length, fam: all.filter(m => m.kind === 'versement').reduce((s, m) => s + m.amount, 0), jade: all.filter(m => store.get(m.studentId)?.firstName === 'Jade').length }`, p);
+  eq(db.jade, 2, 'exactement deux mouvements pour Jade'); eq(db.fam, 2100, 'somme des versements au journal');
+  await go('#/argent?t=journal');
+  const rows = await page.getByTestId('journal-row').count();
+  eq(rows, db.n, 'le journal montre chaque mouvement une seule fois');
+  // Fiche élève : lue depuis le même mouvement.
+  const jade = await S(`return store.all('student').find(s => s.firstName === 'Jade').id`);
+  await go(`#/eleve/${jade}?t=vie`);
+  assert((await page.getByTestId('student-payments').innerText()).includes('versé 8,00'), 'fiche élève : 8 € versés');
+});
+
+await test('Correction tracée : un mouvement validé ne se supprime pas, il s’annule', async () => {
+  await go('#/argent?t=journal');
+  const before = await page.getByTestId('journal-row').count();
+  const row = page.getByTestId('journal-row').filter({ hasText: 'Acompte (exemple)' });
+  await row.getByTestId('reverse').click();
+  await page.getByTestId('reverse-reason').fill('erreur de saisie');
+  await page.getByTestId('reverse-confirm').click(); await page.waitForTimeout(200);
+  eq(await page.getByTestId('journal-row').count(), before + 1, 'une ligne d’annulation ajoutée, l’original reste');
+  assert((await page.getByTestId('journal-row').filter({ hasText: 'Acompte (exemple)' }).first().innerText()).includes('annulé'), 'original marqué annulé');
+  eq(await page.getByTestId('journal-row').filter({ hasText: 'Acompte (exemple)' }).first().getByTestId('reverse').count(), 0, 'plus de bouton Annuler sur l’original');
+  const p = await S(`const p = store.all('project').find(x => x.title === 'Sortie au musée (exemple)'); return FI.projectStatus(p).rows.find(r => r.student.firstName === 'Nino').paid`);
+  eq(p, 0, 'Nino : versement annulé → 0 € reçu');
+});
+
+await test('Liste avec colonne « Paiement d’un projet » : lit et alimente le journal', async () => {
+  const lst = await S(`const p = store.all('project').find(x => x.title === 'Sortie au musée (exemple)');
+    const l = await store.create('list', { classId: a, title: 'Sortie musée', columns: [{ id: 'cp', label: 'Paiement sortie', type: 'paiement', options: [], link: null, projectId: p.id }], values: {} }); return l.id;`, ids.cls);
+  await go(`#/listes/${lst}`);
+  const nino = page.locator('tr').filter({ hasText: 'Nino' });
+  assert((await nino.innerText()).includes('à payer 8,00'), 'Nino : à payer 8 €');
+  await nino.getByTestId('cell-pay').click();
+  eq(await page.getByTestId('mv-amount').inputValue(), '8', 'montant restant proposé');
+  await page.getByTestId('mv-save').click(); await page.waitForTimeout(250);
+  assert((await page.locator('tr').filter({ hasText: 'Nino' }).innerText()).includes('réglé'), 'liste à jour');
+  const n = await S(`return FI.movements({}).filter(m => store.get(m.studentId)?.firstName === 'Nino' && !m.correctsId && !m.reversedById).length`);
+  eq(n, 1, 'un seul mouvement valide pour Nino');
+});
+
+await test('Comptes : solde initial explicite, report sur une nouvelle année sans mélange', async () => {
+  await go('#/argent?t=comptes');
+  const bal = await page.getByTestId('account-balance').first().innerText();
+  const expected = await S(`const acc = FI.accounts(a)[0]; return FI.euros(FI.balance(acc).closing)`, ids.year);
+  eq(bal, expected, 'solde affiché = solde calculé');
+  const r = await S(`const y = await store.create('year', { label: '2027-2028', start: '2027-09-01', end: '2028-07-07', periods: [] });
+    const old = FI.accounts(a)[0]; const n = await FI.carryOver(old, y.id);
+    return { opening: n.opening.amount, closing: FI.balance(old).closing, newCount: FI.movements({ yearId: y.id }).length, oldCount: FI.movements({ yearId: a }).length, note: n.opening.note }`, ids.year);
+  eq(r.opening, r.closing, 'solde initial du nouveau compte = solde final de l’ancien');
+  eq(r.newCount, 0, 'aucun mouvement recopié dans la nouvelle année'); assert(r.oldCount > 0, 'l’ancienne année garde ses mouvements');
+  assert(r.note.includes('Report'), 'origine du report notée');
+});
+
+await test('Matériel : achat → une seule dépense au journal, stock, prêt et retour', async () => {
+  await go('#/materiel');
+  const row = page.getByTestId('material-row').filter({ hasText: 'Ballons' });
+  eq(await row.getByTestId('material-qty').innerText(), '8', 'stock initial');
+  const nBefore = await S(`return store.all('movement').length`);
+  await row.getByTestId('material-move').click();
+  await page.getByTestId('mm-kind').selectOption('achat'); await page.getByTestId('mm-qty').fill('4'); await page.getByTestId('mm-cost').fill('24,90');
+  await page.getByTestId('mm-save').click(); await page.waitForTimeout(250);
+  eq(await page.getByTestId('material-row').filter({ hasText: 'Ballons' }).getByTestId('material-qty').innerText(), '12', 'stock après achat');
+  const mv = await S(`const all = store.all('movement'); return { n: all.length, last: all.find(m => m.label.startsWith('Achat : Ballons')) }`);
+  eq(mv.n, nBefore + 1, 'une seule dépense créée'); eq(mv.last.amount, -2490, 'dépense de 24,90 €');
+  await page.getByTestId('material-row').filter({ hasText: 'Ballons' }).getByTestId('material-move').click();
+  await page.getByTestId('mm-kind').selectOption('prêt'); await page.getByTestId('mm-qty').fill('2'); await page.getByTestId('mm-student').selectOption({ label: await S(`const s = store.get(a); return model.fullName(s)`, ids.lou) });
+  await page.getByTestId('mm-save').click(); await page.waitForTimeout(250);
+  eq(await page.getByTestId('material-row').filter({ hasText: 'Ballons' }).getByTestId('material-available').innerText(), '10', 'disponible = 12 − 2 prêtés');
+  await page.getByTestId('loan-return').click(); await page.waitForTimeout(200);
+  eq(await page.getByTestId('material-row').filter({ hasText: 'Ballons' }).getByTestId('material-available').innerText(), '12', 'retour enregistré');
+  await page.getByTestId('material-row').filter({ hasText: 'Ballons' }).getByTestId('material-move').click();
+  await page.getByTestId('mm-kind').selectOption('sortie'); await page.getByTestId('mm-qty').fill('50');
+  await page.getByTestId('mm-save').click();
+  assert((await page.locator('.form-errors').innerText()).includes('disponible'), 'sortie impossible au-delà du stock');
+  await page.keyboard.press('Escape');
+});
+
 await test('Captures', async () => {
-  for (const [r, n] of [[`#/reunions/${meetingId}`, 'reunion'], ['#/heures', 'heures'], ['#/heures?t=apc', 'apc'], ['#/transmissions', 'transmissions'], ['#/pes', 'pes'], ['#/remplacement', 'remplacement']]) { await go(r); await page.screenshot({ path: `${OUT}etape4-${n}.png`, fullPage: true }); }
+  for (const [r, n] of [[`#/reunions/${meetingId}`, 'reunion'], ['#/heures', 'heures'], ['#/heures?t=apc', 'apc'], ['#/transmissions', 'transmissions'], ['#/pes', 'pes'], ['#/remplacement', 'remplacement'], ['#/argent', 'argent'], ['#/argent?t=journal', 'journal'], ['#/materiel', 'materiel']]) { await go(r); await page.screenshot({ path: `${OUT}etape4-${n}.png`, fullPage: true }); }
 });
 
 await test('Aucune erreur JavaScript', async () => { eq(errors.length, 0, errors.join(' | ')); });

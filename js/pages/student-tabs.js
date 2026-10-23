@@ -11,6 +11,7 @@ import { bound, pickMany, iconBtn } from '../forms.js';
 import { addFiles } from './files.js';
 import { competencyLabel, competencyIndex, pickCompetencies } from './referentiels.js';
 import { openLoansOfStudent } from './bibliotheque.js';
+import * as FI from '../finance.js';
 
 const fileLink = (id) => { const f = id && store.get(id); return f && !f.deletedAt ? h('a', { href: `#/fichiers?open=${f.id}` }, f.name) : null; };
 async function attach(extra) { const fs = await pickFiles({ accept: 'image/*,application/pdf' }); if (!fs.length) return null; const c = await addFiles(fs, null, { tags: ['élève'], ...extra }); return c[0]?.id || null; }
@@ -178,7 +179,20 @@ export function vieTab(s, cls) {
       h('a', { class: 'btn btn-small', href: '#/services?t=semaine' }, 'Modifier la semaine type')),
     h('section', { class: 'card' }, h('h2', {}, 'Bibliothèque'),
       openLoansOfStudent(s.id).length ? h('ul', { class: 'plain' }, openLoansOfStudent(s.id).map(l => { const b = store.get(l.bookId); return h('li', {}, `${b?.title || '?'} — depuis le ${model.frShort(l.start)}${l.due ? `, retour prévu le ${model.frShort(l.due)}` : ''}`); })) : h('p', { class: 'muted' }, 'Aucun livre emprunté.'),
-      h('a', { class: 'btn btn-small', href: '#/bibliotheque' }, 'Bibliothèque')));
+      h('a', { class: 'btn btn-small', href: '#/bibliotheque' }, 'Bibliothèque')),
+    paymentsCard(s));
+}
+
+/** Paiements de l'élève : lus dans le journal financier (aucune copie). */
+function paymentsCard(s) {
+  const projs = store.all('project').filter(p => (p.participants || []).includes(s.id) || FI.paymentsOfStudent(s.id).some(m => m.projectId === p.id));
+  const loose = FI.paymentsOfStudent(s.id).filter(m => !m.projectId);
+  return h('section', { class: 'card', 'data-testid': 'student-payments' }, h('h2', {}, 'Paiements'),
+    projs.length || loose.length ? h('ul', { class: 'plain' },
+      projs.map(p => { const x = FI.studentInProject(p, s.id); return h('li', {}, h('a', { href: `#/argent/projet/${p.id}` }, p.title), ` : versé ${FI.euros(x.paid)} sur ${FI.euros(x.expected)} `,
+        x.rest > 0 ? badge(`reste ${FI.euros(x.rest)}`, 'warn') : x.rest < 0 ? badge(`trop-perçu ${FI.euros(-x.rest)}`, 'info') : badge('réglé', 'ok')); }),
+      loose.map(m => h('li', {}, `${model.frShort(m.date)} — ${m.label || m.kind} : ${FI.euros(m.amount, { sign: true })}`))) : h('p', { class: 'muted' }, 'Aucun paiement enregistré.'),
+    h('a', { class: 'btn btn-small', href: '#/argent' }, 'Argent et projets'));
 }
 
 // ───────── Échanges avec la famille

@@ -124,7 +124,16 @@ function demoClassLife(items, classId, yearId, sids) {
   items.push(D('book', { title: 'Album d\u2019exemple (fictif)', author: 'Auteur fictif', category: 'album', level: 'CE2', ref: 'ALB', sequenceIds: [], copies: [{ id: 'cp1', code: 'ALB-1', state: 'disponible' }, { id: 'cp2', code: 'ALB-2', state: 'disponible' }] }));
   const jobs = [{ id: 'j1', label: 'Distribuer le matériel', count: 1 }, { id: 'j2', label: 'Effacer le tableau', count: 1 }];
   items.push(D('jobs', { classId, jobs, history: [{ from: '2026-11-02', map: { j1: [jade], j2: [malo] } }] }));
-  void yearId;
+  // Argent et projets : un compte, une sortie, deux versements (dont un partiel) et une dépense.
+  const acc = store.uid(), proj = store.uid();
+  items.push(D('account', { id: acc, name: 'Coopérative (exemple)', yearId, opening: { amount: 15000, note: 'Solde initial fictif', fromAccountId: null } }));
+  items.push(D('project', { id: proj, title: 'Sortie au musée (exemple)', kind: 'sortie', date: '2026-11-20', perStudent: 800, yearId, classId, participants: sids.slice(0, 6), overrides: {},
+    budget: [{ label: 'Entrées du musée', amount: -3000 }, { label: 'Car', amount: -12000 }], steps: [{ date: '2026-11-13', label: 'Récupérer les autorisations', done: false }], subjects: ['Arts plastiques'], contactIds: [], companions: '', productions: '', description: '', groups: '', fileIds: [] }));
+  const mv = (o) => D('movement', { accountId: acc, yearId, projectId: proj, studentId: null, mode: 'chèque', label: '', stand: '', payer: '', fileIds: [], status: 'validé', correctsId: null, reversedById: null, ...o });
+  items.push(mv({ date: '2026-11-03', kind: 'versement', amount: 800, studentId: lou, label: 'Chèque (exemple)' }));
+  items.push(mv({ date: '2026-11-04', kind: 'versement', amount: 500, studentId: nino, mode: 'espèces', label: 'Acompte (exemple)' }));
+  items.push(mv({ date: '2026-11-05', kind: 'dépense', amount: -3000, mode: 'virement', label: 'Réservation du musée (exemple)' }));
+  items.push(D('material', { name: 'Ballons de sport (exemple)', category: 'sport', unit: '', initial: 8, threshold: 3, location: 'local EPS', notes: '' }));
 }
 
 /** Petite classe multiniveau fictive : deux activités parallèles et un conflit de présence de l'enseignant. */
@@ -159,5 +168,7 @@ export async function removeDemo() {
   const demoClasses = new Set(store.all('class', { includeDeleted: true }).filter(c => c.demo).map(c => c.id));
   const demoProgs = new Set(store.all('programmation', { includeDeleted: true }).filter(p => p.demo || demoClasses.has(p.classId)).map(p => p.id));
   // Tout ce qui a été saisi dans une classe de démonstration part avec elle ; vos propres élèves restent.
-  return store.purgeWhere(r => r.demo === true || (r.type !== 'student' && r.classId && demoClasses.has(r.classId)) || (r.type === 'notion' && demoProgs.has(r.programmationId)), 'Suppression des données de démonstration');
+  const demoAccounts = new Set(store.all('account', { includeDeleted: true }).filter(a => a.demo).map(a => a.id));
+  const demoMaterials = new Set(store.all('material', { includeDeleted: true }).filter(a => a.demo).map(a => a.id));
+  return store.purgeWhere(r => r.demo === true || (r.type === 'movement' && demoAccounts.has(r.accountId)) || (r.type === 'matmove' && demoMaterials.has(r.materialId)) || (r.type !== 'student' && r.classId && demoClasses.has(r.classId)) || (r.type === 'notion' && demoProgs.has(r.programmationId)), 'Suppression des données de démonstration');
 }

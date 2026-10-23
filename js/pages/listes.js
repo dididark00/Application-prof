@@ -8,8 +8,10 @@ import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyStat
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { toCsv } from '../csv.js';
 import { printDocument, printTable } from '../print.js';
+import * as FI from '../finance.js';
+import { movementDialog } from './argent.js';
 
-const TYPES = [['case', 'Case à cocher'], ['date', 'Date'], ['texte', 'Texte'], ['montant', 'Montant (€)'], ['choix', 'Choix dans une liste'], ['lien', 'Lié à la fiche élève (document, autorisation, image)']];
+const TYPES = [['case', 'Case à cocher'], ['date', 'Date'], ['texte', 'Texte'], ['montant', 'Montant (€)'], ['choix', 'Choix dans une liste'], ['lien', 'Lié à la fiche élève (document, autorisation, image)'], ['paiement', 'Paiement d’un projet (lié à Argent et projets)']];
 const view = { q: '', sort: 'nom', filterCol: '', filterVal: '', selected: new Set() };
 
 export function render({ params, rerender }) {
@@ -47,10 +49,12 @@ function columnDialog(l, col = null) {
   const type = h('select', { name: 'type' }, TYPES.map(([v, t]) => h('option', { value: v, selected: (col?.type || 'case') === v }, t)));
   const opts = h('input', { name: 'options', value: (col?.options || []).join(', '), placeholder: 'ex. oui, non, à relancer' });
   const link = h('select', { name: 'link' }, tpls.map(t => h('option', { value: t.id, selected: col?.link === t.id }, `${t.category === 'image' ? 'Droit à l’image — ' : ''}${t.label}`)));
-  const optsF = field('Choix (séparés par des virgules)', opts); const linkF = field('Donnée de la fiche élève', link);
-  const sync = () => { optsF.hidden = type.value !== 'choix'; linkF.hidden = type.value !== 'lien'; };
+  const projs = FI.projects(store.get(l.classId)?.yearId);
+  const proj = h('select', { name: 'projectId' }, projs.length ? projs.map(p => h('option', { value: p.id, selected: col?.projectId === p.id }, p.title)) : h('option', { value: '' }, 'Aucun projet : créez-le dans Organisation › Argent et projets'));
+  const optsF = field('Choix (séparés par des virgules)', opts); const linkF = field('Donnée de la fiche élève', link); const projF = field('Projet', proj);
+  const sync = () => { optsF.hidden = type.value !== 'choix'; linkF.hidden = type.value !== 'lien'; projF.hidden = type.value !== 'paiement'; };
   type.addEventListener('change', sync); sync();
-  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() }, field('Intitulé', h('input', { name: 'label', value: col?.label || '' })), field('Type', type), optsF, linkF);
+  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() }, field('Intitulé', h('input', { name: 'label', value: col?.label || '' })), field('Type', type), optsF, linkF, projF);
   const actions = [{ label: 'Annuler' }];
   if (col) actions.unshift({ label: 'Supprimer la colonne', danger: true, onClick: async () => {
     if (!await confirmDialog('Supprimer la colonne ?', col.type === 'lien' ? 'Les données de la fiche élève ne sont pas effacées.' : 'Les valeurs de cette colonne seront perdues (annulable).', { confirmLabel: 'Supprimer', danger: true })) return false;
@@ -59,8 +63,9 @@ function columnDialog(l, col = null) {
   actions.push({ label: 'Enregistrer', primary: true, onClick: async () => {
     const d = formData(form);
     const t = tpls.find(x => x.id === d.link);
-    const label = d.label || (d.type === 'lien' ? t?.label : '') || 'Colonne';
-    const rec = { id: col?.id || store.uid(), label, type: d.type, options: d.type === 'choix' ? d.options.split(',').map(x => x.trim()).filter(Boolean) : [], link: d.type === 'lien' ? d.link : null };
+    if (d.type === 'paiement' && !d.projectId) { toast('Choisissez un projet.', { kind: 'error' }); return false; }
+    const label = d.label || (d.type === 'lien' ? t?.label : '') || (d.type === 'paiement' ? store.get(d.projectId)?.title : '') || 'Colonne';
+    const rec = { id: col?.id || store.uid(), label, type: d.type, options: d.type === 'choix' ? d.options.split(',').map(x => x.trim()).filter(Boolean) : [], link: d.type === 'lien' ? d.link : null, projectId: d.type === 'paiement' ? d.projectId : null };
     const cols = store.get(l.id).columns;
     await store.update(l.id, { columns: col ? cols.map(c => c.id === col.id ? rec : c) : [...cols, rec] }, col ? 'Colonne modifiée' : 'Colonne ajoutée');
   } });
@@ -69,6 +74,7 @@ function columnDialog(l, col = null) {
 
 /** Valeur d'une cellule : lue dans la liste, ou dans la fiche élève pour une colonne liée. */
 function cellValue(l, col, s, yearId) {
+  if (col.type === 'paiement') { const p = store.get(col.projectId); return p && !p.deletedAt ? { p, ...FI.studentInProject(p, s.id) } : null; }
   if (col.type === 'lien') { const t = E.docTemplates().find(x => x.id === col.link); if (!t) return null; const d = E.docOf(s.id, yearId, t.id); return { t, d, st: E.docState(d, t) }; }
   return l.values?.[s.id]?.[col.id] ?? '';
 }
@@ -88,6 +94,7 @@ async function setCell(l, col, s, yearId, v, quiet = true) {
 function cellText(l, col, s, yearId) {
   const v = cellValue(l, col, s, yearId);
   if (col.type === 'lien') return v ? `${v.st.status}${v.st.expired ? ' (expirée)' : ''}` : '';
+  if (col.type === 'paiement') return !v ? '' : !v.participant ? 'non participant' : v.rest <= 0 ? `réglé (${FI.euros(v.paid)})` : v.paid ? `${FI.euros(v.paid)} — reste ${FI.euros(v.rest)}` : `à payer ${FI.euros(v.rest)}`;
   if (col.type === 'case') return v ? '✓' : '';
   if (col.type === 'date') return v ? model.frShort(v) : '';
   if (col.type === 'montant') return v !== '' && v != null ? `${Number(v).toFixed(2).replace('.', ',')} €` : '';
@@ -114,6 +121,12 @@ function detail(id, cls, rerender) {
       const on = v.st.status === positive(v.t);
       return h('span', { class: 'inline' }, h('input', { type: 'checkbox', checked: on, 'aria-label': `${col.label} : ${s.firstName}`, 'data-testid': 'cell-link', onchange: (e) => setCell(l, col, s, yearId, e.target.checked ? positive(v.t) : E.defaultStatus(v.t)).then(rerender) }),
         badge(v.st.status, v.st.kind), v.st.expired ? badge('expirée', 'warn') : null);
+    }
+    if (col.type === 'paiement') {
+      if (!v) return h('span', { class: 'muted' }, 'projet supprimé');
+      if (!v.participant) return h('span', { class: 'muted small' }, 'non participant');
+      return h('span', { class: 'inline' }, badge(cellText(l, col, s, yearId), v.rest <= 0 ? 'ok' : 'warn'),
+        v.rest > 0 ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'cell-pay', onclick: () => movementDialog({ projectId: v.p.id, studentId: s.id, kind: 'versement', abs: v.rest }) }, '+ versement') : null);
     }
     if (col.type === 'case') return h('input', { type: 'checkbox', checked: !!v, 'aria-label': `${col.label} : ${s.firstName}`, 'data-testid': 'cell-case', onchange: (e) => setCell(l, col, s, yearId, e.target.checked) });
     if (col.type === 'choix') return h('select', { 'aria-label': `${col.label} : ${s.firstName}`, onchange: (e) => setCell(l, col, s, yearId, e.target.value) }, h('option', { value: '' }, '—'), col.options.map(o => h('option', { value: o, selected: v === o }, o)));
@@ -154,5 +167,5 @@ function detail(id, cls, rerender) {
           h('td', {}, h('a', { href: `#/eleve/${s.id}?t=documents` }, `${s.firstName} ${s.lastName}`)), l.columns.map(c => h('td', {}, cell(c, s)))))),
         sumCols.length ? h('tfoot', {}, h('tr', {}, h('th', {}), h('th', {}, 'Total'), l.columns.map(c => h('td', {}, c.type === 'montant' ? `${rows.reduce((t, s) => t + (Number(l.values?.[s.id]?.[c.id]) || 0), 0).toFixed(2).replace('.', ',')} €` : '')))) : null))
         : emptyState('Aucune colonne', 'Ajoutez des colonnes : case, date, texte, montant, choix, ou une donnée liée à la fiche élève (assurance, autorisation, droit à l’image).')),
-    h('p', { class: 'muted small' }, 'Montants : simple suivi dans la liste. Le lien avec la caisse de la classe (paiements, journal financier) arrivera avec le module Argent et projets (étape 4).'));
+    h('p', { class: 'muted small' }, 'Colonne « Montant » : simple suivi dans la liste. Colonne « Paiement d’un projet » : lit et alimente le journal financier (Organisation › Argent et projets), sans double saisie.'));
 }

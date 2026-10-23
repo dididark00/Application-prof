@@ -26,6 +26,12 @@ export function search(q) {
     for (const f of store.all('file')) if (match(f.name, (f.tags || []).join(' '), f.description, f.subject, f.level, f.project)) out.push({ group: 'Fichiers', title: f.name, detail: [f.kind === 'link' ? 'lien' : 'fichier', f.subject, f.level].filter(Boolean).join(' · '), href: `#/fichiers?open=${f.id}` });
     for (const d of store.all('folder')) if (match(d.name)) out.push({ group: 'Fichiers', title: d.name, detail: 'dossier', href: `#/fichiers?folder=${d.id}` });
   }
+  if (!isHidden('organisation', 'argent')) {
+    for (const p of store.all('project')) if (match(p.title, p.kind, p.description)) out.push({ group: 'Projets', title: p.title, detail: p.kind, href: `#/argent/projet/${p.id}` });
+  }
+  if (!isHidden('organisation', 'materiel')) {
+    for (const m of store.all('material')) if (match(m.name, m.category, m.location)) out.push({ group: 'Matériel', title: m.name, detail: [m.category, m.location].filter(Boolean).join(' · '), href: '#/materiel' });
+  }
   if (!isHidden('organisation', 'reception')) {
     for (const i of store.all('inbox')) if (match(i.title, i.text, i.name)) out.push({ group: 'Boîte de réception', title: i.title || i.name || (i.text || '').slice(0, 60), detail: i.status, href: '#/reception' });
   }

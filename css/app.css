@@ -692,3 +692,14 @@ a.trombi-card:hover { background: var(--surface); }
 tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .grid-2 > *, .grid-3 > * { min-width: 0; }
 .grid-3 > input, .grid-3 > select { width: 100%; }
+
+/* ── Argent et projets, matériel */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+.stat { padding: 12px 14px; }
+.stat-value { font-size: 1.35rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.money { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.money-input { width: 7em; text-align: right; }
+.reversed, .reversed td { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--ink-2); }
+.table.compact td, .table.compact th { padding: 4px 6px; }
+.table th.num, .table td.num { text-align: right; }
