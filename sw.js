@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-3a6ba8d4dbfe';
+const CACHE = 'classeur-9e2144a2c632';
 const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = [
   "./",
@@ -55,10 +55,12 @@ const ASSETS = [
   "js/device.js",
   "js/eleve.js",
   "js/eps.js",
+  "js/exercices.js",
   "js/finance.js",
   "js/fonts.js",
   "js/forms.js",
   "js/groups.js",
+  "js/ia.js",
   "js/infos.js",
   "js/instruments.js",
   "js/jeux.js",
@@ -82,6 +84,7 @@ const ASSETS = [
   "js/pages/eps.js",
   "js/pages/etiquettes.js",
   "js/pages/evaluations.js",
+  "js/pages/exercices.js",
   "js/pages/familles.js",
   "js/pages/files.js",
   "js/pages/heures.js",
@@ -90,6 +93,7 @@ const ASSETS = [
   "js/pages/interventions.js",
   "js/pages/jeux.js",
   "js/pages/lecons.js",
+  "js/pages/liens.js",
   "js/pages/listes.js",
   "js/pages/livrets.js",
   "js/pages/manuels.js",
@@ -103,6 +107,7 @@ const ASSETS = [
   "js/pages/progressions.js",
   "js/pages/projection.js",
   "js/pages/rattrapage.js",
+  "js/pages/recreation.js",
   "js/pages/redaction.js",
   "js/pages/referentiels.js",
   "js/pages/remplacement.js",
@@ -133,6 +138,7 @@ const ASSETS = [
   "js/search.js",
   "js/shell.js",
   "js/store.js",
+  "js/syllabes.js",
   "js/sync.js",
   "js/theme.js",
   "js/timer.js",

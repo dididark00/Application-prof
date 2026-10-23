@@ -54,7 +54,7 @@ export const ROADMAP = [
   R(2, '§5 Préparation', 'Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication', 'fait', 'Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge.'),
   R(2, '§5 Préparation', 'Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes', 'fait'),
   R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'partiel', 'Fait : lecture du texte d’une photo ou capture, sur l’appareil (moteur Tesseract gratuit, 4,7 Mo téléchargés à la première utilisation), dans Outils de classe et dans l’aperçu des images de Fichiers (texte enregistré et cherchable). À venir : PDF scannés (page par page) et surlignage des mots incertains.'),
-  R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)'),
+  R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)', 'partiel', 'Uniquement l’IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier » un texte, « Reformuler » une appréciation. Boutons affichés seulement si l’appareil la propose en français. Aucune IA en ligne, aucun abonnement.'),
   R(2, '§5 Préparation', 'Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle', 'fait'),
   R(2, '§5 Préparation', 'Photos du tableau et corrections ; suivi des apprentissages à reprendre', 'partiel', 'Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3).'),
 
@@ -96,7 +96,7 @@ export const ROADMAP = [
   R(2, '§10 Suivi', 'Devoirs datés liés aux séances/leçons, destinataires, publication volontaire', 'partiel', 'Préparé / donné : fait. Publication aux familles : étape 5.'),
   R(3, '§10 Suivi', 'Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse', 'fait'),
   R(3, '§10 Suivi', 'Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle', 'fait', 'Export tabulaire des appréciations à reporter dans le LSU ; vocabulaire adapté en maternelle.'),
-  R(5, '§10 Suivi', 'Export compatible LSU (à vérifier séparément, sans remplacer le service officiel)'),
+  R(5, '§10 Suivi', 'Export compatible LSU (à vérifier séparément, sans remplacer le service officiel)', 'partiel', 'Export tableau des appréciations à recopier. L’import direct dans le LSU est réservé aux éditeurs validés par le ministère (Éduscol, « Interfaces entre les applications nationales ») : non accessible à cette application.'),
   R(3, '§10 Suivi', 'Rattrapage : absences × séances réellement faites × supports distribués ; remis/rattrapé', 'fait'),
 
   // ── §11 Fichiers, diaporamas, charte
@@ -185,11 +185,11 @@ export const ROADMAP = [
   R(4, '§26 Agenda', 'Aide à la rédaction des appréciations (phrases-types accordées, sans IA)', 'fait', 'Dans Livrets et bilans et dans Organisation › Mots, autorisations et registres.'),
   R(4, '§26 Agenda', 'Mots aux familles et autorisations de sortie avec coupon, un exemplaire par élève', 'fait', 'Remplissage depuis un projet d’Argent et projets ; historique.'),
   R(4, '§26 Agenda', 'Fiche de missions AESH, rapport d’incident factuel (initiales, mots de jugement signalés), registre de soins', 'fait', 'Confidentiels : masqués par défaut, jamais projetés ni indexés.'),
-  R(4, '§26 Agenda', 'Code couleur des syllabes (type « Lire Couleur ») pour l’aide au décodage', 'afaire', 'Demande un découpage syllabique du français fiable : à construire et vérifier.'),
-  R(4, '§26 Agenda', 'Parler et transcrire (dictée vocale)', 'afaire', 'La reconnaissance vocale intégrée aux navigateurs envoie la voix à un service en ligne (Google, Apple) : à décider avec vous avant toute intégration.'),
-  R(4, '§26 Agenda', 'Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture', 'afaire', 'Sans IA : banques et modèles paramétrables, avec corrigés.'),
-  R(4, '§26 Agenda', 'Planning des surveillances de récréation (école)', 'afaire'),
-  R(5, '§26 Agenda', 'Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens', 'afaire', 'Dépendent de sites extérieurs : simples liens, pas de reproduction.'),
+  R(4, '§26 Agenda', 'Code couleur des syllabes (type « Lire Couleur ») pour l’aide au décodage', 'fait', 'Outils de classe › Syllabes en couleur : découpage de l’écrit par règles (vérifié sur 60 mots courants), couleurs alternées, arcs, lettres muettes en gris, police Marelle, impression. Correction possible d’un mot : « li|on ».'),
+  R(4, '§26 Agenda', 'Parler et transcrire (dictée vocale)', 'fait', 'Outils de classe › Parler et transcrire : reconnaissance du navigateur (la voix part en général à son service en ligne : Google, Apple), seulement après votre accord (case à cocher), avec avertissement ; ponctuation dictée.'),
+  R(4, '§26 Agenda', 'Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture', 'fait', 'Préparer › Générateurs d’exercices : calculs (en ligne ou posés, tables, sans retenue), problèmes (9 types), dictées de mots par son (15 sons), fiches de fluence ; graine et corrigé. Pas de génération de textes originaux sans IA : vos textes servent de base.'),
+  R(4, '§26 Agenda', 'Planning des surveillances de récréation (école)', 'fait', 'Organisation › Surveillances de récréation : adultes et jours de présence, répartition équitable, modification case par case, impression.'),
+  R(5, '§26 Agenda', 'Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens', 'fait', 'Organisation › Liens utiles : liens officiels vérifiés le 23/10/2026 (Éduscol, BO, apps.education.fr, IPS des écoles, Lumni…), liste modifiable.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -220,6 +220,7 @@ export const RUBRIQUES = [
     { id: 'fichiers', titre: 'Fichiers et ressources', route: 'fichiers' },
     { id: 'diaporamas', titre: 'Diaporamas', route: 'diaporamas' },
     { id: 'atelier', titre: 'Atelier pédagogique', route: 'atelier' },
+    { id: 'exercices', titre: 'Générateurs d’exercices', route: 'exercices' },
     { id: 'jeux', titre: 'Jeux et anglais', route: 'jeux' },
     { id: 'eps', titre: 'Schémas EPS', route: 'eps' },
     { id: 'etiquettes', titre: 'Étiquettes et affichages', route: 'etiquettes' },
@@ -260,6 +261,8 @@ export const RUBRIQUES = [
     { id: 'argent', titre: 'Argent et projets', route: 'argent' },
     { id: 'materiel', titre: 'Matériel', route: 'materiel' },
     { id: 'redaction', titre: 'Mots, autorisations et registres', route: 'redaction' },
+    { id: 'recreation', titre: 'Surveillances de récréation', route: 'recreation' },
+    { id: 'liens', titre: 'Liens utiles', route: 'liens' },
     { id: 'contacts', titre: 'Contacts', route: 'contacts' },
     { id: 'remplacement', titre: 'Dossiers remplacement et visite', route: 'remplacement' },
     { id: 'pes', titre: 'PES et visites', route: 'pes' },

@@ -1,13 +1,13 @@
 {
   "name": "classeur",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "description": "Application de gestion de classe (PWA, sans dépendance à l'exécution)",
   "scripts": {
     "start": "python3 serveur.py",
     "build": "node tools/build-sw.mjs && node tools/roadmap-md.mjs",
-    "test": "node tests/e2e.mjs && node tests/e2e-etape2.mjs && node tests/e2e-etape3.mjs && node tests/e2e-etape4.mjs && node tests/e2e-etape4b.mjs && node tests/e2e-etape5.mjs && node tests/e2e-etape5b.mjs"
+    "test": "node tests/e2e.mjs && node tests/e2e-etape2.mjs && node tests/e2e-etape3.mjs && node tests/e2e-etape4.mjs && node tests/e2e-etape4b.mjs && node tests/e2e-etape5.mjs && node tests/e2e-etape5b.mjs && node tests/e2e-complements.mjs"
   },
   "devDependencies": {
     "pdf-lib": "^1.17.1",

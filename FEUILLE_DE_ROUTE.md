@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (122) · 🟡 Partiel (15) · ⚙️ À configurer (2) · ⬜ À développer (7) — 146 entrées.
+Légende : ✅ Réalisé (127) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 146 entrées.
 
 ## Étape 1 — Socle
 
@@ -149,19 +149,19 @@ Légende : ✅ Réalisé (122) · 🟡 Partiel (15) · ⚙️ À configurer (2) 
 | ✅ | §26 Agenda | Aide à la rédaction des appréciations (phrases-types accordées, sans IA) | Dans Livrets et bilans et dans Organisation › Mots, autorisations et registres. |
 | ✅ | §26 Agenda | Mots aux familles et autorisations de sortie avec coupon, un exemplaire par élève | Remplissage depuis un projet d’Argent et projets ; historique. |
 | ✅ | §26 Agenda | Fiche de missions AESH, rapport d’incident factuel (initiales, mots de jugement signalés), registre de soins | Confidentiels : masqués par défaut, jamais projetés ni indexés. |
-| ⬜ | §26 Agenda | Code couleur des syllabes (type « Lire Couleur ») pour l’aide au décodage | Demande un découpage syllabique du français fiable : à construire et vérifier. |
-| ⬜ | §26 Agenda | Parler et transcrire (dictée vocale) | La reconnaissance vocale intégrée aux navigateurs envoie la voix à un service en ligne (Google, Apple) : à décider avec vous avant toute intégration. |
-| ⬜ | §26 Agenda | Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture | Sans IA : banques et modèles paramétrables, avec corrigés. |
-| ⬜ | §26 Agenda | Planning des surveillances de récréation (école) |  |
+| ✅ | §26 Agenda | Code couleur des syllabes (type « Lire Couleur ») pour l’aide au décodage | Outils de classe › Syllabes en couleur : découpage de l’écrit par règles (vérifié sur 60 mots courants), couleurs alternées, arcs, lettres muettes en gris, police Marelle, impression. Correction possible d’un mot : « li/on ». |
+| ✅ | §26 Agenda | Parler et transcrire (dictée vocale) | Outils de classe › Parler et transcrire : reconnaissance du navigateur (la voix part en général à son service en ligne : Google, Apple), seulement après votre accord (case à cocher), avec avertissement ; ponctuation dictée. |
+| ✅ | §26 Agenda | Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture | Préparer › Générateurs d’exercices : calculs (en ligne ou posés, tables, sans retenue), problèmes (9 types), dictées de mots par son (15 sons), fiches de fluence ; graine et corrigé. Pas de génération de textes originaux sans IA : vos textes servent de base. |
+| ✅ | §26 Agenda | Planning des surveillances de récréation (école) | Organisation › Surveillances de récréation : adultes et jours de présence, répartition équitable, modification case par case, impression. |
 | ✅ | §23 Bibliothèque | Scan code-barres/QR (facultatif) | Saisie ou douchette partout ; caméra si le navigateur sait lire les codes. |
 
 ## Étape 5 — Collaboration et connexions
 
 | | Section | Fonction | Note |
 |---|---|---|---|
-| ⬜ | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) |  |
+| 🟡 | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) | Uniquement l’IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier » un texte, « Reformuler » une appréciation. Boutons affichés seulement si l’appareil la propose en français. Aucune IA en ligne, aucun abonnement. |
 | ✅ | §6 Planifier | Notifications configurables | Réglages › Rappels et agenda : tâches, rendez-vous, événements, séances de demain sans fiche ; bandeau et notification quand l’application est ouverte ; export .ics pour que l’agenda du téléphone sonne même application fermée. |
-| ⬜ | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) |  |
+| 🟡 | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) | Export tableau des appréciations à recopier. L’import direct dans le LSU est réservé aux éditeurs validés par le ministère (Éduscol, « Interfaces entre les applications nationales ») : non accessible à cette application. |
 | ⚙️ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) | Choix du 23/10/2026 : pas de serveur de l’application. Les comptes parents sont ceux de l’ENT de l’école ; l’application prépare ce qui est diffusé, élève par élève. |
 | 🟡 | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Fait : messages à partir de modèles (copie pour l’ENT ou messagerie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La consultation et la réponse des familles passent par l’ENT. |
 | ✅ | §13 Familles | Préparation privée jusqu’à publication ; aperçu « comme ce parent » | Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée. |
@@ -173,4 +173,4 @@ Légende : ✅ Réalisé (122) · 🟡 Partiel (15) · ⚙️ À configurer (2) 
 | ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Famille : ENT de l’école. |
 | ✅ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone. |
 | ✅ | §21 PWA | Politique de rétention distante | Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer. |
-| ⬜ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Dépendent de sites extérieurs : simples liens, pas de reproduction. |
+| ✅ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Organisation › Liens utiles : liens officiels vérifiés le 23/10/2026 (Éduscol, BO, apps.education.fr, IPS des écoles, Lumni…), liste modifiable. |

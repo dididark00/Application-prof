@@ -10,6 +10,7 @@ import * as FI from '../finance.js';
 import { h, icon, toast, modal, field, confirmDialog, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs } from '../components.js';
 import { printDocument, printTable } from '../print.js';
+import { iaButton } from './outils.js';
 
 const TABS = [['appreciations', 'Appréciations'], ['mot', 'Mots et autorisations'], ['aesh', 'Missions AESH'], ['incident', 'Rapport d’incident'], ['soins', 'Registre de soins']];
 let tab = 'mot';
@@ -44,6 +45,7 @@ export function appreciationDialog(s, { initial = '', onUse } = {}) {
     h('h3', { class: 'appr-h appr-aids' }, 'Aides (facultatif)'), chips(A.AIDS, st.aids, 'aids'), freeIn('aids', 'autre aide'),
     h('h3', {}, 'Proposition (modifiable)'), out,
     h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'appr-other', onclick: () => { st.seed++; gen(); } }, 'Autre formulation'),
+      iaButton(() => out.value, (t) => { out.value = t; }, 'reformuler', 'Reformuler (IA de l’appareil)'),
       h('span', { class: 'muted small' }, 'Phrases-types assemblées sur l’appareil : relisez et personnalisez, vous restez l’autrice.')));
   modal({ title: `Appréciation — ${s.firstName}`, wide: true, body, actions: [{ label: 'Annuler' },
     { label: 'Copier', onClick: async () => { try { await navigator.clipboard.writeText(out.value); toast('Copié'); } catch { out.select(); } return false; } },

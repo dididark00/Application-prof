@@ -909,3 +909,24 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .rdv-print li { list-style: none; margin: 3mm 0; font-size: 12pt; }
 .relance { break-inside: avoid; }
 .rot-table td, .rot-table th { text-align: center; } .rot-table tbody th { white-space: nowrap; }
+/* Syllabes en couleur */
+.syl-view { margin-top: 12px; background: #fff; color: #1d1d1d; border-radius: var(--radius); padding: 24px 28px; box-shadow: var(--shadow); }
+.syl-view p, .syl-print p { margin: 0 0 .3em; }
+.syl-word { white-space: nowrap; }
+.syl { display: inline-block; }
+.syl-arc { border-bottom: 3px solid; border-radius: 0 0 50% 50% / 0 0 14px 14px; padding: 0 1px 2px; margin: 0 1px; }
+.syl-muette { color: #9aa0a6 !important; }
+.syl-print .syl-arc { border-bottom-width: 2px; }
+/* Exercices */
+.ex-preview { background: #fff; color: #1d1d1d; padding: 16px; border-radius: 6px; }
+.ex-head h1 { font-size: 1.3rem; margin: 0 0 4px; } .ex-head p { margin: 0 0 12px; }
+.ex-calc { columns: 2; font-size: 1.15rem; line-height: 2.1; }
+.ex-prob li { margin-bottom: 14px; } .ex-space p { margin: 6px 0 22px; } .ex-corr { color: #15803d; font-weight: 600; }
+.ex-pose { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 24px; font-size: 1.4rem; font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.pose { width: 5.5em; } .pose-row { display: flex; justify-content: space-between; letter-spacing: .12em; } .pose-line { border-top: 2px solid #1d1d1d; margin-top: 2px; }
+.ex-dict { columns: 2; font-size: 1.15rem; line-height: 2; }
+.ex-lines li { height: 2.4em; } .ex-line { display: inline-block; width: 85%; border-bottom: 1px solid #999; }
+.flu-table { width: 100%; border-collapse: collapse; line-height: 1.9; } .flu-n { text-align: right; width: 3em; color: #666; font-size: .8em; vertical-align: bottom; }
+.page-break { break-before: page; }
+.recre-table td, .recre-table th { text-align: center; } .recre-table select { max-width: 11em; }
+[hidden] { display: none !important; }

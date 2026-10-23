@@ -59,6 +59,9 @@ import * as pOutils from './pages/outils.js';
 import * as pRedac from './pages/redaction.js';
 import * as pFam from './pages/familles.js';
 import * as pAteliers from './pages/ateliers.js';
+import * as pExos from './pages/exercices.js';
+import * as pRecre from './pages/recreation.js';
+import * as pLiens from './pages/liens.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -114,6 +117,9 @@ const ROUTES = {
   outils: pOutils,
   redaction: pRedac,
   ateliers: pAteliers,
+  exercices: pExos,
+  recreation: pRecre,
+  liens: pLiens,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
   rdv: { render: pFam.renderRdv },

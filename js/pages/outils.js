@@ -6,16 +6,18 @@
 //    et de conversion, réglettes, calculs de pourcentage.
 import * as store from '../store.js';
 import * as model from '../model.js';
-import { h, icon, toast, badge, pickFiles, modal, download } from '../ui.js';
+import { h, icon, toast, badge, pickFiles, modal, download, confirmDialog } from '../ui.js';
 import { printDocument } from '../print.js';
 import { addFiles } from './files.js';
 import { openWithText } from './atelier.js';
 import * as Fo from '../fonts.js';
+import * as SY from '../syllabes.js';
+import * as IA from '../ia.js';
 import { pageHeader, subTabs } from '../components.js';
 import { beep } from '../timer.js';
 
 export const TOOLS = [
-  ['tapuscrit', 'Texte d’une photo'], ['lire', 'Lire pour moi'], ['sono', 'Sonomètre'], ['pot', 'Pot de récompense'], ['abaque', 'Abaque'],
+  ['tapuscrit', 'Texte d’une photo'], ['syllabes', 'Syllabes en couleur'], ['parler', 'Parler et transcrire'], ['lire', 'Lire pour moi'], ['sono', 'Sonomètre'], ['pot', 'Pot de récompense'], ['abaque', 'Abaque'],
   ['cent', 'Tableau des nombres'], ['numeration', 'Numération et conversion'], ['reglettes', 'Réglettes'], ['pourcent', 'Pourcentages'],
 ];
 let tool = 'tapuscrit';
@@ -25,7 +27,7 @@ export function render({ query, rerender }) {
   if (cleanup) { try { cleanup(); } catch { /* */ } cleanup = null; }
   if (TOOLS.some(t => t[0] === query.o)) tool = query.o;
   const stage = h('div', { class: 'tool-stage', 'data-testid': `tool-${tool}` });
-  const builders = { tapuscrit, lire, sono, pot, abaque, cent, numeration, reglettes, pourcent };
+  const builders = { tapuscrit, syllabes, parler, lire, sono, pot, abaque, cent, numeration, reglettes, pourcent };
   const res = builders[tool](stage, rerender);
   if (typeof res === 'function') cleanup = res;
   const big = h('button', { class: 'btn', type: 'button', 'data-testid': 'tool-big', onclick: () => (document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen?.().catch(() => toast('Plein écran refusé par le navigateur.', { kind: 'error' }))) }, 'Afficher en grand');
@@ -78,6 +80,8 @@ function tapuscrit(stage, rerender) {
       h('div', { class: 'row' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(tap.text); toast('Texte copié'); } catch { ta.select(); toast('Sélectionné : copiez avec Ctrl + C'); } } }, icon('copy', 14), 'Copier'),
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'ocr-to-lire', onclick: () => { lireState.text = tap.text; location.hash = '#/outils?o=lire'; } }, 'Lire pour moi'),
+        h('button', { class: 'btn btn-small', type: 'button', onclick: () => { syl.text = tap.text; location.hash = '#/outils?o=syllabes'; } }, 'Syllabes en couleur'),
+        iaButton(() => tap.text, (t) => { tap.text = t; ta.value = t; }, 'simplifier', 'Simplifier (IA de l’appareil)'),
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'ocr-to-seyes', onclick: () => openWithText(tap.text, 'ecriture') }, 'Tableau Seyès'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => openWithText(tap.text, 'texte') }, 'Texte à compléter'),
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'ocr-save', onclick: async () => { if (!tap.text.trim()) return; const name = `${(tap.text.split('\n')[0] || 'texte').slice(0, 40).replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'texte'}.txt`; await addFiles([new File([tap.text], name, { type: 'text/plain' })], null, { tags: ['tapuscrit'] }); } }, 'Enregistrer dans mes fichiers')),
@@ -89,6 +93,94 @@ function tapuscrit(stage, rerender) {
         h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: tap.caps, onchange: (e) => { tap.caps = e.target.checked; } }), 'capitales'),
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'ocr-print', onclick: () => { if (tap.text.trim()) printDocument(sheet()); } }, icon('print', 14), 'Imprimer')))));
   return () => document.removeEventListener('paste', onPaste);
+}
+
+// ───────── IA intégrée à l'appareil (affichée seulement si le navigateur la propose)
+export function iaButton(get, set, mode, label) {
+  const b = h('button', { class: 'btn btn-small', type: 'button', hidden: true, 'data-testid': `ia-${mode}`, title: 'IA intégrée au navigateur : le texte ne quitte pas l’appareil. Relisez toujours le résultat.' }, label);
+  let status = 'unavailable';
+  IA.rewriterStatus().then(st => { status = st; if (st !== 'unavailable') b.hidden = false; });
+  b.onclick = async () => {
+    const text = get(); if (!text?.trim()) return;
+    if (status === 'downloadable' && !await confirmDialog('Télécharger l’IA du navigateur ?', 'La première fois, le navigateur télécharge son modèle d’IA (fourni par Chrome, plusieurs gigaoctets, gratuit). Ensuite tout se fait sur l’appareil, sans connexion. Mieux vaut être en Wi-Fi.', { confirmLabel: 'Télécharger' })) return;
+    b.disabled = true; const old = b.textContent; b.textContent = 'IA en cours…';
+    try { set(await IA.rewrite(text, mode, { onProgress: (p) => { b.textContent = `Téléchargement du modèle… ${p} %`; } })); toast('Texte réécrit sur l’appareil : relisez-le.'); }
+    catch (e) { toast(`IA indisponible : ${e.message}`, { kind: 'error' }); }
+    finally { b.disabled = false; b.textContent = old; }
+  };
+  return b;
+}
+
+// ───────── Parler et transcrire
+const parl = { text: '' };
+function parler(stage, rerender) {
+  const ta = h('textarea', { rows: 10, class: 'tap-text', 'data-testid': 'parler-text', oninput: (e) => { parl.text = e.target.value; } }, parl.text);
+  const interim = h('p', { class: 'muted', 'aria-live': 'polite' });
+  const status = h('p', { class: 'small', 'data-testid': 'parler-status' });
+  let stop = null;
+  const btn = h('button', { class: 'btn btn-primary btn-big', type: 'button', 'data-testid': 'parler-start', disabled: true }, '🎙 Parler');
+  const box = h('div', { class: 'card stack' }, status, h('div', { class: 'row' }, btn,
+    h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(parl.text); toast('Texte copié'); } catch { ta.select(); } } }, icon('copy', 14), 'Copier'),
+    h('button', { class: 'btn btn-small', type: 'button', onclick: () => { tap.text = parl.text; location.hash = '#/outils?o=tapuscrit'; } }, 'Tapuscrit'),
+    h('button', { class: 'btn btn-small', type: 'button', onclick: () => openWithText(parl.text, 'ecriture') }, 'Tableau Seyès'),
+    h('button', { class: 'btn btn-small', type: 'button', onclick: () => { parl.text = ''; ta.value = ''; } }, 'Effacer')),
+    interim, ta,
+    h('p', { class: 'muted small' }, 'Dites « virgule », « point », « point d’interrogation », « à la ligne » pour la ponctuation. Relisez : la reconnaissance peut se tromper.'));
+  stage.append(box);
+  IA.speechMode().then(mode => {
+    const consent = IA.onlineSpeechAllowed();
+    if (mode === 'none') { status.replaceChildren(badge('non disponible', 'muted'), ' Ce navigateur ne sait pas reconnaître la voix. Essayez Chrome, Edge ou Safari.'); return; }
+    if (mode === 'local') status.replaceChildren(badge('sur l’appareil', 'ok'), ' La reconnaissance se fait sur l’appareil : votre voix n’est envoyée nulle part.');
+    else status.replaceChildren(badge('service en ligne du navigateur', 'warn'), ' Sur ce navigateur, la voix est envoyée à son service de reconnaissance (Google pour Chrome et Edge, Apple pour Safari). Ne dictez pas de données personnelles d’élèves. ',
+      h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: consent, 'data-testid': 'parler-consent', onchange: async (e) => { await store.setSettings({ speechOnline: e.target.checked }, { quiet: true }); btn.disabled = !e.target.checked; } }), 'J’accepte ce fonctionnement'));
+    btn.disabled = mode === 'online' && !consent;
+    btn.onclick = () => {
+      if (stop) { stop(); return; }
+      btn.textContent = '■ Arrêter';
+      stop = IA.listen({ local: mode === 'local',
+        onText: (t) => { parl.text = (parl.text ? parl.text.replace(/\s*$/, ' ') : '') + IA.punctuate(t); ta.value = parl.text; },
+        onInterim: (t) => { interim.textContent = t; },
+        onError: (m) => toast(m, { kind: 'error' }),
+        onEnd: () => { stop = null; btn.textContent = '🎙 Parler'; interim.textContent = ''; } });
+    };
+  });
+  return () => { if (stop) stop(); };
+  void rerender;
+}
+
+// ───────── Syllabes en couleur (aide au décodage)
+export const SYL_PALETTES = { 'rouge / bleu': ['#d62828', '#1d4ed8'], 'rouge / vert / bleu': ['#d62828', '#15803d', '#1d4ed8'], 'violet / orange': ['#7e22ce', '#ea580c'] };
+const syl = { text: 'Le petit chat noir mange une souris dans la cuisine.', palette: 'rouge / bleu', arcs: true, colors: true, muettes: true, size: 40, font: '', spacing: 2 };
+/** Texte coloré syllabe par syllabe (éléments HTML). */
+export function sylNodes(text, o = syl) {
+  const cols = SYL_PALETTES[o.palette] || SYL_PALETTES['rouge / bleu'];
+  let n = 0;
+  return SY.analyse(text).map(tok => {
+    if (!tok.word) return h('span', { class: 'syl-sep' }, tok.text);
+    return h('span', { class: 'syl-word' }, tok.syl.map(([a, b]) => {
+      const c = cols[n++ % cols.length];
+      const letters = [];
+      for (let i = a; i < b; i++) letters.push(o.muettes && tok.silent.has(i) ? h('span', { class: 'syl-muette' }, tok.text[i]) : tok.text[i]);
+      return h('span', { class: `syl${o.arcs ? ' syl-arc' : ''}`, style: { color: o.colors ? c : null, borderColor: o.arcs ? c : null } }, letters);
+    }));
+  });
+}
+function syllabes(stage) {
+  const view = h('div', { class: 'syl-view', 'data-testid': 'syl-view' });
+  const draw = () => { view.style.fontSize = `${syl.size}px`; view.style.lineHeight = String(syl.spacing); view.style.fontFamily = syl.font ? `"${syl.font}", cursive` : ''; view.replaceChildren(...syl.text.split('\n').map(l => h('p', {}, sylNodes(l)))); };
+  const chk = (k, label) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: syl[k], 'data-testid': `syl-${k}`, onchange: (e) => { syl[k] = e.target.checked; draw(); } }), label);
+  const fonts = Fo.available().filter(([n]) => n);
+  stage.append(h('div', { class: 'card stack' },
+    h('textarea', { rows: 4, 'data-testid': 'syl-text', oninput: (e) => { syl.text = e.target.value; draw(); } }, syl.text),
+    h('div', { class: 'row' },
+      h('select', { 'aria-label': 'Couleurs', onchange: (e) => { syl.palette = e.target.value; draw(); } }, Object.keys(SYL_PALETTES).map(k => h('option', { value: k, selected: syl.palette === k }, k))),
+      chk('colors', 'couleurs'), chk('arcs', 'arcs sous les syllabes'), chk('muettes', 'lettres muettes en gris'),
+      h('label', { class: 'inline' }, 'Police', h('select', { onchange: (e) => { syl.font = e.target.value; draw(); } }, h('option', { value: '' }, 'Script'), fonts.map(([n, l]) => h('option', { value: n, selected: syl.font === n }, l)))),
+      h('label', { class: 'inline' }, 'Taille', h('input', { type: 'range', min: 20, max: 90, value: syl.size, oninput: (e) => { syl.size = Number(e.target.value); draw(); } })),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'syl-print', onclick: () => printDocument(h('div', { class: 'print-doc syl-print', style: { fontSize: `${Math.round(syl.size * 0.55)}pt`, lineHeight: String(syl.spacing), fontFamily: syl.font ? `"${syl.font}", cursive` : '' } }, syl.text.split('\n').map(l => h('p', {}, sylNodes(l))))) }, icon('print', 14), 'Imprimer')),
+    h('p', { class: 'muted small' }, 'Découpage automatique de l’écrit, à relire : quelques mots peuvent être mal coupés. Pour corriger un mot, écrivez-le avec des barres : « li|on ». Lettres muettes : seulement les plus fréquentes (s, t, d, x en fin de mot, h au début).')),
+  view);
+  draw();
 }
 
 // ───────── Lire pour moi

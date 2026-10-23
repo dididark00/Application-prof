@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.0).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (7 fonctions à développer, dont certaines à décider avec vous).
+**État : les cinq étapes sont réalisées et testées (version 0.5.1).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -105,6 +105,15 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 5. **Réglages › Rappels et agenda** et **Planifier › Agenda › « Vers mon agenda »** : fichier .ics à ouvrir dans l'agenda du téléphone, qui sonnera même application fermée.
 6. **Planifier › Ateliers et rotations** : tableau de rotation à partir de vos groupes.
 
+## 2 septies. Tester les compléments (10 minutes)
+
+1. **Aujourd'hui › Outils de classe › Syllabes en couleur** : collez un texte ; couleurs alternées, arcs, lettres muettes en gris, police Marelle, impression. Un mot mal coupé se corrige en l'écrivant « li|on ».
+2. **Outils de classe › Parler et transcrire** : cochez d'abord l'accord (la voix part au service de reconnaissance du navigateur), puis dictez ; « virgule », « point », « à la ligne ».
+3. **Préparer › Générateurs d'exercices** : calculs (posés ou en ligne, tables, sans retenue), problèmes, dictée de mots par son, fiche de fluence ; « avec le corrigé », « Nouvelle fiche ».
+4. **Organisation › Surveillances de récréation** : adultes et jours de présence, « Répartir équitablement ».
+5. **Organisation › Liens utiles**.
+6. Boutons « Simplifier » (Texte d'une photo) et « Reformuler » (appréciations) : visibles seulement si votre navigateur propose son IA intégrée (Chrome récent sur un ordinateur compatible).
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -169,6 +178,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 
 **Étape 5** — 8 scénarios de synchronisation (`tests/e2e-etape5.mjs`) : fichier chiffré illisible sans le mot de passe ; nouvel appareil qui récupère tout ; modifications sur deux appareils fusionnées, conflit tracé ; suppression définitive propagée ; « Remplacer » sans doublon ; dossier synchronisé. Et 11 scénarios familles et rappels (`tests/e2e-etape5b.mjs`) : **photo avec un élève sans droit à l'image → publication bloquée** ; aperçu parent sans observation, besoin, échange ni devoir d'un autre élève ; **un créneau ne peut pas être réservé deux fois** ; message noté dans l'historique ; relances par famille ; fichier .ics conforme (alertes, aucun nom de famille) ; rappel affiché une seule fois ; rotation des ateliers.
 
+**Compléments** — 10 scénarios (`tests/e2e-complements.mjs`) : **60 mots courants coupés comme à l'école** ; couleurs alternées et lettres muettes ; **corrigé des calculs vérifié**, sans retenue, même graine = même fiche ; problèmes, dictée, fluence (cumul des mots) ; surveillances équilibrées qui respectent les jours de présence ; adresse de lien dangereuse refusée ; **dictée vocale inactive sans accord** ; IA cachée quand le navigateur ne la propose pas.
+
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
 
 Pour les relancer (nécessite Node.js) :
@@ -223,6 +234,10 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 - Synchronisation : sur téléphone, envoyer et récupérer se font à la main (deux gestes) ; synchronisation d'un clic seulement sur ordinateur avec Chrome ou Edge.
 - Familles : pas de portail propre ; les familles ne réservent pas elles-mêmes un rendez-vous en ligne (réponse par l'ENT ou sur papier).
 - Compétences officielles : extraction automatique des PDF, à relire avant validation ; objectifs d'EVAR de maternelle non extraits.
+- Syllabes en couleur : découpage automatique, à relire (correction possible mot par mot).
+- Dictée vocale : la voix part en général au service du navigateur (Google, Apple) ; à n'utiliser qu'après accord, sans données d'élèves.
+- IA : seulement celle intégrée au navigateur, quand il la propose ; aucune IA en ligne.
+- LSU : l'import direct est réservé aux éditeurs validés par le ministère ; l'application exporte un tableau à recopier.
 - Lecture de texte (OCR) : images seulement pour l'instant (pas encore les PDF scannés) ; le texte lu peut contenir des erreurs, à relire.
 - Sonomètre : niveau relatif, non étalonné en décibels.
 - Voix anglaise : celle fournie par l'appareil (qualité variable) ; un enregistrement de votre voix est toujours possible.
