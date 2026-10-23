@@ -108,8 +108,8 @@ export const ROADMAP = [
   R(3, '§11 Fichiers', 'Import PDF/images affichables ; PPTX : conversion nécessaire expliquée', 'fait'),
   R(3, '§11 Fichiers', 'Éditeur simple de diapositives (titre, texte, image, consigne, exercice, timer)', 'fait'),
   R(3, '§11 Fichiers', 'Mode projection séparé sans données privées ; notes présentateur', 'fait'),
-  R(4, '§11 Fichiers', 'Charte visuelle enregistrée'),
-  R(4, '§11 Fichiers', 'Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle'),
+  R(4, '§11 Fichiers', 'Charte visuelle enregistrée', 'fait', 'Réglages › Charte visuelle : police, couleurs, bordure.'),
+  R(4, '§11 Fichiers', 'Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle', 'fait', 'Impression A4 à taille réelle (PDF via « Enregistrer au format PDF ») ; séries versionnées après changement d’académie.'),
 
   // ── §12 Organisation et finances
   R(4, '§12 Organisation', 'Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves', 'fait'),
@@ -206,7 +206,7 @@ export const RUBRIQUES = [
     { id: 'fichiers', titre: 'Fichiers et ressources', route: 'fichiers' },
     { id: 'diaporamas', titre: 'Diaporamas', route: 'diaporamas' },
     { id: 'atelier', titre: 'Atelier pédagogique', route: 'atelier' },
-    { id: 'etiquettes', titre: 'Étiquettes et affichages', etape: 4 },
+    { id: 'etiquettes', titre: 'Étiquettes et affichages', route: 'etiquettes' },
   ]},
   { id: 'planifier', titre: 'Planifier', icone: 'calendar', sous: [
     { id: 'cahier', titre: 'Cahier journal', route: 'cahier' },

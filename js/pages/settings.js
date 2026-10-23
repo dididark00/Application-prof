@@ -1,6 +1,8 @@
 import * as store from '../store.js';
 import * as model from '../model.js';
 import * as Theme from '../theme.js';
+import * as LB from '../labels.js';
+import * as FO from '../fonts.js';
 import * as backup from '../backup.js';
 import * as demo from '../demo.js';
 import * as P from '../pedago.js';
@@ -16,6 +18,7 @@ const TABS = [
   ['annees', 'Années et périodes'],
   ['classes', 'Classes'],
   ['modules', 'Modules'],
+  ['charte', 'Charte visuelle'],
   ['sauvegarde', 'Sauvegarde'],
   ['connexions', 'Connexions'],
   ['historique', 'Historique'],
@@ -28,7 +31,7 @@ const TABS = [
 
 export async function render({ params }) {
   const tab = TABS.some(t => t[0] === params[0]) ? params[0] : 'general';
-  const content = await ({ general, annees, classes, modules, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
+  const content = await ({ general, annees, classes, modules, charte: charteTab, sauvegarde, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
   return h('div', { class: 'page' },
     pageHeader('Réglages', { favKey: 'reglages' }),
     h('nav', { class: 'subtabs', 'aria-label': 'Réglages' }, TABS.map(([id, label]) =>
@@ -74,6 +77,25 @@ function appearance() {
       custom('menu', 'Couleur du menu actif'),
       custom('fond', 'Couleur du fond')) : h('p', { class: 'muted small' }, 'Choisissez « Mes couleurs » pour composer votre propre thème.'),
     field('Mode sombre', h('select', { 'data-testid': 'theme-mode', onchange: (e) => Theme.set({ mode: e.target.value }) }, Theme.MODES.map(([v, l]) => h('option', { value: v, selected: t.mode === v }, l))), 'Le soir, l’application passe dans la version sombre du même thème. Impressions, projection et diaporamas restent sur fond blanc.'));
+}
+
+// ───────── Charte visuelle (étiquettes, affichages)
+function charteTab() {
+  const c = LB.charte();
+  const save = (patch, label) => store.setSettings({ charte: { ...LB.charte(), ...patch } }).then(() => toast(label || 'Charte enregistrée'));
+  const fonts = FO.available();
+  const sample = LB.S('svg', { viewBox: '0 0 105 74', width: '105mm', height: '74mm', class: 'charte-sample' });
+  LB.drawLabel(sample, { line1: 'Exemple', line2: 'Ma classe', emblem: { kind: 'symbol', key: 'etoile' } }, 105, 74, {});
+  return h('div', { class: 'stack' }, h('div', { class: 'card form', 'data-testid': 'charte' },
+    h('h2', {}, 'Charte visuelle'),
+    h('p', { class: 'muted small' }, 'Utilisée par défaut pour les étiquettes, affichages, titres et cartes d’ateliers. Chaque série peut ensuite être ajustée.'),
+    h('div', { class: 'grid-2' },
+      field('Police principale', h('select', { 'data-testid': 'charte-font', onchange: (e) => save({ font: e.target.value }) }, fonts.map(([v, l]) => h('option', { value: v, selected: c.font === v }, l)))),
+      field('Bordure', h('select', { onchange: (e) => save({ border: e.target.value }) }, LB.BORDERS.map(([v, l]) => h('option', { value: v, selected: c.border === v }, l))))),
+    field('Couleurs de la charte', h('div', { class: 'row' }, c.colors.map((col, i) => h('input', { type: 'color', value: col, 'aria-label': `Couleur ${i + 1}`, 'data-testid': 'charte-color', onchange: (e) => save({ colors: c.colors.map((x, j) => (j === i ? e.target.value : x)) }) })))),
+    field('Épaisseur de la bordure (mm)', h('input', { type: 'number', min: 0.2, max: 4, step: 0.1, value: c.borderWidth, onchange: (e) => save({ borderWidth: Number(e.target.value) || 1 }) })),
+    h('div', { class: 'charte-preview' }, sample),
+    h('p', {}, h('a', { class: 'btn btn-small', href: '#/etiquettes' }, 'Ouvrir le générateur d’étiquettes'))));
 }
 
 // ───────── Années

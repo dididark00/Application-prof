@@ -51,6 +51,7 @@ import * as pPes from './pages/pes.js';
 import * as pRempl from './pages/remplacement.js';
 import * as pArgent from './pages/argent.js';
 import * as pMateriel from './pages/materiel.js';
+import * as pEtiquettes from './pages/etiquettes.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -99,6 +100,7 @@ const ROUTES = {
   remplacement: pRempl,
   argent: pArgent,
   materiel: pMateriel,
+  etiquettes: pEtiquettes,
 };
 
 let rendering = false;

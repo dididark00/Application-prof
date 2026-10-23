@@ -38,7 +38,7 @@ const ids = await S(`const cls = store.all('class').find(c => c.name === 'CE2 (d
   return { cls: cls.id, lou: st('Lou'), nino: st('Nino'), year: cls.yearId };`);
 
 await test('Pages de l’organisation sans erreur ni faux bouton', async () => {
-  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel']) {
+  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel', '#/etiquettes', '#/etiquettes?t=series', '#/etiquettes?t=academies', '#/reglages/charte']) {
     await go(r);
     assert(!(await page.locator('.page').innerText()).includes('à venir à l’étape'), `${r} affiche encore « à venir »`);
   }
@@ -253,8 +253,88 @@ await test('Matériel : achat → une seule dépense au journal, stock, prêt et
   await page.keyboard.press('Escape');
 });
 
+await test('Académies : noms, couleurs, emblèmes, un élève dans une seule académie', async () => {
+  await go('#/etiquettes?t=academies');
+  await page.getByTestId('academies-create').click(); await page.waitForTimeout(250);
+  eq(await page.getByTestId('academy').count(), 4, '4 académies créées');
+  await page.getByTestId('academy-name').first().fill('Les Phénix'); await page.getByTestId('academy-name').first().press('Tab'); await page.waitForTimeout(200);
+  await page.getByTestId('academy-color').first().evaluate(el => { el.value = '#d9534f'; el.dispatchEvent(new Event('change', { bubbles: true })); }); await page.waitForTimeout(200);
+  await page.getByTestId('academies-random').click(); await page.waitForTimeout(250);
+  const r = await S(`const set = store.all('groupset').find(s => s.classId === a && s.kind === 'académies'); const all = set.groups.flatMap(g => g.memberIds);
+    return { dup: all.length - new Set(all).size, n: all.length, total: model.studentsOfClass(a).length, first: set.groups[0].name, color: set.groups[0].color, emblem: set.groups[0].emblem.key }`, ids.cls);
+  eq(r.dup, 0, 'aucun élève dans deux académies'); eq(r.n, r.total, 'tous les élèves répartis');
+  eq(r.first, 'Les Phénix', 'nom modifié'); eq(r.color, '#d9534f', 'couleur modifiée'); eq(r.emblem, 'etoile', 'emblème par défaut');
+});
+
+await test('§17 Étiquettes : taille réelle, colonnes et pagination', async () => {
+  await go('#/etiquettes?t=generer');
+  await page.getByTestId('labels-type').selectOption('eleves'); await page.waitForTimeout(150);
+  await page.getByTestId('labels-format').selectOption('70x37'); await page.waitForTimeout(250);
+  const info = await page.getByTestId('labels-info').innerText();
+  const L = await page.evaluate(async () => (await import('./js/labels.js')).layout({ w: 70, h: 37, margin: 0, gap: 0 }));
+  const n = await S(`return model.studentsOfClass(a).length`, ids.cls);
+  assert(info.includes(`${n} étiquette(s)`) && info.includes(`${L.perPage} par page`), `info : ${info}`);
+  eq(L.cols * L.rows, 24, 'planche 70 × 37 : 3 × 8 = 24 étiquettes');
+  const L8 = await page.evaluate(async () => (await import('./js/labels.js')).layout({ w: 70, h: 37, margin: 8, gap: 4 }));
+  eq(L8.cols + '×' + L8.rows, '2×6', 'avec 8 mm de marge et 4 mm d’espace : 2 × 6');
+  for (const [id, n] of [['63x38', 21], ['99x38', 14], ['105x74', 8], ['148x105', 4]]) eq(await page.evaluate(async (i) => { const LB = await import('./js/labels.js'); return LB.layout(LB.FORMATS.find(f => f.id === i)).perPage; }, id), n, `${id} : ${n} par page`);
+  const svg = page.getByTestId('labels-preview').locator('svg').first();
+  eq(await svg.getAttribute('width'), '210mm', 'page A4 à taille réelle (largeur)'); eq(await svg.getAttribute('height'), '297mm', 'page A4 à taille réelle (hauteur)');
+  eq(await svg.locator('[data-testid=label]').count(), Math.min(n, L.perPage), 'étiquettes sur la 1re page');
+  const box = await svg.locator('[data-testid=label]').first().evaluate(g => { const r = g.querySelector('rect.cut'); return [r.getAttribute('width'), r.getAttribute('height')]; });
+  eq(box.join('×'), '70×37', 'chaque étiquette mesure 70 × 37 mm');
+  const fam = await svg.locator('text').first().getAttribute('font-family');
+  assert(fam.includes('Marelle'), 'police de la charte (Marelle) par défaut');
+  // Pagination : 40 titres en 70 × 37 → 3 pages.
+  await page.getByTestId('labels-type').selectOption('titres'); await page.waitForTimeout(150);
+  await page.getByTestId('labels-format').selectOption('70x37'); await page.waitForTimeout(150);
+  await page.getByTestId('labels-text').fill(Array.from({ length: 40 }, (_, i) => `Titre ${i + 1}`).join('\n')); await page.waitForTimeout(250);
+  assert((await page.getByTestId('labels-info').innerText()).includes(`${Math.ceil(40 / L.perPage)} page(s)`), 'pagination correcte');
+  // Format personnalisé trop grand.
+  await page.getByTestId('labels-format').selectOption('a4l'); await page.waitForTimeout(250);
+  assert((await page.getByTestId('labels-info').innerText()).includes('1 par page'), 'A4 paysage : 1 par page');
+  eq(await page.getByTestId('labels-preview').locator('svg').first().getAttribute('width'), '297mm', 'page paysage');
+});
+
+await test('Série enregistrée, retouche, puis version actualisée après changement d’académie', async () => {
+  await go('#/etiquettes?t=generer');
+  await page.getByTestId('labels-type').selectOption('eleves'); await page.waitForTimeout(150);
+  await page.getByTestId('labels-format').selectOption('105x74'); await page.waitForTimeout(150);
+  await page.getByTestId('labels-save').click(); await page.waitForTimeout(300);
+  assert(/#\/etiquettes\/.+/.test(await page.evaluate(() => location.hash)), 'série ouverte');
+  eq(await page.getByTestId('academy-changed').count(), 0, 'pas de changement au départ');
+  // Retouche : le prénom de Lou devient « Lou-Anne ».
+  const idx = await page.getByTestId('label-edit').evaluateAll(els => els.findIndex(e => e.querySelector('input').value === 'Lou'));
+  assert(idx >= 0, 'étiquette de Lou trouvée');
+  const edit = page.getByTestId('label-edit').nth(idx);
+  await edit.locator('input').first().fill('Lou-Anne'); await edit.locator('input').first().press('Tab'); await page.waitForTimeout(200);
+  // Lou change d'académie.
+  const setId = await page.evaluate(() => location.hash.split('/')[2]);
+  await S(`const set = store.all('groupset').find(s => s.classId === a.cls && s.kind === 'académies');
+    const from = set.groups.findIndex(g => g.memberIds.includes(a.lou)); const to = (from + 1) % set.groups.length;
+    await store.update(set.id, { groups: set.groups.map((g, i) => i === from ? { ...g, memberIds: g.memberIds.filter(x => x !== a.lou) } : i === to ? { ...g, memberIds: [...g.memberIds, a.lou] } : g) }, 'test');`, ids);
+  await go(`#/etiquettes/${setId}`);
+  assert((await page.getByTestId('academy-changed').innerText()).includes('Lou-Anne'), 'changement signalé pour Lou');
+  await page.getByTestId('series-refresh').click(); await page.waitForTimeout(300);
+  const r = await S(`const all = store.all('labelset'); const v1 = store.get(a.old); const v2 = all.find(x => x.previousId === a.old);
+    const acad = (await import('./js/labels.js')).academyOf(a.cls, a.lou);
+    return { v1Color: v1.items.find(i => i.studentId === a.lou).color, v2Color: v2.items.find(i => i.studentId === a.lou).color, v2Name: v2.items.find(i => i.studentId === a.lou).line1, version: v2.version, now: acad.color }`, { ...ids, old: setId });
+  eq(r.version, 2, 'version 2 créée'); eq(r.v2Color, r.now, 'nouvelle version : couleur de la nouvelle académie');
+  assert(r.v1Color !== r.v2Color, 'la version 1 garde l’ancienne couleur'); eq(r.v2Name, 'Lou-Anne', 'retouche conservée');
+  eq(await page.getByTestId('academy-changed').count(), 0, 'version actualisée à jour');
+});
+
+await test('Charte visuelle enregistrée et utilisée par défaut', async () => {
+  await go('#/reglages/charte');
+  await page.getByTestId('charte-font').selectOption('Marelle Baton'); await page.waitForTimeout(200);
+  eq(await S(`return store.getSettings().charte.font`), 'Marelle Baton', 'police de la charte enregistrée');
+  await go('#/etiquettes?t=generer'); await page.waitForTimeout(250);
+  assert((await page.getByTestId('labels-preview').locator('text').first().getAttribute('font-family')).includes('Marelle Baton'), 'étiquettes en Marelle Bâton');
+  await S(`await store.setSettings({ charte: { ...store.getSettings().charte, font: 'Marelle' } })`);
+});
+
 await test('Captures', async () => {
-  for (const [r, n] of [[`#/reunions/${meetingId}`, 'reunion'], ['#/heures', 'heures'], ['#/heures?t=apc', 'apc'], ['#/transmissions', 'transmissions'], ['#/pes', 'pes'], ['#/remplacement', 'remplacement'], ['#/argent', 'argent'], ['#/argent?t=journal', 'journal'], ['#/materiel', 'materiel']]) { await go(r); await page.screenshot({ path: `${OUT}etape4-${n}.png`, fullPage: true }); }
+  for (const [r, n] of [[`#/reunions/${meetingId}`, 'reunion'], ['#/heures', 'heures'], ['#/heures?t=apc', 'apc'], ['#/transmissions', 'transmissions'], ['#/pes', 'pes'], ['#/remplacement', 'remplacement'], ['#/argent', 'argent'], ['#/argent?t=journal', 'journal'], ['#/materiel', 'materiel'], ['#/etiquettes?t=generer', 'etiquettes'], ['#/etiquettes?t=academies', 'academies']]) { await go(r); await page.screenshot({ path: `${OUT}etape4-${n}.png`, fullPage: true }); }
 });
 
 await test('Aucune erreur JavaScript', async () => { eq(errors.length, 0, errors.join(' | ')); });
