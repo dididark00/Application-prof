@@ -13,6 +13,8 @@ import { printSession } from '../printdocs.js';
 import * as G from '../groups.js';
 import { slideshowsOf, createFor } from './diaporamas.js';
 import { gamesOfSession } from '../jeux.js';
+import { phaseDiagrams } from './eps.js';
+import { diagramsOfPhase } from '../eps.js';
 
 let rerender = () => {};
 const ui = { showAll: false };
@@ -197,6 +199,7 @@ function phaseCard(s, ph, i, full) {
       h('span', { class: 'row-actions' }, iconBtn('up', 'Monter', () => move(-1)), iconBtn('down', 'Descendre', () => move(1)),
         iconBtn('trash', 'Supprimer la phase', async () => { await store.update(s.id, { phases: store.get(s.id).phases.filter(x => x.id !== ph.id) }, 'Phase supprimée'); toast('Phase supprimée', { action: 'Annuler', onAction: () => store.undo() }); }))),
     h('div', { class: 'phase-grid' }, fields.map(f => bound({ ...f, value: ph[f.key], testid: `ph-${f.key}`, onSave: (v) => update({ [f.key]: v }, `${def.label} : ${f.label}`) }))),
+    /eps|éducation physique/i.test(s.subject || '') || diagramsOfPhase(s.id, ph.id).length ? phaseDiagrams(s, ph) : null,
     hidden ? h('p', { class: 'muted small' }, `${hidden} rubrique(s) vide(s) masquée(s) — cochez « Toutes les rubriques » ou passez en mode Visite.`) : null);
 }
 

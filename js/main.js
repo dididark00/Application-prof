@@ -53,6 +53,7 @@ import * as pArgent from './pages/argent.js';
 import * as pMateriel from './pages/materiel.js';
 import * as pEtiquettes from './pages/etiquettes.js';
 import * as pJeux from './pages/jeux.js';
+import * as pEps from './pages/eps.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -103,6 +104,7 @@ const ROUTES = {
   materiel: pMateriel,
   etiquettes: pEtiquettes,
   jeux: pJeux,
+  eps: pEps,
 };
 
 let rendering = false;

@@ -57,7 +57,7 @@ function general() {
     h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Enregistrer')));
   return h('div', { class: 'stack' }, appearance(), form,
     h('div', { class: 'card' }, h('h2', {}, 'À propos'),
-      h('p', {}, `Version ${backup.APP_VERSION} — étapes 1 (socle), 2 (préparation et planification) et 3 (usage en classe). Les données sont enregistrées dans ce navigateur, sur cet appareil.`),
+      h('p', {}, `Version ${backup.APP_VERSION} — étapes 1 (socle), 2 (préparation et planification), 3 (usage en classe) et 4 (organisation et atelier). Les données sont enregistrées dans ce navigateur, sur cet appareil.`),
       h('p', { class: 'muted' }, 'Service, binôme et niveaux se règlent dans l’onglet Classes. Calendrier et périodes dans Années et périodes.')));
 }
 

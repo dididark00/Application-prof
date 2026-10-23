@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : étapes 1 (socle), 2 (préparation et planification liées) et 3 (usage en classe) réalisées et testées.** Les étapes 4 et 5 restent à développer ; leurs pages sont visibles mais affichent honnêtement « Pas encore disponible », sans bouton factice.
+**État : étapes 1 (socle), 2 (préparation et planification liées), 3 (usage en classe) et 4 (organisation, atelier) réalisées et testées.** L'étape 5 (comptes, familles, synchronisation, connexions) reste à développer ; ses pages affichent honnêtement « Pas encore disponible », sans bouton factice.
 
 ---
 
@@ -74,6 +74,21 @@ Avec les données fictives chargées :
 11. **Préparer › Atelier pédagogique** : **Tableau d’écriture (Seyès)** — tapez un texte, il s’écrit en attaché sur les lignes du cahier (minuscules = 1 interligne, ligne de base sur la ligne épaisse). Les polices **Marelle** (attaché et bâton, ministère de l’Éducation nationale, licence libre OFL, fichier `fonts/OFL.txt`) sont fournies avec l’application ; « Importer une autre police » permet d’en ajouter. « Afficher en grand » permet d’écrire par-dessus au doigt/stylet. Aussi : lignes Seyès, réglure, texte à compléter, droite graduée, numération, fractions, horloges ; version corrigée ; impression A4 à taille réelle (imprimer à 100 %).
 12. **Préparer › Diaporamas** : « Créer depuis la fiche » reprend la structure du modèle de diaporama ; « Présenter ici » ou « Projeter sur l'écran séparé » (notes présentateur jamais projetées).
 
+## 2 quater. Tester l'étape 4 (organisation et atelier, 20 minutes)
+
+Chargez la démonstration (Réglages › Démonstration), puis :
+
+1. **Organisation › Argent et projets** : onglet Comptes (solde initial explicite, report d'une année sur l'autre), « Sortie au musée (exemple) » : ajoutez un versement à un élève → il apparaît une seule fois dans le projet, le journal, la fiche élève (onglet Vie) et dans une liste qui a une colonne « Paiement d'un projet ». Journal : « Annuler » crée une correction tracée, l'original reste visible.
+2. **Organisation › Matériel** : achat (crée la dépense au journal), prêt et retour, alerte « à racheter ».
+3. **Préparer › Étiquettes et affichages** : onglet Académies (noms, couleurs, emblèmes, répartition), puis Générer (prénoms, 24 par planche 70 × 37 mm, police Marelle), « Enregistrer la série » et retouche ; changez un élève d'académie → « Créer une version actualisée ».
+4. **Réglages › Charte visuelle** : police, couleurs, bordure par défaut.
+5. **Préparer › Programmes et référentiels** : « Importer les compétences » sur une ligne (ex. Mathématiques CE2) → référentiel à relire (page du PDF indiquée, intitulés « à relire » surlignés) puis à valider.
+6. **Préparer › Atelier pédagogique** : Géométrie (symétrie, reproduction, figures en vraies dimensions, angles) et Cartes (planisphère, continents, France), version corrigée ; « Afficher en grand » : règle, équerre, rapporteur, compas.
+7. **Préparer › Jeux et anglais** : memory, quiz, bingo (cartons), flashcards avec voix de synthèse ou votre enregistrement ; « Jouer en grand ».
+8. **Préparer › Schémas EPS** (ou « + schéma EPS » dans une phase d'une fiche d'EPS) : modèle, déplacer, poignées (taille, orientation), dupliquer, annuler, équipes de la classe, consignes ; le schéma apparaît dans la fiche et le cahier journal.
+9. **Planifier › Cahier journal › Semaine** : « Dossier de la semaine ».
+10. **Ma classe › Bibliothèque** : « Code-barres / QR » (saisie, douchette ou caméra).
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -106,7 +121,7 @@ Ajoutées à l'étape 2 :
 
 Ajoutées à l'étape 3 : `attendance` (appel par demi-journée, validé ou non), `serviceplan` / `serviceexc` (semaine type et exceptions datées), `studentdoc` (documents, autorisations, droit à l'image, par année), `observation`, `levelmark`, `aid`, `portfolio`, `exchange`, `need` et `plan` (confidentiels), `list` (colonnes libres ou liées à la fiche élève), `evaluation` (maîtrise et points séparés), `report` (bilans de période), `catchup` (rattrapage), `layout` (plans de classe), `groupset` (groupes ; copie figée dans la séance datée), `jobs`, `book` / `loan`, `slideshow`.
 
-Prévues ensuite (étape 4) : réunions, 108 h, APC, transmissions binôme, argent et projets (mouvements financiers uniques), matériel, PES, étiquettes, schémas EPS, jeux, géométrie, cartes.
+Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, licence OFL).
 
 **Fichiers du projet**
 
@@ -130,6 +145,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 
 **Étape 2** — 17 scénarios (`tests/e2e-etape2.mjs`), dont ceux du cahier des charges : modifier une préparation et la retrouver au cahier journal sans doublon ; reporter une séance (supports conservés, créneau proposé, passé préservé) ; intervention à partir d'une date (absente avant) ; multiniveau (colonnes parallèles, conflit de présence de l'enseignant) ; réalisé figé ; EDT versionné ; statut de notion déduit ; copie indépendante ; référentiel validé et versionné ; reprise d'année sans journal ni résultats ; impressions PDF (fiche de visite sur 3 pages, séquence, EDT, journée, semaine, devoirs) ; sauvegarde/restauration de toutes les nouvelles données ; retrait complet de la démo.
 
+**Étape 4** — 25 scénarios (`tests/e2e-etape4.mjs`), dont : **deux versements → total juste dans le projet et le journal, sans double compte** ; correction tracée ; colonne de liste liée au paiement ; report de compte sans mélanger les années ; achat de matériel = une seule dépense ; **étiquettes à taille réelle (24 par planche, colonnes, pagination)** ; version actualisée après changement d'académie ; géométrie exacte et cartes sourcées ; instruments à l'échelle ; jeux jouables ; schéma EPS modifié retrouvé dans la fiche ; dossier de la semaine.
+
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
 
 Pour les relancer (nécessite Node.js) :
@@ -138,7 +155,7 @@ Pour les relancer (nécessite Node.js) :
 npm install            # installe Playwright et pdf-lib (outils de test uniquement)
 npx playwright install chromium
 python3 serveur.py &              # ou dans un autre terminal
-npm test                          # étapes 1, 2 et 3 (60 scénarios)
+npm test                          # étapes 1 à 4
 node tools/build-sw.mjs           # après toute modification des fichiers de l'application
 ```
 
@@ -178,7 +195,10 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 - PowerPoint (.pptx) : pas d'aperçu dans le navigateur (téléchargement, ou export PDF à déposer).
 - Données sensibles (santé, PPS/PAI…) : pas encore saisissables ; elles arriveront à l'étape 3 avec un accès restreint.
 - Avant d'y mettre de vraies données d'élèves : exportez régulièrement la sauvegarde et rangez-la en lieu sûr.
-- Les notifications (rappels de tâches, de séances) arrivent à l'étape 5 ; la répartition des préparations avec la binôme, à l'étape 4.
+- Les notifications (rappels de tâches, de séances) arrivent à l'étape 5.
+- Compétences officielles : extraction automatique des PDF, à relire avant validation ; objectifs d'EVAR de maternelle non extraits.
+- OCR (lecture de texte dans les scans) : non intégré, à décider (moteur gratuit mais lourd).
+- Voix anglaise : celle fournie par l'appareil (qualité variable) ; un enregistrement de votre voix est toujours possible.
 - Les heures de référence par discipline ne sont pas préremplies : à saisir depuis le texte officiel en vigueur.
 - Les champs de date affichent le format de la langue du navigateur.
 - Informations confidentielles : masquage à l'écran (avec code facultatif), pas un chiffrement ; le contrôle d'accès par compte arrive à l'étape 5.

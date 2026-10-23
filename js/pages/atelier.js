@@ -10,6 +10,7 @@ import { pageHeader, subTabs } from '../components.js';
 import { pickMany } from '../forms.js';
 import * as F from '../fonts.js';
 import * as T from '../atelier-tools.js';
+import { attachInstruments } from '../instruments.js';
 
 const PAGE = { w: 210, h: 297 };
 const TOOLS = [
@@ -354,6 +355,7 @@ export function animate(content) {
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => (document.fullscreenElement ? document.exitFullscreen() : wrap.requestFullscreen?.()) }, 'Plein écran'),
     h('button', { class: 'btn btn-small btn-primary', type: 'button', onclick: close }, 'Fermer')));
   document.body.append(wrap);
+  attachInstruments({ wrap, board, canvas, getCtx: () => ctx, bar: wrap.querySelector('.animate-bar'), color: () => color });
   requestAnimationFrame(fit);
   window.addEventListener('resize', fit, { once: true });
   void modal;

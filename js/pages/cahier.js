@@ -2,6 +2,7 @@
 // Chaque date garde son propre bilan ; ce qui est fait est figé (instantané) ;
 // les reports conservent la séance d'origine et ses supports.
 import * as store from '../store.js';
+import { diagramsOfSession } from '../eps.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
 import * as PL from '../planning.js';
@@ -13,7 +14,7 @@ import { scheduleDialog, newSession } from './seance.js';
 import { homeworkDialog } from './devoirs.js';
 import { addFiles } from './files.js';
 import { printDocument } from '../print.js';
-import { printDay, printWeek, printMaterials } from '../printdocs.js';
+import { printDay, printWeek, printMaterials, printWeekDossier } from '../printdocs.js';
 
 let rerender = () => {};
 
@@ -168,7 +169,9 @@ function entryCard(cls, e, inConflict) {
         onSave: (v) => PL.patchEntry(e, cls, { after: { ...(e.kind === 'occ' ? store.get(e.occ.id).after : {}), [f.key]: v } }, `Après la séance : ${f.label}`, { quiet: e.kind === 'occ' }) })))) : null,
     boardFiles.length ? h('p', { class: 'small' }, 'Tableau : ', boardFiles.map(f => h('a', { href: `#/fichiers?open=${f.id}` }, f.name)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])) : null) : null;
 
-  return h('article', { class: cardCls, style: { borderLeftColor: model.subjectColor(e.subject) }, 'data-testid': 'entry' }, header, body, bilan, actions);
+  const diags = s ? diagramsOfSession(s.id) : [];
+  const diagLinks = diags.length ? h('p', { class: 'small', 'data-testid': 'entry-diagrams' }, 'Schémas EPS : ', diags.map(x => h('a', { href: `#/eps/${x.id}` }, x.title)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])) : null;
+  return h('article', { class: cardCls, style: { borderLeftColor: model.subjectColor(e.subject) }, 'data-testid': 'entry' }, header, body, diagLinks, bilan, actions);
 }
 
 async function chooseSession(cls, e) {
@@ -259,7 +262,8 @@ function weekView(cls, date, nav) {
   const rows = PL.materials(cls, days);
   return h('div', { class: 'page' },
     pageHeader('Cahier journal — semaine', { favKey: 'planifier/cahier', subtitle: `${cls.name} · semaine du ${model.frDate(monday)}`,
-      actions: [h('button', { class: 'btn', type: 'button', 'data-testid': 'print-week', onclick: () => printDocument(printWeek(cls, monday), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer la semaine')] }),
+      actions: [h('button', { class: 'btn', type: 'button', 'data-testid': 'print-week', onclick: () => printDocument(printWeek(cls, monday), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer la semaine'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-dossier', onclick: () => printDocument(printWeekDossier(cls, monday)) }, icon('print', 16), 'Dossier de la semaine')] }),
     subTabs(), nav,
     h('div', { class: 'week', style: { gridTemplateColumns: `repeat(${days.length}, minmax(160px, 1fr))` }, 'data-testid': 'week' }, days.map(d => {
       const p = PL.dayPlan(cls, d);

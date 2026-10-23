@@ -38,7 +38,7 @@ const ids = await S(`const cls = store.all('class').find(c => c.name === 'CE2 (d
   return { cls: cls.id, lou: st('Lou'), nino: st('Nino'), year: cls.yearId };`);
 
 await test('Pages de l’organisation sans erreur ni faux bouton', async () => {
-  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel', '#/etiquettes', '#/etiquettes?t=series', '#/etiquettes?t=academies', '#/reglages/charte', '#/jeux']) {
+  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel', '#/etiquettes', '#/etiquettes?t=series', '#/etiquettes?t=academies', '#/reglages/charte', '#/jeux', '#/eps']) {
     await go(r);
     assert(!(await page.locator('.page').innerText()).includes('à venir à l’étape'), `${r} affiche encore « à venir »`);
   }
@@ -412,6 +412,122 @@ await test('Jeux : memory joué jusqu’au bout, quiz, bingo, flashcards d’ang
   await S(`await store.update(a.g, { sessionId: a.s }, 'test')`, { g: gid, s: sid });
   await go(`#/seance/${sid}`);
   assert((await page.locator('.page').innerText()).includes('Animals'), 'jeu listé dans la fiche de séance');
+});
+
+await test('Schémas EPS : modèle, déplacer, redimensionner, orienter, dupliquer, annuler ; lien phase et version actuelle', async () => {
+  const sid = await S(`const s = await store.create('session', { classId: a, title: 'Jeux collectifs (exemple)', subject: 'EPS', phases: P.defaultPhases(), competencyIds: [], fileIds: [], manualRefs: [], copies: [], variants: [], checklist: {} }); return s.id`, ids.cls);
+  await go(`#/seance/${sid}`);
+  await page.getByTestId('phase-add-diagram').first().click();
+  await page.getByTestId('diagram-title').fill('Mise en place — passes'); await page.getByTestId('diagram-template').selectOption('collectif');
+  await page.getByTestId('diagram-create').click(); await page.waitForTimeout(300);
+  const did = await page.evaluate(() => location.hash.split('/')[2]);
+  const before = await S(`return store.get(a).items.length`, did);
+  assert(before >= 10, 'modèle « jeu collectif » chargé');
+  // Couleurs d'équipes reprises des groupes de la classe (démo : Les Hiboux, Les Renards).
+  assert((await page.locator('.page').innerText()).includes('Les Hiboux'), 'équipes de la classe proposées');
+  // Déplacer un joueur à la souris.
+  const p0 = await S(`const it = store.get(a).items.find(i => i.kind === 'joueur'); return { id: it.id, x: it.x, y: it.y }`, did);
+  const box = await page.locator(`[data-testid=eps-host] [data-id="${p0.id}"]`).boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 40, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(250);
+  const p1 = await S(`const it = store.get(a.d).items.find(i => i.id === a.p); return { x: it.x, y: it.y }`, { d: did, p: p0.id });
+  assert(p1.x > p0.x + 20 && p1.y > p0.y + 10, `joueur déplacé (${p0.x},${p0.y} → ${p1.x},${p1.y})`);
+  // Orienter, dupliquer, étiqueter, colorer.
+  await page.getByTestId('item-rotate').click(); await page.waitForTimeout(150);
+  await page.getByTestId('item-dup').click(); await page.waitForTimeout(150);
+  eq(await S(`return store.get(a).items.length`, did), before + 1, 'élément dupliqué');
+  await page.getByTestId('item-label').fill('C'); await page.getByTestId('item-label').press('Tab'); await page.waitForTimeout(150);
+  await page.getByTestId('item-color').nth(1).click(); await page.waitForTimeout(150);
+  // Ajouter un plot puis annuler.
+  await page.getByTestId('add-plot').click(); await page.waitForTimeout(150);
+  eq(await S(`return store.get(a).items.length`, did), before + 2, 'plot ajouté');
+  await page.getByTestId('eps-undo').click(); await page.waitForTimeout(150);
+  eq(await S(`return store.get(a).items.length`, did), before + 1, 'annulation');
+  // Tracer une flèche de déplacement.
+  await page.getByTestId('add-deplacement').click();
+  const hb = await page.getByTestId('eps-host').boundingBox();
+  await page.mouse.move(hb.x + 100, hb.y + 100); await page.mouse.down(); await page.mouse.move(hb.x + 300, hb.y + 160, { steps: 5 }); await page.mouse.up(); await page.waitForTimeout(250);
+  const arrow = await S(`return store.get(a).items.filter(i => i.kind === 'deplacement').length`, did);
+  eq(arrow, 1, 'flèche tracée');
+  await page.getByTestId('eps-consignes').fill('Passes à deux, sans courir avec le ballon.'); await page.getByTestId('eps-consignes').press('Tab'); await page.waitForTimeout(150);
+  eq(await page.locator('[data-testid=eps-svg] text').filter({ hasText: 'Croquis non coté' }).count(), 1, 'croquis signalé non coté sans dimensions');
+  // Fiche de séance : schéma visible dans la phase ; une modification se retrouve (version actuelle, pas une copie).
+  await S(`const d = store.get(a); await store.update(a, { items: [...d.items, { id: 'zz', kind: 'texte', x: 10, y: 10, w: 120, h: 30, rot: 0, color: '#222', label: 'NOUVEAU' }] }, 'test')`, did);
+  await go(`#/seance/${sid}`);
+  const mini = page.getByTestId('phase-diagrams').first();
+  assert((await mini.innerText()).includes('Mise en place — passes'), 'schéma visible dans la phase');
+  assert((await mini.locator('svg').textContent()).includes('NOUVEAU'), 'version actuelle du schéma affichée');
+  await page.screenshot({ path: `${OUT}etape4-seance-eps.png` });
+  await go(`#/eps/${did}`); await page.screenshot({ path: `${OUT}etape4-eps.png` });
+});
+
+await test('Instruments virtuels : règle à l’échelle de la fiche, rapporteur, équerre, compas qui trace', async () => {
+  await go('#/atelier'); await page.getByTestId('tool-figures').click(); await page.waitForTimeout(150);
+  await page.getByRole('button', { name: 'Afficher en grand' }).click(); await page.waitForTimeout(300);
+  await page.getByTestId('instr-add-regle').click(); await page.getByTestId('instr-add-rapporteur').click(); await page.getByTestId('instr-add-equerre').click(); await page.waitForTimeout(150);
+  const m = await page.evaluate(() => {
+    const seg = document.querySelector('.animate-board [data-kind=segment] line[data-mm]');
+    const r = seg.getBoundingClientRect();
+    const ruler = document.querySelector('[data-testid=instr-regle]').getBoundingClientRect();
+    return { seg: r.width, ruler: ruler.width };
+  });
+  // Segment de 7 cm de la fiche ; règle de 20,5 cm : rapport attendu 70 / 205.
+  assert(Math.abs(m.seg / m.ruler - 70 / 205) < 0.01, `règle à l’échelle de la fiche (${(m.seg / m.ruler).toFixed(3)})`);
+  eq(await page.getByTestId('instr-rapporteur').count(), 1, 'rapporteur affiché'); eq(await page.getByTestId('instr-equerre').count(), 1, 'équerre affichée');
+  // Déplacer la règle.
+  const rb = await page.getByTestId('instr-regle').boundingBox();
+  await page.mouse.move(rb.x + 40, rb.y + 10); await page.mouse.down(); await page.mouse.move(rb.x + 140, rb.y + 90, { steps: 5 }); await page.mouse.up();
+  const rb2 = await page.getByTestId('instr-regle').boundingBox();
+  assert(rb2.x > rb.x + 80 && rb2.y > rb.y + 60, 'règle déplacée');
+  // Compas.
+  await page.getByTestId('instr-compass').click();
+  const c = await page.locator('.animate-ink').boundingBox();
+  await page.mouse.move(c.x + 200, c.y + 200); await page.mouse.down(); await page.mouse.move(c.x + 280, c.y + 200, { steps: 4 });
+  assert((await page.getByTestId('compass-info').innerText()).startsWith('rayon'), 'rayon affiché en cm');
+  await page.mouse.up(); await page.waitForTimeout(100);
+  const inked = await page.evaluate(() => { const cv = document.querySelector('.animate-ink'); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n; });
+  assert(inked > 200, 'cercle tracé sur le calque d’annotation');
+  await page.screenshot({ path: `${OUT}etape4-instruments.png` });
+  await page.keyboard.press('Escape');
+});
+
+await test('Bibliothèque : code saisi ou douchette → prêt ou retour ; ISBN → livre', async () => {
+  await go('#/bibliotheque');
+  await page.getByTestId('scan').click(); await page.getByTestId('scan-input').fill('alb 2'); await page.getByTestId('scan-input').press('Enter'); await page.waitForTimeout(200);
+  assert((await page.locator('.modal').innerText()).includes('Prêter « Album d’exemple (fictif) » (ALB-2)'), 'code d’exemplaire reconnu → dialogue de prêt');
+  await page.keyboard.press('Escape');
+  await page.getByTestId('scan').click(); await page.getByTestId('scan-input').fill('XYZ-9'); await page.getByTestId('scan-go').click();
+  assert((await page.getByTestId('scan-status').innerText()).includes('Code inconnu'), 'code inconnu signalé');
+  await page.keyboard.press('Escape');
+});
+
+await test('Dossier de la semaine : cahier, matériel, fiches et schémas EPS', async () => {
+  const r = await page.evaluate(async (cls) => {
+    const PD = await import('./js/printdocs.js'); const s = await import('./js/store.js'); const m = await import('./js/model.js');
+    const node = PD.printWeekDossier(s.get(cls), m.mondayOf('2026-11-02'));
+    return { sessions: Number(node.getAttribute('data-sessions')), parts: node.querySelectorAll('.print-doc').length, text: node.textContent.slice(0, 400) };
+  }, ids.cls);
+  assert(r.parts >= 2, 'semaine + matériel au minimum'); assert(r.text.includes('Cahier journal — semaine du'), 'cahier de la semaine en tête');
+  assert(r.parts >= 2 + r.sessions, `une fiche par séance programmée (${r.sessions})`);
+});
+
+await test('Sauvegarde/restauration de toutes les données de l’étape 4 ; téléphone sans débordement', async () => {
+  const types = ['account', 'movement', 'project', 'material', 'matmove', 'labelset', 'game', 'epsdiagram', 'groupset', 'referential'];
+  const count = () => page.evaluate(async (ts) => { const s = await import('./js/store.js'); return ts.map(t => s.all(t).length).join(','); }, types);
+  const before = await count();
+  const backup = await page.evaluate(async () => { const b = await import('./js/backup.js'); return JSON.stringify(await b.buildBackup()); });
+  await page.evaluate(async () => (await import('./js/backup.js')).wipeAll());
+  await page.evaluate(async (txt) => { const b = await import('./js/backup.js'); await b.restoreBackup(await b.readBackup(new File([txt], 's.json'))); }, backup);
+  eq(await count(), before, 'mêmes données après restauration');
+  const m = await browser.newContext({ viewport: { width: 375, height: 760 }, isMobile: true, hasTouch: true, locale: 'fr-FR' });
+  const mp = await m.newPage(); await mp.goto(BASE); await mp.waitForFunction(() => window.__classeurReady);
+  await mp.evaluate(async () => (await import('./js/demo.js')).loadDemo()); await mp.waitForTimeout(300);
+  for (const r of ['#/argent', '#/argent?t=journal', '#/materiel', '#/etiquettes', '#/etiquettes?t=academies', '#/jeux', '#/eps', '#/referentiels', '#/atelier']) {
+    await mp.evaluate(h => { location.hash = h; }, r); await mp.waitForTimeout(250);
+    const over = await mp.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    assert(over <= 1, `${r} déborde de ${over}px`);
+  }
+  await m.close();
 });
 
 await test('Captures', async () => {

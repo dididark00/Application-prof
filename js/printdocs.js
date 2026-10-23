@@ -4,6 +4,7 @@ import * as model from './model.js';
 import * as P from './pedago.js';
 import * as PL from './planning.js';
 import { h } from './ui.js';
+import * as EPS from './eps.js';
 import { manualRefsText } from './pedago-ui.js';
 import { competencyIndex, competencyLabel, competencySource } from './pages/referentiels.js';
 
@@ -125,4 +126,21 @@ export function printHomework(cls, list) {
   return h('div', { class: 'print-doc' }, head('Devoirs', cls.name),
     h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, ['Pour le', 'Donné le', 'Discipline', 'Travail', 'Pour qui'].map(t => h('th', {}, t)))),
       h('tbody', {}, list.map(x => h('tr', {}, h('td', {}, model.frDate(x.dueDate, { weekday: 'short', day: 'numeric', month: 'short' })), h('td', {}, model.frShort(x.givenDate)), h('td', {}, x.subject || ''), h('td', {}, h('strong', {}, x.title), x.details ? h('div', { class: 'small pre' }, x.details) : null), h('td', {}, target(x)))))));
+}
+
+/** Dossier de la semaine : cahier journal, matériel et photocopies, fiches de séance et schémas EPS. */
+export function printWeekDossier(cls, monday) {
+  const days = model.classDays(cls).map(d => model.addDays(monday, d - 1));
+  const ids = [];
+  for (const d of days) for (const e of PL.dayPlan(cls, d).entries) if (e.sessionId && !ids.includes(e.sessionId) && store.get(e.sessionId) && !store.get(e.sessionId).deletedAt) ids.push(e.sessionId);
+  const parts = [printWeek(cls, monday), printMaterials(cls, days, `Matériel et photocopies — semaine du ${model.frDate(monday)}`)];
+  for (const id of ids) {
+    parts.push(printSession(id));
+    for (const d of EPS.diagramsOfSession(id)) {
+      const notes = [['Consignes', 'consignes'], ['Matériel', 'materiel'], ['Rotations', 'rotations'], ['Points de vigilance', 'vigilance']].filter(([, k]) => d.notes?.[k]);
+      parts.push(h('div', { class: 'print-doc eps-print' }, head(`Schéma EPS — ${d.title}`, P.sessionTitle(store.get(id))), EPS.render(d),
+        notes.length ? h('div', { class: 'eps-notes' }, notes.map(([l, k]) => h('div', {}, h('strong', {}, l), h('p', { class: 'pre' }, d.notes[k])))) : null));
+    }
+  }
+  return h('div', { class: 'dossier', 'data-sessions': ids.length }, parts.map((p, i) => (i ? h('div', { class: 'page-break' }, p) : p)));
 }

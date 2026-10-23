@@ -53,7 +53,7 @@ export const ROADMAP = [
   R(2, '§5 Préparation', 'Fiche de séquence complète', 'fait'),
   R(2, '§5 Préparation', 'Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication', 'fait', 'Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge.'),
   R(2, '§5 Préparation', 'Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes', 'fait'),
-  R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'afaire', 'Local et gratuit si possible ; OCR distant facultatif.'),
+  R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'afaire', 'Reporté : un OCR local gratuit demande d’intégrer un moteur (Tesseract, ~10 Mo) ; à décider avec vous. OCR distant : non, sans votre accord.'),
   R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)'),
   R(2, '§5 Préparation', 'Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle', 'fait'),
   R(2, '§5 Préparation', 'Photos du tableau et corrections ; suivi des apprentissages à reprendre', 'partiel', 'Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3).'),
@@ -137,7 +137,7 @@ export const ROADMAP = [
   R(1, '§14 Exports', 'Sauvegarde complète réimportable', 'fait'),
   R(2, '§14 Exports', 'Impression EDT, cahier journal, préparations, séquences, progressions', 'fait'),
   R(3, '§14 Exports', 'Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans', 'fait'),
-  R(4, '§14 Exports', 'Dossier de semaine ; finances ; étiquettes à taille réelle'),
+  R(4, '§14 Exports', 'Dossier de semaine ; finances ; étiquettes à taille réelle', 'fait', 'Cahier journal › semaine › « Dossier de la semaine » : semaine, matériel, fiches de séance et schémas EPS.'),
   R(3, '§14 Exports', 'Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut', 'partiel', 'Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4).'),
 
   // ── §15 Fiabilité
@@ -156,18 +156,18 @@ export const ROADMAP = [
   R(3, '§19 Atelier', 'Écriture : lignes Seyès, réglures, textes à compléter', 'fait'),
   R(3, '§19 Atelier', 'Tableau d’écriture Seyès : texte tapé en cursive (police Marelle importée), calé sur les lignes, imprimable et affichable en grand avec annotation', 'fait', 'La police Marelle (gratuite, licence libre) se télécharge sur le site du ministère puis s’importe une fois par appareil.'),
   R(3, '§19 Atelier', 'Maths : droites graduées, numération, fractions, horloges', 'fait'),
-  R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections', 'partiel', 'Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, avec corrections. Instruments virtuels : en cours.'),
+  R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections', 'fait', 'Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, corrections ; règle, équerre, rapporteur et compas à l’échelle de la fiche en affichage en grand.'),
   R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées', 'fait', 'Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée.'),
   R(4, '§19 Atelier', 'Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes', 'fait', 'Imprimables et jouables en grand (tactile), reliés aux séances.'),
   R(4, '§19 Atelier', 'Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé', 'fait', 'Audio : voix de synthèse de l’appareil (indiquée comme telle) ou enregistrement de l’enseignante.'),
-  R(4, '§19 Atelier', 'Modes concevoir/animer plein écran, annotation, tactile'),
-  R(4, '§19 Atelier', 'Fenêtre de projection séparée / image dans l’image si supporté'),
+  R(4, '§19 Atelier', 'Modes concevoir/animer plein écran, annotation, tactile', 'partiel', 'Plein écran, annotation au doigt, instruments déplaçables, jeux jouables en grand. À venir : affichage progressif des éléments d’une fiche.'),
+  R(4, '§19 Atelier', 'Fenêtre de projection séparée / image dans l’image si supporté', 'fait', 'Écran de projection séparé (Aujourd’hui › Projection) ; timer en image dans l’image sur Chrome/Edge.'),
 
   // ── §20 Plans, groupes, EPS
   R(3, '§20 Plans', 'Plan de classe visuel : mobilier, modèles, dispositions nommées par période/séance', 'fait'),
   R(3, '§20 Plans', 'Groupes manuels ou aléatoires, absents, rôles, rotations ; groupes de séance figés', 'fait'),
-  R(4, '§20 Plans', 'Fiches de groupes imprimables/projetables (version enseignant séparée)'),
-  R(4, '§20 Plans', 'Éditeur de schémas EPS lié aux préparations et au cahier journal'),
+  R(4, '§20 Plans', 'Fiches de groupes imprimables/projetables (version enseignant séparée)', 'fait', 'Plan de classe et groupes › Fiches de groupe / Version enseignante (notes) ; projection des groupes.'),
+  R(4, '§20 Plans', 'Éditeur de schémas EPS lié aux préparations et au cahier journal', 'fait', 'Déplacer, redimensionner, orienter, dupliquer, annuler ; modèles ; couleurs d’équipes des groupes ; image, impression, projection ; croquis non coté sauf dimensions saisies.'),
 
   // ── §21-22 PWA, sync, budget, visites
   R(1, '§21 PWA', 'Application web installable (manifeste, icônes, fonctionnement hors ligne)', 'fait'),
@@ -182,7 +182,7 @@ export const ROADMAP = [
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
   R(3, '§23 Bibliothèque', 'Vues par livre/élève, retards, retour en un clic, impressions, grille vierge', 'fait'),
   R(3, '§23 Bibliothèque', 'Prêts ouverts signalés au départ d’un élève ou au changement d’année', 'fait'),
-  R(4, '§23 Bibliothèque', 'Scan code-barres/QR (facultatif)'),
+  R(4, '§23 Bibliothèque', 'Scan code-barres/QR (facultatif)', 'fait', 'Saisie ou douchette partout ; caméra si le navigateur sait lire les codes.'),
 ];
 
 // Sous-pages de chaque rubrique et l'étape où elles arrivent.
@@ -207,6 +207,7 @@ export const RUBRIQUES = [
     { id: 'diaporamas', titre: 'Diaporamas', route: 'diaporamas' },
     { id: 'atelier', titre: 'Atelier pédagogique', route: 'atelier' },
     { id: 'jeux', titre: 'Jeux et anglais', route: 'jeux' },
+    { id: 'eps', titre: 'Schémas EPS', route: 'eps' },
     { id: 'etiquettes', titre: 'Étiquettes et affichages', route: 'etiquettes' },
   ]},
   { id: 'planifier', titre: 'Planifier', icone: 'calendar', sous: [

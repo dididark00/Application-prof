@@ -41,11 +41,12 @@ export function render({ rerender }) {
 }
 
 function catalogue(cls, rerender) {
-  const books = store.all('book').filter(b => (!filt.q || `${b.title} ${b.author || ''} ${(b.copies || []).map(c => c.code).join(' ')}`.toLowerCase().includes(filt.q.toLowerCase())) && (!filt.category || b.category === filt.category))
+  const books = store.all('book').filter(b => (!filt.q || `${b.title} ${b.author || ''} ${b.isbn || ''} ${(b.copies || []).map(c => c.code).join(' ')}`.toLowerCase().includes(filt.q.toLowerCase())) && (!filt.category || b.category === filt.category))
     .sort((a, b) => a.title.localeCompare(b.title, 'fr'));
   const cats = [...new Set(store.all('book').map(b => b.category).filter(Boolean))];
   return h('div', { class: 'stack' },
     h('div', { class: 'filters' }, h('input', { type: 'search', placeholder: 'Titre, auteur, code…', value: filt.q, 'aria-label': 'Rechercher un livre', onchange: (e) => { filt.q = e.target.value; rerender(); } }),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'scan', onclick: () => scanDialog(cls, rerender) }, 'Code-barres / QR'),
       cats.length ? h('select', { 'aria-label': 'Catégorie', onchange: (e) => { filt.category = e.target.value; rerender(); } }, h('option', { value: '' }, 'Toutes catégories'), cats.map(c => h('option', { value: c, selected: filt.category === c }, c))) : null),
     books.length ? books.map(b => {
       const avail = (b.copies || []).filter(c => c.state === 'disponible' && !loanOfCopy(c.id)).length;
@@ -69,7 +70,45 @@ function catalogue(cls, rerender) {
               if (sel) await store.update(b.id, { sequenceIds: sel }, 'Livre relié aux séquences');
             } }, 'Relier à des séquences'))) : null);
     }) : emptyState('Catalogue vide', 'Ajoutez les livres de la classe, avec un exemplaire par livre physique.'),
-    h('p', { class: 'muted small' }, 'La lecture de codes-barres ou QR pour les exemplaires est prévue plus tard, en option.'));
+    h('p', { class: 'muted small' }, 'Code-barres / QR : saisissez ou scannez le code d’un exemplaire (ex. ALB-1) ou l’ISBN du livre. Une douchette USB ou Bluetooth fonctionne comme un clavier ; la caméra est utilisée si le navigateur sait lire les codes (Chrome sur Android, par exemple).'));
+}
+
+/** Trouve un exemplaire (code) ou un livre (ISBN) à partir d'un code lu ou saisi. */
+export function findByCode(code) {
+  const c = String(code || '').trim().toUpperCase().replace(/[\s-]/g, '');
+  if (!c) return null;
+  for (const b of store.all('book')) {
+    const copy = (b.copies || []).find(x => x.code.toUpperCase().replace(/[\s-]/g, '') === c);
+    if (copy) return { book: b, copy };
+  }
+  const b = store.all('book').find(x => x.isbn && x.isbn.replace(/[\s-]/g, '').toUpperCase() === c);
+  return b ? { book: b, copy: null } : null;
+}
+
+function scanDialog(cls, rerender) {
+  const input = h('input', { placeholder: 'code de l’exemplaire ou ISBN', 'data-testid': 'scan-input', autocomplete: 'off' });
+  const status = h('p', { class: 'muted small', 'data-testid': 'scan-status' });
+  const video = h('video', { class: 'scan-video', playsinline: true, muted: true, hidden: true });
+  let stream = null, stop = false, dlg = null;
+  const handle = (code) => {
+    const r = findByCode(code);
+    if (!r) { status.textContent = `Code inconnu : ${code}`; return; }
+    stop = true; stream?.getTracks().forEach(t => t.stop()); dlg?.close();
+    if (r.copy) { const ln = loanOfCopy(r.copy.id); if (ln) returnDialog([ln]); else lendDialog(cls, r.book, r.copy); }
+    else { filt.openBook = r.book.id; filt.q = ''; tab = 'catalogue'; rerender(); toast(`Livre trouvé : ${r.book.title}`); }
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handle(input.value); } });
+  const camera = 'BarcodeDetector' in window ? h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
+    try {
+      const det = new window.BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128', 'code_39'] });
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      video.srcObject = stream; video.hidden = false; await video.play(); status.textContent = 'Présentez le code à la caméra…';
+      const loop = async () => { if (stop) return; try { const codes = await det.detect(video); if (codes[0]) { handle(codes[0].rawValue); if (stop) return; } } catch { /* image suivante */ } requestAnimationFrame(loop); };
+      loop();
+    } catch { status.textContent = 'Caméra indisponible ou refusée : saisissez le code.'; }
+  } }, 'Utiliser la caméra') : h('p', { class: 'muted small' }, 'La lecture par caméra n’est pas proposée par ce navigateur ; la saisie (ou une douchette) fonctionne partout.');
+  dlg = modal({ title: 'Code-barres / QR', body: h('div', { class: 'form' }, field('Code', input), camera, video, status), onClose: () => { stop = true; stream?.getTracks().forEach(t => t.stop()); },
+    actions: [{ label: 'Fermer' }, { label: 'Chercher', primary: true, testid: 'scan-go', onClick: () => { handle(input.value); return false; } }] });
 }
 
 function bookDialog(b = null) {
@@ -78,6 +117,7 @@ function bookDialog(b = null) {
     h('div', { class: 'grid-3' }, field('Catégorie', h('input', { name: 'category', value: b?.category || '', placeholder: 'album, roman, documentaire, BD…', list: 'book-cats' })),
       field('Niveau indicatif', h('select', { name: 'level' }, h('option', { value: '' }, '—'), model.NIVEAUX.map(l => h('option', { value: l, selected: b?.level === l }, l)))),
       field('Identifiant / cote', h('input', { name: 'ref', value: b?.ref || '' }))),
+    field('ISBN (facultatif, pour la lecture du code-barres du livre)', h('input', { name: 'isbn', value: b?.isbn || '', inputmode: 'numeric' })),
     h('datalist', { id: 'book-cats' }, ['album', 'roman', 'documentaire', 'bande dessinée', 'poésie', 'série de lecture'].map(v => h('option', { value: v }))),
     b ? null : field('Nombre d’exemplaires', h('input', { name: 'n', type: 'number', min: 1, max: 40, value: 1 })));
   const actions = [{ label: 'Annuler' }];
@@ -87,8 +127,8 @@ function bookDialog(b = null) {
   } });
   actions.push({ label: 'Enregistrer', primary: true, onClick: async () => {
     const d = formData(form); if (!d.title) return false;
-    if (b) await store.update(b.id, { title: d.title, author: d.author, category: d.category, level: d.level, ref: d.ref }, `Livre « ${d.title} »`);
-    else { const code = d.ref || d.title.slice(0, 3).toUpperCase(); await store.create('book', { title: d.title, author: d.author, category: d.category, level: d.level, ref: d.ref, sequenceIds: [], copies: Array.from({ length: Math.max(1, Math.min(40, Number(d.n) || 1)) }, (_, i) => ({ id: store.uid(), code: `${code}-${i + 1}`, state: 'disponible' })) }, `Livre « ${d.title} » ajouté`); }
+    if (b) await store.update(b.id, { title: d.title, author: d.author, category: d.category, level: d.level, ref: d.ref, isbn: d.isbn }, `Livre « ${d.title} »`);
+    else { const code = d.ref || d.title.slice(0, 3).toUpperCase(); await store.create('book', { title: d.title, author: d.author, category: d.category, level: d.level, ref: d.ref, isbn: d.isbn, sequenceIds: [], copies: Array.from({ length: Math.max(1, Math.min(40, Number(d.n) || 1)) }, (_, i) => ({ id: store.uid(), code: `${code}-${i + 1}`, state: 'disponible' })) }, `Livre « ${d.title} » ajouté`); }
   } });
   modal({ title: b ? 'Modifier le livre' : 'Ajouter un livre', wide: true, body: form, actions });
 }

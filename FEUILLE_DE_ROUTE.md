@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (104) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (20) — 135 entrées.
+Légende : ✅ Réalisé (110) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (14) — 135 entrées.
 
 ## Étape 1 — Socle
 
@@ -121,7 +121,7 @@ Légende : ✅ Réalisé (104) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | | Section | Fonction | Note |
 |---|---|---|---|
 | ✅ | §5 Préparation | Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider) | 2 080 intitulés extraits des PDF officiels (TPS–CM2), page indiquée, contrôle automatique mot à mot ; EVAR maternelle non extrait. |
-| ⬜ | §5 Préparation | OCR optionnel avec texte incertain signalé | Local et gratuit si possible ; OCR distant facultatif. |
+| ⬜ | §5 Préparation | OCR optionnel avec texte incertain signalé | Reporté : un OCR local gratuit demande d’intégrer un moteur (Tesseract, ~10 Mo) ; à décider avec vous. OCR distant : non, sans votre accord. |
 | ✅ | §6 Planifier | Répartition des préparations avec la binôme | Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme). |
 | ✅ | §11 Fichiers | Charte visuelle enregistrée | Réglages › Charte visuelle : police, couleurs, bordure. |
 | ✅ | §11 Fichiers | Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle | Impression A4 à taille réelle (PDF via « Enregistrer au format PDF ») ; séries versionnées après changement d’académie. |
@@ -134,16 +134,16 @@ Légende : ✅ Réalisé (104) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | ✅ | §12 Organisation | Dossiers remplacement/visite personnalisables |  |
 | ✅ | §12 Organisation | Argent et projets : attendu/reçu/reste, paiements partiels, journal unique, corrections traçables, comptes par année | Comptes par année avec solde initial/report explicites ; export CSV et impression ; aucun paiement en ligne. |
 | ✅ | §12 Organisation | Projets transdisciplinaires ; matériel (stocks, achats, prêts) | Achat de matériel → une seule dépense au journal financier. |
-| ⬜ | §14 Exports | Dossier de semaine ; finances ; étiquettes à taille réelle |  |
-| 🟡 | §19 Atelier | Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections | Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, avec corrections. Instruments virtuels : en cours. |
+| ✅ | §14 Exports | Dossier de semaine ; finances ; étiquettes à taille réelle | Cahier journal › semaine › « Dossier de la semaine » : semaine, matériel, fiches de séance et schémas EPS. |
+| ✅ | §19 Atelier | Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections | Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, corrections ; règle, équerre, rapporteur et compas à l’échelle de la fiche en affichage en grand. |
 | ✅ | §19 Atelier | Cartes monde/continents/France à partir de données sourcées | Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée. |
 | ✅ | §19 Atelier | Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes | Imprimables et jouables en grand (tactile), reliés aux séances. |
 | ✅ | §19 Atelier | Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé | Audio : voix de synthèse de l’appareil (indiquée comme telle) ou enregistrement de l’enseignante. |
-| ⬜ | §19 Atelier | Modes concevoir/animer plein écran, annotation, tactile |  |
-| ⬜ | §19 Atelier | Fenêtre de projection séparée / image dans l’image si supporté |  |
-| ⬜ | §20 Plans | Fiches de groupes imprimables/projetables (version enseignant séparée) |  |
-| ⬜ | §20 Plans | Éditeur de schémas EPS lié aux préparations et au cahier journal |  |
-| ⬜ | §23 Bibliothèque | Scan code-barres/QR (facultatif) |  |
+| 🟡 | §19 Atelier | Modes concevoir/animer plein écran, annotation, tactile | Plein écran, annotation au doigt, instruments déplaçables, jeux jouables en grand. À venir : affichage progressif des éléments d’une fiche. |
+| ✅ | §19 Atelier | Fenêtre de projection séparée / image dans l’image si supporté | Écran de projection séparé (Aujourd’hui › Projection) ; timer en image dans l’image sur Chrome/Edge. |
+| ✅ | §20 Plans | Fiches de groupes imprimables/projetables (version enseignant séparée) | Plan de classe et groupes › Fiches de groupe / Version enseignante (notes) ; projection des groupes. |
+| ✅ | §20 Plans | Éditeur de schémas EPS lié aux préparations et au cahier journal | Déplacer, redimensionner, orienter, dupliquer, annuler ; modèles ; couleurs d’équipes des groupes ; image, impression, projection ; croquis non coté sauf dimensions saisies. |
+| ✅ | §23 Bibliothèque | Scan code-barres/QR (facultatif) | Saisie ou douchette partout ; caméra si le navigateur sait lire les codes. |
 
 ## Étape 5 — Collaboration et connexions
 

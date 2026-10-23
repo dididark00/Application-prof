@@ -778,3 +778,31 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .print-table.assoc td.dot { width: 10mm; text-align: center; font-size: 16pt; }
 .print-table td.tall { height: 60mm; vertical-align: top; }
 @media (max-width: 700px) { .game-row { grid-template-columns: 22px repeat(var(--cols), minmax(0, 1fr)); } .game-row > :nth-last-child(-n+3) { grid-column: 2 / -1; } .quiz-choices { grid-template-columns: 1fr; } }
+
+/* ── Schémas EPS */
+.eps-host { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px; touch-action: none; }
+.eps-host svg { width: 100%; height: auto; display: block; user-select: none; }
+.eps-item { cursor: grab; }
+.eps-item.sel > *:first-child { filter: drop-shadow(0 0 4px #e0a020); }
+.eps-handle { fill: #fff; stroke: #e0a020; stroke-width: 3; cursor: pointer; }
+.eps-palette, .eps-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.eps-tools input { max-width: 200px; }
+.swatch.on { box-shadow: 0 0 0 3px var(--accent); }
+.eps-thumb svg, .eps-mini svg { width: 100%; height: auto; display: block; border-radius: 6px; }
+.eps-inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: 8px; }
+.eps-mini { width: 180px; display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink); }
+.eps-print svg { width: 100%; height: auto; }
+.eps-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 4mm; }
+.animate-bar { overflow-x: auto; flex-wrap: nowrap; padding: 0 8px; }
+.instr-layer { position: absolute; inset: 0 0 56px 0; pointer-events: none; overflow: hidden; }
+.instr-layer.compass-on { pointer-events: auto; cursor: crosshair; }
+.instr-wrap { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: move; touch-action: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+.instr-wrap svg { display: block; }
+.instr-rot, .instr-close { position: absolute; top: -14px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid #888; background: #fff; cursor: pointer; font-size: 15px; line-height: 1; }
+.instr-rot { left: -14px; cursor: grab; }
+.instr-close { right: -14px; }
+.instr-angle { position: absolute; left: 20px; top: -30px; font-weight: 700; background: #fff; border-radius: 6px; padding: 0 4px; }
+.instr-compass { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.instr-info { font-size: .85rem; color: var(--ink-2); white-space: nowrap; }
+@media print { .page-break { break-before: page; page-break-before: always; } }
+.scan-video { width: 100%; max-height: 260px; background: #000; border-radius: 8px; }
