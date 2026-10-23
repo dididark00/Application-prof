@@ -897,3 +897,15 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .mot-coupon .cut { color: #777; letter-spacing: 1px; }
 @media (max-width: 700px) { .pot { grid-template-columns: 1fr; } .rod-stick { height: 240px; } .abaque-rods { gap: 10px; } }
 .info-cell { white-space: nowrap; }
+
+/* ── Familles */
+.pub-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.pub-photo { border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
+.pub-img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: var(--surface-2); }
+.warn-text { color: var(--danger); font-weight: 600; }
+.pub-print-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.pub-print-img { width: 100%; max-height: 90mm; object-fit: contain; }
+.family-view h3 { margin-top: 14px; }
+.rdv-print li { list-style: none; margin: 3mm 0; font-size: 12pt; }
+.relance { break-inside: avoid; }
+.rot-table td, .rot-table th { text-align: center; } .rot-table tbody th { white-space: nowrap; }

@@ -1,7 +1,7 @@
 // Transmissions avec la binôme : fait / à terminer / information, accusé de lecture.
 // Préremplissage depuis le cahier journal du jour (séances faites, partielles ou non faites,
 // devoirs donnés, absences) : rien n'est ressaisi. Répartition des préparations (qui prépare quoi).
-// Sans comptes partagés (étape 5), la transmission se lit sur l'appareil, s'imprime ou se copie
+// Sans comptes partagés (choix sans serveur), la transmission se lit sur l'appareil, s'imprime ou se copie
 // pour l'envoyer par le moyen habituel ; l'accusé de lecture est noté par la personne qui lit.
 import * as store from '../store.js';
 import * as model from '../model.js';
@@ -30,7 +30,7 @@ export function render({ rerender }) {
     h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, [['transmissions', 'Transmissions'], ['repartition', 'Qui prépare quoi']].map(([k, l]) => h('button', { type: 'button', class: tab === k ? 'on' : '', 'data-testid': `ho-tab-${k}`, onclick: () => { tab = k; rerender(); } }, l))),
     tab === 'repartition' ? repartition(cls) : h('div', { class: 'stack' },
       list.length ? list.map(x => card(cls, x)) : emptyState('Aucune transmission', 'Créez une transmission à la fin de votre journée : elle peut être préremplie depuis le cahier journal.'),
-      h('p', { class: 'muted small' }, 'Les comptes partagés arrivent à l’étape 5. En attendant : imprimez ou copiez la transmission pour l’envoyer, et la personne qui la lit sur cet appareil note « Lu ».')));
+      h('p', { class: 'muted small' }, 'Pour l’envoyer : imprimez-la (ou enregistrez-la en PDF dans un dossier Nuage partagé avec votre binôme), ou copiez-la dans la messagerie. La personne qui la lit sur cet appareil note « Lu ».')));
 }
 
 function author(cls, from) { return from === 'binome' ? (cls.binome?.name || 'Binôme') : (store.getSettings().userName || 'Moi'); }

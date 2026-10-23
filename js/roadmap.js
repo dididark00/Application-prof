@@ -68,7 +68,7 @@ export const ROADMAP = [
   R(2, '§6 Planifier', 'Rituels récurrents ; liste consolidée matériel/photocopies', 'fait'),
   R(2, '§6 Planifier', 'Agenda personnel et professionnel, tâches, échéances', 'fait'),
   R(4, '§6 Planifier', 'Répartition des préparations avec la binôme', 'fait', 'Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme).'),
-  R(5, '§6 Planifier', 'Notifications configurables'),
+  R(5, '§6 Planifier', 'Notifications configurables', 'fait', 'Réglages › Rappels et agenda : tâches, rendez-vous, événements, séances de demain sans fiche ; bandeau et notification quand l’application est ouverte ; export .ics pour que l’agenda du téléphone sonne même application fermée.'),
 
   // ── §7 Appel et quotidien
   R(3, '§7 Quotidien', 'Appel matin/après-midi (absent, retard, départ, absence partielle), validation', 'fait'),
@@ -123,13 +123,13 @@ export const ROADMAP = [
   R(4, '§12 Organisation', 'Projets transdisciplinaires ; matériel (stocks, achats, prêts)', 'fait', 'Achat de matériel → une seule dépense au journal financier.'),
 
   // ── §13 Familles et connexions
-  R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)'),
-  R(5, '§13 Familles', 'Messages, documents, devoirs, autorisations ; consultation/réponse/retour'),
-  R(5, '§13 Familles', 'Préparation privée jusqu’à publication ; aperçu « comme ce parent »'),
-  R(5, '§13 Familles', 'Réservation de rendez-vous sur créneaux ouverts, sans double réservation'),
-  R(5, '§13 Familles', 'Mail académique (selon fournisseur et accès autorisés)'),
+  R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)', 'configurer', 'Choix du 23/10/2026 : pas de serveur de l’application. Les comptes parents sont ceux de l’ENT de l’école ; l’application prépare ce qui est diffusé, élève par élève.'),
+  R(5, '§13 Familles', 'Messages, documents, devoirs, autorisations ; consultation/réponse/retour', 'partiel', 'Fait : messages à partir de modèles (copie pour l’ENT ou messagerie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La consultation et la réponse des familles passent par l’ENT.'),
+  R(5, '§13 Familles', 'Préparation privée jusqu’à publication ; aperçu « comme ce parent »', 'fait', 'Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée.'),
+  R(5, '§13 Familles', 'Réservation de rendez-vous sur créneaux ouverts, sans double réservation', 'partiel', 'Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent par l’ENT ou sur papier.'),
+  R(5, '§13 Familles', 'Mail académique (selon fournisseur et accès autorisés)', 'partiel', 'Ouverture de votre messagerie avec le message prêt (aucun mot de passe dans l’application).'),
   R(1, '§13 Connexions', 'Statut des connexions affiché honnêtement (Drive, Canva, agendas, LSU, mail)', 'fait'),
-  R(5, '§13 Connexions', 'Connexions Drive, Canva, agendas, LSU vérifiées une par une'),
+  R(5, '§13 Connexions', 'Connexions Drive, Canva, agendas, LSU vérifiées une par une', 'partiel', 'Agendas : export .ics. Drive, Canva : liens dans Fichiers. LSU : export tableau des appréciations (import direct non vérifié).'),
 
   // ── §14 Impression et exports
   R(1, '§14 Exports', 'Liste d’élèves : aperçu, A4 portrait/paysage, colonnes, version vierge, impression', 'fait'),
@@ -145,10 +145,10 @@ export const ROADMAP = [
   R(1, '§15 Fiabilité', 'Sauvegarde persistante sur l’appareil, état visible', 'fait'),
   R(1, '§15 Fiabilité', 'Annulation et corbeille (récupération après suppression)', 'fait'),
   R(1, '§15 Fiabilité', 'Hors connexion : application entière (données locales)', 'fait'),
-  R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur'),
-  R(5, '§15 Fiabilité', 'Synchronisation, file de modifications et conflits explicites'),
+  R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur', 'configurer', 'Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Rôles parents gérés par l’ENT.'),
+  R(5, '§15 Fiabilité', 'Synchronisation, file de modifications et conflits explicites', 'fait', 'Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées.'),
   R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche', 'partiel', 'Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5.'),
-  R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants'),
+  R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants', 'fait', 'Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Famille : ENT de l’école.'),
 
   R(3, '§2 Interface', 'Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages', 'fait'),
   // ── §19 Atelier
@@ -172,8 +172,8 @@ export const ROADMAP = [
   // ── §21-22 PWA, sync, budget, visites
   R(1, '§21 PWA', 'Application web installable (manifeste, icônes, fonctionnement hors ligne)', 'fait'),
   R(1, '§21 PWA', 'Sauvegarde téléchargeable (données + fichiers), restauration vérifiée, versions', 'fait'),
-  R(5, '§21 PWA', 'Sauvegarde automatique en ligne et synchronisation entre appareils', 'configurer', 'Demande un service distant : tableau gratuit/limites/coûts à valider avant intégration.'),
-  R(5, '§21 PWA', 'Politique de rétention distante'),
+  R(5, '§21 PWA', 'Sauvegarde automatique en ligne et synchronisation entre appareils', 'fait', 'Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone.'),
+  R(5, '§21 PWA', 'Politique de rétention distante', 'fait', 'Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer.'),
   R(2, '§22 Visites', 'Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal', 'fait'),
   R(2, '§22 Visites', 'Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge', 'fait'),
   R(2, '§22 Visites', 'Import/reproduction du modèle personnel de l’utilisatrice', 'fait', 'Modèles de l’enseignante reproduits (programmation, progression, séquence, séance).'),
@@ -230,7 +230,7 @@ export const RUBRIQUES = [
     { id: 'agenda', titre: 'Agenda', route: 'agenda' },
     { id: 'devoirs', titre: 'Devoirs', route: 'devoirs' },
     { id: 'interventions', titre: 'Interventions', route: 'interventions' },
-    { id: 'ateliers', titre: 'Ateliers et rotations', etape: 3 },
+    { id: 'ateliers', titre: 'Ateliers et rotations', route: 'ateliers' },
   ]},
   { id: 'classe', titre: 'Ma classe', icone: 'users', sous: [
     { id: 'eleves', titre: 'Élèves', route: 'eleves' },
@@ -246,11 +246,11 @@ export const RUBRIQUES = [
     { id: 'bibliotheque', titre: 'Bibliothèque', route: 'bibliotheque' },
   ]},
   { id: 'familles', titre: 'Familles', icone: 'home', sous: [
-    { id: 'messages', titre: 'Messages', etape: 5 },
-    { id: 'publications', titre: 'Publications', etape: 5 },
-    { id: 'documents', titre: 'Documents', etape: 5 },
-    { id: 'rdv', titre: 'Rendez-vous', etape: 5 },
-    { id: 'apercu', titre: 'Aperçu parent', etape: 5 },
+    { id: 'messages', titre: 'Messages', route: 'messages' },
+    { id: 'publications', titre: 'Publications', route: 'publications' },
+    { id: 'documents', titre: 'Documents', route: 'documents' },
+    { id: 'rdv', titre: 'Rendez-vous', route: 'rdv' },
+    { id: 'apercu', titre: 'Aperçu parent', route: 'apercu' },
   ]},
   { id: 'organisation', titre: 'Organisation', icone: 'briefcase', sous: [
     { id: 'reception', titre: 'Boîte de réception', route: 'reception' },

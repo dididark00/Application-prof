@@ -1,5 +1,5 @@
 // Devoirs : datés, liés aux séances et leçons, destinataires classe / niveau / élèves.
-// Préparé ≠ donné en classe ≠ publié aux familles (publication : étape 5, jamais automatique).
+// Préparé ≠ donné en classe ≠ publié aux familles (par l'ENT, jamais automatique).
 import * as store from '../store.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
@@ -26,7 +26,7 @@ export function render({ query, rerender }) {
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-homework', onclick: () => printDocument(printHomework(cls, list)) }, icon('print', 16), 'Imprimer')] }),
     subTabs(),
     h('div', { class: 'seg', role: 'group', 'aria-label': 'Filtre' }, [['avenir', 'À venir'], ['tous', 'Tous']].map(([v, l]) => h('button', { type: 'button', class: filt.when === v ? 'on' : '', onclick: () => { filt.when = v; rerender(); } }, l))),
-    h('p', { class: 'muted small' }, 'La publication aux familles arrivera avec le portail familles (étape 5) et ne se fera jamais sans votre action.'),
+    h('p', { class: 'muted small' }, 'Les familles voient les devoirs par l’ENT de l’école : copiez-les ou imprimez-les. Familles › Aperçu parent montre ce que chaque famille peut recevoir.'),
     list.length ? h('div', { class: 'stack', 'data-testid': 'homework-list' }, list.map(x => {
       const s = x.sessionId ? store.get(x.sessionId) : null; const l = x.lessonId ? store.get(x.lessonId) : null;
       return h('div', { class: 'card' }, h('div', { class: 'card-head' },

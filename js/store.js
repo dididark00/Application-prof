@@ -198,6 +198,7 @@ function blobIdsOf(rec) {
   if (rec.blobId) ids.push(rec.blobId);
   if (rec.photoBlobId) ids.push(rec.photoBlobId);
   if (Array.isArray(rec.versions)) for (const v of rec.versions) if (v.blobId) ids.push(v.blobId);
+  if (Array.isArray(rec.photos)) for (const p of rec.photos) if (p.blobId) ids.push(p.blobId);
   return ids;
 }
 

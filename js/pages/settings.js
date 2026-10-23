@@ -22,6 +22,7 @@ const TABS = [
   ['charte', 'Charte visuelle'],
   ['sauvegarde', 'Sauvegarde'],
   ['synchro', 'Synchronisation (Nuage)'],
+  ['rappels', 'Rappels et agenda'],
   ['connexions', 'Connexions'],
   ['historique', 'Historique'],
   ['corbeille', 'Corbeille'],
@@ -33,7 +34,7 @@ const TABS = [
 
 export async function render({ params }) {
   const tab = TABS.some(t => t[0] === params[0]) ? params[0] : 'general';
-  const content = await ({ general, annees, classes, modules, charte: charteTab, sauvegarde, synchro: synchroTab, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
+  const content = await ({ general, annees, classes, modules, charte: charteTab, sauvegarde, synchro: synchroTab, rappels: rappelsTab, connexions, historique, corbeille, demo: demoTab, feuille, reprise, documents })[tab]();
   return h('div', { class: 'page' },
     pageHeader('Réglages', { favKey: 'reglages' }),
     h('nav', { class: 'subtabs', 'aria-label': 'Réglages' }, TABS.map(([id, label]) =>
@@ -254,7 +255,7 @@ function classDialog(c, year) {
     h('fieldset', {}, h('legend', {}, 'Mes jours dans cette classe (vide = tous)'), h('div', { class: 'chips' }, [1, 2, 3, 4, 5, 6].map(d => h('label', { class: 'chip' },
       h('input', { type: 'checkbox', checked: serviceDays.has(d), onchange: (e) => { e.target.checked ? serviceDays.add(d) : serviceDays.delete(d); } }), model.JOURS[d]))),
       h('small', { class: 'hint' }, 'Les autres jours sont signalés « jour de la binôme » dans le cahier journal.')),
-    h('p', { class: 'muted' }, 'Le partage réel avec la binôme (compte, droits) arrive à l’étape 5. Ici, ce sont des informations de référence.'));
+    h('p', { class: 'muted' }, 'Informations de référence. Pour échanger avec la binôme : Organisation › Transmissions (copie, impression, ou dépôt dans un dossier Nuage partagé avec elle).'));
   const errors = h('div', { class: 'form-errors', role: 'alert' });
   modal({ title: editing ? `Modifier ${c.name}` : 'Nouvelle classe', body: h('div', {}, form, errors), wide: true, actions: [
     { label: 'Annuler' },
@@ -362,16 +363,36 @@ async function sauvegarde() {
       } }, 'Tout effacer…')));
 }
 
+// ───────── Rappels et agenda
+async function rappelsTab() {
+  const R = await import('../rappels.js');
+  const p = R.prefs();
+  const set = (k, v) => store.setSettings({ reminders: { ...R.prefs(), [k]: v } }, { quiet: true });
+  const chk = (k, label) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!p[k], 'data-testid': `rem-${k}`, onchange: (e) => set(k, e.target.checked) }), label);
+  const perm = R.canNotify() ? Notification.permission : 'indisponible';
+  return h('div', { class: 'stack' },
+    h('section', { class: 'card stack' }, h('h2', {}, 'Rappels'),
+      chk('tasks', 'Tâches du jour ou en retard'), chk('rdv', 'Rendez-vous avec les familles'), chk('events', 'Événements de l’agenda'), chk('prep', 'La veille à partir de 15 h : séances de demain sans fiche'),
+      h('label', { class: 'inline' }, 'Prévenir', h('input', { type: 'number', min: 0, max: 240, value: p.before, style: { width: '5em' }, onchange: (e) => set('before', Number(e.target.value) || 0) }), 'minutes avant'),
+      h('p', { class: 'muted small' }, 'Ces rappels s’affichent quand l’application est ouverte (bandeau, et notification du système si vous l’autorisez). Une application web ne peut pas sonner quand elle est fermée sans passer par un serveur : pour cela, envoyez vos rendez-vous vers l’agenda de votre téléphone (ci-dessous), c’est lui qui sonnera.'),
+      h('div', { class: 'row' }, perm === 'granted' ? badge('notifications autorisées', 'ok') : perm === 'denied' ? badge('notifications refusées dans le navigateur', 'warn') : perm === 'indisponible' ? badge('notifications non disponibles sur ce navigateur', 'muted')
+        : h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rem-permission', onclick: async () => { await R.askPermission(); location.reload(); } }, 'Autoriser les notifications'))),
+    h('section', { class: 'card stack' }, h('h2', {}, 'Vers l’agenda de mon téléphone ou de mon ordinateur'),
+      h('p', {}, 'Crée un fichier .ics (format standard) avec les événements, rendez-vous et tâches à venir, et leurs alertes. Ouvrez-le avec l’Agenda (iPhone, Android, Outlook, Thunderbird, Agenda d’apps.education.fr…). Refaites l’export après des changements : les éléments déjà importés sont mis à jour, pas dupliqués.'),
+      h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'rem-ics', onclick: () => R.exportIcs() }, 'Exporter l’agenda (.ics)')),
+      h('p', { class: 'muted small' }, 'Pour un rendez-vous, seul le prénom de l’élève figure dans le fichier. Rien de confidentiel n’y est mis.')));
+}
+
 // ───────── Connexions
 function connexions() {
   const rows = [
     ['Synchronisation entre appareils', 'Par Nuage (apps.education.fr)', 'ok', 'Fichier chiffré par appareil, fusion élément par élément (Réglages › Synchronisation).'],
     ['Google Drive', 'Non développé', 'muted', 'Les liens Drive s’enregistrent et s’ouvrent depuis Fichiers, sans connexion.'],
     ['Canva', 'Non développé', 'muted', 'Les liens Canva s’enregistrent et s’ouvrent depuis Fichiers.'],
-    ['Agendas externes', 'Non développé', 'muted', 'Prévu : import/export de fichiers .ics (étape 2).'],
+    ['Agendas externes', 'Export .ics', 'ok', 'Réglages › Rappels et agenda, ou Agenda › « Vers mon agenda ».'],
     ['LSU', 'Non développé', 'muted', 'Préparation des bilans prévue à l’étape 3 ; compatibilité d’export à vérifier avant tout développement.'],
     ['Mail académique', 'Non développé', 'muted', 'Dépend du fournisseur et des accès autorisés : à vérifier avant développement.'],
-    ['Comptes et portail familles', 'Non développé', 'muted', 'Étape 5, avec contrôle des droits côté serveur.'],
+    ['Communication avec les familles', 'Par l’ENT de l’école', 'ok', 'Familles › Publications, Messages, Rendez-vous, Documents, Aperçu parent : préparé ici, diffusé sur l’ENT (comptes parents et droits gérés par l’ENT).'],
   ];
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Aucune connexion externe n’est active. Aucun mot de passe n’est demandé ni stocké par l’application.'),
@@ -383,7 +404,7 @@ function connexions() {
 // ───────── Historique
 async function historique() {
   const log = await store.auditLog(300);
-  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', attendance: 'Appel', serviceplan: 'Services', serviceexc: 'Exception de service', studentdoc: 'Document élève', observation: 'Observation', levelmark: 'Niveau', aid: 'Aide', portfolio: 'Portfolio', need: 'Besoin particulier', plan: 'Dispositif', infoconf: 'Informations confidentielles', studentinfo: 'Informations de l’année', incident: 'Rapport d’incident', soin: 'Registre de soins', aeshsheet: 'Fiche AESH', familynote: 'Mot aux familles', rewardjar: 'Pot de récompense', exchange: 'Échange', list: 'Liste', evaluation: 'Évaluation', report: 'Bilan de période', catchup: 'Rattrapage', layout: 'Plan de classe', groupset: 'Groupes', jobs: 'Responsabilités', book: 'Livre', loan: 'Prêt', slideshow: 'Diaporama', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel', lot: 'Lot' };
+  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', attendance: 'Appel', serviceplan: 'Services', serviceexc: 'Exception de service', studentdoc: 'Document élève', observation: 'Observation', levelmark: 'Niveau', aid: 'Aide', portfolio: 'Portfolio', need: 'Besoin particulier', plan: 'Dispositif', publication: 'Publication', rdvslot: 'Créneau de rendez-vous', infoconf: 'Informations confidentielles', studentinfo: 'Informations de l’année', incident: 'Rapport d’incident', soin: 'Registre de soins', aeshsheet: 'Fiche AESH', familynote: 'Mot aux familles', rewardjar: 'Pot de récompense', exchange: 'Échange', list: 'Liste', evaluation: 'Évaluation', report: 'Bilan de période', catchup: 'Rattrapage', layout: 'Plan de classe', groupset: 'Groupes', jobs: 'Responsabilités', book: 'Livre', loan: 'Prêt', slideshow: 'Diaporama', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel', lot: 'Lot' };
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Les 300 dernières modifications, avec leur auteur. Le bouton « Annuler » du haut de l’écran revient sur les dernières actions de cette session.'),
     log.length ? h('div', { class: 'card' }, h('table', { class: 'table', 'data-testid': 'audit-table' },
@@ -440,6 +461,8 @@ function documents() {
       h('p', { class: 'muted small' }, 'Une ligne par élément. Commencez par « D » pour un document, « A » pour une autorisation ; ajoutez « + » pour une date de validité (ex. « D+ Attestation d’assurance »). Les états déjà saisis sont conservés.'),
       docsTa,
       h('h3', {}, 'Usages pour le droit à l’image'), usagesTa,
+      h('label', { class: 'inline' }, 'Usage vérifié pour les publications aux familles', h('select', { 'data-testid': 'pub-usage', onchange: (e) => store.setSettings({ publicationUsage: e.target.value }, { quiet: true }) },
+        (Array.isArray(st.imageUsages) && st.imageUsages.length ? st.imageUsages : E.DEFAULT_IMAGE_USAGES).map(u => h('option', { value: u, selected: (st.publicationUsage || E.DEFAULT_IMAGE_USAGES.find(x => /ENT/.test(x))) === u }, u)))),
       h('h3', {}, 'Services (cantine, étude, garderie…)'), svcTa,
       h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: async () => {
         const lines = docsTa.value.split('\n').map(l => l.trim()).filter(Boolean);
@@ -450,7 +473,7 @@ function documents() {
       } }, 'Enregistrer'))),
     h('div', { class: 'card form' }, h('h2', {}, 'Informations confidentielles'),
       h('p', {}, 'Besoins particuliers, PPRE/PAP/PPS/PAI/AESH et santé sont masqués par défaut, jamais affichés dans la recherche ni en projection, et exclus des exports par défaut.'),
-      h('p', { class: 'warn' }, 'Sur cet appareil, il s’agit d’un masquage d’affichage, pas d’un chiffrement : toute personne ayant accès à votre session de navigateur pourrait lire la sauvegarde. Le contrôle d’accès par compte arrivera avec l’étape 5.'),
+      h('p', { class: 'warn' }, 'Sur cet appareil, il s’agit d’un masquage d’affichage, pas d’un chiffrement : toute personne ayant accès à votre session de navigateur pourrait lire la sauvegarde. Protégez aussi l’appareil par son code de verrouillage. Les fichiers déposés dans Nuage, eux, sont chiffrés par votre mot de passe de synchronisation.'),
       field(C.hasPin() ? 'Changer le code' : 'Définir un code (facultatif)', pin),
       h('div', { class: 'row' },
         h('button', { class: 'btn btn-primary', type: 'button', onclick: async () => { if (pin.value.length < 4) { toast('Au moins 4 caractères', { kind: 'error' }); return; } await C.setPin(pin.value); toast('Code enregistré'); } }, 'Enregistrer le code'),

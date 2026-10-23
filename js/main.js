@@ -57,6 +57,8 @@ import * as pEps from './pages/eps.js';
 import * as pInfos from './pages/infos.js';
 import * as pOutils from './pages/outils.js';
 import * as pRedac from './pages/redaction.js';
+import * as pFam from './pages/familles.js';
+import * as pAteliers from './pages/ateliers.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -111,6 +113,12 @@ const ROUTES = {
   infos: pInfos,
   outils: pOutils,
   redaction: pRedac,
+  ateliers: pAteliers,
+  publications: { render: pFam.renderPublications },
+  messages: { render: pFam.renderMessages },
+  rdv: { render: pFam.renderRdv },
+  documents: { render: pFam.renderDocuments },
+  apercu: { render: pFam.renderApercu },
 };
 
 let rendering = false;
@@ -161,6 +169,7 @@ async function start() {
   });
   await render();
   T.init();
+  import('./rappels.js').then(R => R.start()).catch(() => {});
   // Polices d'écriture importées (ex. Marelle) : chargées puis la page est redessinée si besoin.
   F.loadAll().then(() => { if (location.hash.startsWith('#/atelier')) render(); }).catch(() => {});
   registerServiceWorker();

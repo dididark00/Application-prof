@@ -199,7 +199,7 @@ function paymentsCard(s) {
 export function echangesTab(s) {
   const ex = E.of('exchange', s.id);
   return h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Échanges et rendez-vous'), h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'add-exchange', onclick: () => exchangeDialog(s) }, '+ Échange')),
-    h('p', { class: 'muted small' }, 'Historique personnel, non partagé. La messagerie avec les familles et la prise de rendez-vous arriveront avec l’étape 5.'),
+    h('p', { class: 'muted small' }, 'Historique personnel, non partagé. Rédiger un message : Familles › Messages ; créneaux de rendez-vous : Familles › Rendez-vous.'),
     ex.length ? h('ul', { class: 'obs-list' }, ex.map(x => h('li', {}, h('strong', {}, model.frShort(x.date)), ' ', badge(x.kind, 'muted'), x.with ? ` avec ${x.with}` : '',
       h('p', { class: 'pre small' }, x.summary || ''), x.followUp ? h('p', { class: 'small' }, `Suite : ${x.followUp}`) : null,
       h('button', { class: 'btn btn-link small', type: 'button', onclick: () => exchangeDialog(s, x) }, 'modifier')))) : h('p', { class: 'muted' }, 'Aucun échange noté.'),

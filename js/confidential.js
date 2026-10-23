@@ -2,7 +2,8 @@
 // Masquées par défaut, affichées après déverrouillage (code facultatif), jamais indexées
 // dans la recherche, jamais projetées, exclues des exports par défaut.
 // Limite assumée : sur cet appareil, c'est un masquage d'affichage, pas un chiffrement ;
-// le contrôle d'accès par compte arrive avec l'étape 5.
+// sans serveur, pas de comptes : la protection repose sur le verrouillage de l'appareil.
+// Dans Nuage, les fichiers de synchronisation sont chiffrés par mot de passe.
 import * as store from './store.js';
 import { h, modal, field, toast } from './ui.js';
 

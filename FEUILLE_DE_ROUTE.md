@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (116) · 🟡 Partiel (11) · ⚙️ À configurer (1) · ⬜ À développer (18) — 146 entrées.
+Légende : ✅ Réalisé (122) · 🟡 Partiel (15) · ⚙️ À configurer (2) · ⬜ À développer (7) — 146 entrées.
 
 ## Étape 1 — Socle
 
@@ -160,17 +160,17 @@ Légende : ✅ Réalisé (116) · 🟡 Partiel (11) · ⚙️ À configurer (1) 
 | | Section | Fonction | Note |
 |---|---|---|---|
 | ⬜ | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) |  |
-| ⬜ | §6 Planifier | Notifications configurables |  |
+| ✅ | §6 Planifier | Notifications configurables | Réglages › Rappels et agenda : tâches, rendez-vous, événements, séances de demain sans fiche ; bandeau et notification quand l’application est ouverte ; export .ics pour que l’agenda du téléphone sonne même application fermée. |
 | ⬜ | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) |  |
-| ⬜ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) |  |
-| ⬜ | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour |  |
-| ⬜ | §13 Familles | Préparation privée jusqu’à publication ; aperçu « comme ce parent » |  |
-| ⬜ | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation |  |
-| ⬜ | §13 Familles | Mail académique (selon fournisseur et accès autorisés) |  |
-| ⬜ | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une |  |
-| ⬜ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur |  |
-| ⬜ | §15 Fiabilité | Synchronisation, file de modifications et conflits explicites |  |
-| ⬜ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants |  |
-| ⚙️ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Demande un service distant : tableau gratuit/limites/coûts à valider avant intégration. |
-| ⬜ | §21 PWA | Politique de rétention distante |  |
+| ⚙️ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) | Choix du 23/10/2026 : pas de serveur de l’application. Les comptes parents sont ceux de l’ENT de l’école ; l’application prépare ce qui est diffusé, élève par élève. |
+| 🟡 | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Fait : messages à partir de modèles (copie pour l’ENT ou messagerie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La consultation et la réponse des familles passent par l’ENT. |
+| ✅ | §13 Familles | Préparation privée jusqu’à publication ; aperçu « comme ce parent » | Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée. |
+| 🟡 | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation | Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent par l’ENT ou sur papier. |
+| 🟡 | §13 Familles | Mail académique (selon fournisseur et accès autorisés) | Ouverture de votre messagerie avec le message prêt (aucun mot de passe dans l’application). |
+| 🟡 | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une | Agendas : export .ics. Drive, Canva : liens dans Fichiers. LSU : export tableau des appréciations (import direct non vérifié). |
+| ⚙️ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur | Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Rôles parents gérés par l’ENT. |
+| ✅ | §15 Fiabilité | Synchronisation, file de modifications et conflits explicites | Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées. |
+| ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Famille : ENT de l’école. |
+| ✅ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone. |
+| ✅ | §21 PWA | Politique de rétention distante | Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer. |
 | ⬜ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Dépendent de sites extérieurs : simples liens, pas de reproduction. |

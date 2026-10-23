@@ -223,10 +223,12 @@ await test('Favoris : ajout depuis une page, visible dans la barre latérale', a
   assert((await page.locator('#sidebar').innerText()).toLowerCase().includes('favoris'), 'favori absent');
 });
 
-await test('Pages à venir : aucune action factice', async () => {
-  await go('#/avenir/familles/messages');
-  await page.getByTestId('placeholder').waitFor();
-  eq(await page.locator('[data-testid=placeholder] button').count(), 0, 'boutons dans une page à venir');
+await test('Plus aucune page « à venir » : chaque rubrique ouvre une vraie page', async () => {
+  const missing = await page.evaluate(async () => (await import('./js/roadmap.js')).RUBRIQUES.flatMap(r => r.sous.filter(s => !s.route).map(s => `${r.id}/${s.id}`)));
+  eq(missing.length, 0, `sous-pages sans page réelle : ${missing.join(', ')}`);
+  await go('#/avenir/familles/messages'); await page.waitForTimeout(300);
+  eq(await page.getByTestId('placeholder').count(), 0, 'l’ancienne adresse mène à la vraie page');
+  assert(await page.evaluate(() => location.hash.startsWith('#/messages')), 'redirigé vers Messages');
 });
 
 await test('Export CSV de la liste d’élèves', async () => {

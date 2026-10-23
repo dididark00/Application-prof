@@ -26,7 +26,8 @@ export function render({ query }) {
     pageHeader('Agenda', { favKey: 'planifier/agenda', subtitle: view === 'mois' ? model.frDate(date, { month: 'long', year: 'numeric' }) : `Semaine du ${model.frDate(model.mondayOf(date))}`,
       actions: [
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-event', onclick: () => eventDialog({ date }) }, icon('plus', 16), 'Événement'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'new-task', onclick: () => taskDialog({ due: date }) }, icon('check', 16), 'Tâche')] }),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'new-task', onclick: () => taskDialog({ due: date }) }, icon('check', 16), 'Tâche'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'export-ics', title: 'Fichier .ics à ouvrir dans l’agenda du téléphone ou de l’ordinateur', onclick: async () => { const R = await import('../rappels.js'); const r = await R.exportIcs(); if (r !== 'annulé') toast('Ouvrez le fichier « classeur-agenda.ics » : votre agenda importe les événements, rendez-vous et tâches, avec leurs alertes.', { timeout: 9000 }); } }, icon('calendar', 16), 'Vers mon agenda')] }),
     subTabs(), nav,
     h('div', { class: `agenda agenda-${view}`, 'data-testid': 'agenda' },
       view === 'mois' ? ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => h('div', { class: 'agenda-dow' }, d)) : null,

@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : étapes 1 (socle), 2 (préparation et planification liées), 3 (usage en classe) et 4 (organisation, atelier) réalisées et testées.** L'étape 5 (comptes, familles, synchronisation, connexions) reste à développer ; ses pages affichent honnêtement « Pas encore disponible », sans bouton factice.
+**État : les cinq étapes sont réalisées et testées (version 0.5.0).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (7 fonctions à développer, dont certaines à décider avec vous).
 
 ---
 
@@ -96,6 +96,15 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 3. **Fichiers** : « Aperçu » d'une image › « Lire le texte de l'image » : le texte est enregistré et retrouvé par la recherche.
 4. **Organisation › Mots, autorisations et registres** : mot ou autorisation de sortie (aussi depuis un projet d'Argent et projets) avec coupon, un exemplaire par élève ; appréciations (aussi dans Livrets et bilans, « Aide à la rédaction ») ; fiche AESH, rapport d'incident, registre de soins (confidentiels).
 
+## 2 sexies. Tester l'étape 5 (Nuage, familles, rappels, 15 minutes)
+
+1. **Réglages › Synchronisation (Nuage)** : nom de l'appareil, mot de passe de synchronisation (le même partout, à noter). Sur ordinateur (Chrome/Edge) : installez Nextcloud (guide officiel en lien), choisissez votre dossier Nuage, « Synchroniser maintenant ». Sur téléphone : « Envoyer vers Nuage » (choisir Nextcloud dans le partage) et « Récupérer depuis Nuage ».
+2. **Familles › Publications** : texte et photos, « Qui est sur la photo ? » ; un élève sans droit à l'image « Site ou ENT » bloque la publication. « Copier le texte », télécharger les photos, déposer sur l'ENT, puis « Marquer publié ».
+3. **Familles › Rendez-vous** : « Ouvrir des créneaux », « Mot avec les créneaux libres », réserver, puis « Fait » (compte rendu dans l'historique de l'élève).
+4. **Familles › Messages** (modèles, copie pour l'ENT), **Documents** (manquants, relances par famille), **Aperçu parent** (ce qu'une famille peut recevoir, rien de privé).
+5. **Réglages › Rappels et agenda** et **Planifier › Agenda › « Vers mon agenda »** : fichier .ics à ouvrir dans l'agenda du téléphone, qui sonnera même application fermée.
+6. **Planifier › Ateliers et rotations** : tableau de rotation à partir de vos groupes.
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -104,7 +113,7 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 | **IndexedDB** dans le navigateur (données + fichiers) | Vraie persistance après fermeture, fonctionne hors connexion. N'est **pas** une sauvegarde en ligne : c'est affiché dans l'application |
 | Service worker + manifeste | Application installable et utilisable sans réseau |
 | Sauvegarde complète `.json` (données, fichiers, historique, empreinte SHA-256) | Seul moyen de sécurité en mode local ; restauration vérifiée ; refus des fichiers altérés ou d'une version plus récente |
-| Couche de données unique (`js/store.js`) | Identifiants stables, historique auteur/date, annulation, corbeille ; pourra être branchée sur un serveur à l'étape 5 sans ressaisie |
+| Couche de données unique (`js/store.js`) | Identifiants stables, historique auteur/date, annulation, corbeille ; synchronisée par fichiers chiffrés (Nuage) sans serveur de l'application |
 
 **Entités en place** (chaque objet a un identifiant stable ; les liens se font par identifiant, jamais par nom) :
 
@@ -128,7 +137,9 @@ Ajoutées à l'étape 2 :
 
 Ajoutées à l'étape 3 : `attendance` (appel par demi-journée, validé ou non), `serviceplan` / `serviceexc` (semaine type et exceptions datées), `studentdoc` (documents, autorisations, droit à l'image, par année), `observation`, `levelmark`, `aid`, `portfolio`, `exchange`, `need` et `plan` (confidentiels), `list` (colonnes libres ou liées à la fiche élève), `evaluation` (maîtrise et points séparés), `report` (bilans de période), `catchup` (rattrapage), `layout` (plans de classe), `groupset` (groupes ; copie figée dans la séance datée), `jobs`, `book` / `loan`, `slideshow`.
 
-Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, licence OFL).
+Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Ajoutées à l'étape 5 : `publication` (brouillon privé / publié, photos et élèves visibles), `rdvslot` (créneaux, réservation unique). Réglages propres à l'appareil (identité, mot de passe mémorisé, dossier Nuage, rappels déjà affichés) dans une petite base séparée `classeur-appareil`, jamais synchronisée.
+
+Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, licence OFL).
 
 **Fichiers du projet**
 
@@ -156,6 +167,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 
 **Ajouts de l'agenda** — 13 scénarios (`tests/e2e-etape4b.mjs`), dont : une case du tableau « Informations élèves » met à jour la fiche (et la semaine type de cantine, la sortie habituelle) ; colonnes confidentielles masquées, stockées à part, jamais imprimées par défaut ni trouvées par la recherche ; **texte réellement lu dans une image** puis envoyé au tableau Seyès ; texte d'une image des Fichiers retrouvé par la recherche ; pot enregistré, abaque avec échange, tableau des nombres ; autorisation de sortie depuis un projet, un exemplaire par élève ; appréciation accordée au féminin placée dans le bilan ; incident : mots de jugement signalés, noms remplacés par les initiales.
 
+**Étape 5** — 8 scénarios de synchronisation (`tests/e2e-etape5.mjs`) : fichier chiffré illisible sans le mot de passe ; nouvel appareil qui récupère tout ; modifications sur deux appareils fusionnées, conflit tracé ; suppression définitive propagée ; « Remplacer » sans doublon ; dossier synchronisé. Et 11 scénarios familles et rappels (`tests/e2e-etape5b.mjs`) : **photo avec un élève sans droit à l'image → publication bloquée** ; aperçu parent sans observation, besoin, échange ni devoir d'un autre élève ; **un créneau ne peut pas être réservé deux fois** ; message noté dans l'historique ; relances par famille ; fichier .ics conforme (alertes, aucun nom de famille) ; rappel affiché une seule fois ; rotation des ateliers.
+
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
 
 Pour les relancer (nécessite Node.js) :
@@ -164,7 +177,7 @@ Pour les relancer (nécessite Node.js) :
 npm install            # installe Playwright et pdf-lib (outils de test uniquement)
 npx playwright install chromium
 python3 serveur.py &              # ou dans un autre terminal
-npm test                          # étapes 1 à 4 et ajouts
+npm test                          # étapes 1 à 5 et ajouts
 node tools/build-sw.mjs           # après toute modification des fichiers de l'application
 ```
 
@@ -194,7 +207,8 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 À décider plus tard, avec votre accord, après un tableau fonction / solution gratuite / limites / coût vérifié à la date du choix :
 
 - **Hébergement des fichiers de l'application en https** (pour l'installer sur téléphone) : plusieurs hébergeurs statiques proposent une offre gratuite (par ex. GitHub Pages, Cloudflare Pages, Netlify). L'application ne contient aucune donnée : héberger le code ne transmet aucune donnée d'élève.
-- **Synchronisation entre appareils et sauvegarde en ligne** (étape 5) : demande une base de données et une authentification en ligne ; offres gratuites à comparer (quotas, localisation des données, conditions) **avant** toute donnée réelle d'enfant.
+- **Synchronisation entre appareils** : **Nuage** d'apps.education.fr (gratuit pour les agents, 100 Go, serveurs du ministère). Fichiers chiffrés (AES-256, mot de passe connu de vous seule). Comparatif fait le 23/10/2026 avec Supabase, Firebase, Appwrite et Cloudflare : écartés (entreprises privées, mises en pause, carte bancaire pour les fichiers, démarches RGPD).
+- **Familles** : l'ENT de l'école (comptes parents, droits, messagerie) ; l'application ne contacte aucun serveur.
 - **Lecture de texte (OCR)** : intégrée, gratuite, sur l'appareil — moteur tesseract-wasm (licence BSD) et modèle français tessdata fast (Apache 2.0), dossier `ocr/` (4,7 Mo), téléchargé seulement à la première utilisation. Sources dans `ocr/SOURCES.txt`.
 - IA, SMS, emails en masse, domaine personnalisé : facultatifs, non nécessaires.
 
@@ -205,13 +219,15 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 - PowerPoint (.pptx) : pas d'aperçu dans le navigateur (téléchargement, ou export PDF à déposer).
 - Données sensibles (santé, PPS/PAI…) : pas encore saisissables ; elles arriveront à l'étape 3 avec un accès restreint.
 - Avant d'y mettre de vraies données d'élèves : exportez régulièrement la sauvegarde et rangez-la en lieu sûr.
-- Les notifications (rappels de tâches, de séances) arrivent à l'étape 5.
+- Rappels : affichés quand l'application est ouverte ; pour être prévenue application fermée, exportez vers l'agenda du téléphone (.ics).
+- Synchronisation : sur téléphone, envoyer et récupérer se font à la main (deux gestes) ; synchronisation d'un clic seulement sur ordinateur avec Chrome ou Edge.
+- Familles : pas de portail propre ; les familles ne réservent pas elles-mêmes un rendez-vous en ligne (réponse par l'ENT ou sur papier).
 - Compétences officielles : extraction automatique des PDF, à relire avant validation ; objectifs d'EVAR de maternelle non extraits.
 - Lecture de texte (OCR) : images seulement pour l'instant (pas encore les PDF scannés) ; le texte lu peut contenir des erreurs, à relire.
 - Sonomètre : niveau relatif, non étalonné en décibels.
 - Voix anglaise : celle fournie par l'appareil (qualité variable) ; un enregistrement de votre voix est toujours possible.
 - Les heures de référence par discipline ne sont pas préremplies : à saisir depuis le texte officiel en vigueur.
 - Les champs de date affichent le format de la langue du navigateur.
-- Informations confidentielles : masquage à l'écran (avec code facultatif), pas un chiffrement ; le contrôle d'accès par compte arrive à l'étape 5.
+- Informations confidentielles : masquage à l'écran (avec code facultatif), pas un chiffrement ; sans serveur, il n'y a pas de comptes : protégez l'appareil par son propre code de verrouillage.
 - Timer au-dessus des autres applications : seulement dans les navigateurs qui le permettent (Chrome, Edge). Sinon, il reste au-dessus des pages de l'application et dans l'écran de projection.
 - Export des appréciations : tableau à reporter dans le LSU, pas un import officiel vérifié.
