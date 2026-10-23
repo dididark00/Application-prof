@@ -9,7 +9,7 @@ import { h, modal, field, toast } from './ui.js';
 let unlockedUntil = 0;
 const DURATION = 10 * 60 * 1000;
 
-export const SENSITIVE_TYPES = ['need', 'plan'];
+export const SENSITIVE_TYPES = ['need', 'plan', 'infoconf', 'incident', 'soin', 'aeshsheet'];
 export function isUnlocked() { return Date.now() < unlockedUntil; }
 export function lock() { unlockedUntil = 0; }
 

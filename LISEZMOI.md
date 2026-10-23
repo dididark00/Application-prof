@@ -89,6 +89,13 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 9. **Planifier › Cahier journal › Semaine** : « Dossier de la semaine ».
 10. **Ma classe › Bibliothèque** : « Code-barres / QR » (saisie, douchette ou caméra).
 
+## 2 quinquies. Tester les ajouts inspirés de votre agenda (10 minutes)
+
+1. **Ma classe › Informations élèves** : le tableau de votre agenda. Cliquez une case (assurance, coopérative, lunettes, bus…) : la fiche de l'élève est mise à jour. « Afficher les colonnes confidentielles » pour PAI, PPRE/PAP/PPS, RASED, situation familiale. « Colonnes » pour en ajouter ou en masquer ; « Imprimer » (rempli, ou grille vierge à remplir à la main).
+2. **Aujourd'hui › Outils de classe** : « Texte d'une photo » (choisissez une photo de page : le texte est lu sur l'appareil, puis corrigeable, imprimable en tapuscrit, envoyable au tableau Seyès), lire pour moi, sonomètre, pot de récompense, abaque, tableau des nombres, numération et conversion, réglettes, pourcentages. « Afficher en grand » pour le TNI.
+3. **Fichiers** : « Aperçu » d'une image › « Lire le texte de l'image » : le texte est enregistré et retrouvé par la recherche.
+4. **Organisation › Mots, autorisations et registres** : mot ou autorisation de sortie (aussi depuis un projet d'Argent et projets) avec coupon, un exemplaire par élève ; appréciations (aussi dans Livrets et bilans, « Aide à la rédaction ») ; fiche AESH, rapport d'incident, registre de soins (confidentiels).
+
 ## 3. Architecture retenue
 
 | Choix | Pourquoi |
@@ -121,7 +128,7 @@ Ajoutées à l'étape 2 :
 
 Ajoutées à l'étape 3 : `attendance` (appel par demi-journée, validé ou non), `serviceplan` / `serviceexc` (semaine type et exceptions datées), `studentdoc` (documents, autorisations, droit à l'image, par année), `observation`, `levelmark`, `aid`, `portfolio`, `exchange`, `need` et `plan` (confidentiels), `list` (colonnes libres ou liées à la fiche élève), `evaluation` (maîtrise et points séparés), `report` (bilans de période), `catchup` (rattrapage), `layout` (plans de classe), `groupset` (groupes ; copie figée dans la séance datée), `jobs`, `book` / `loan`, `slideshow`.
 
-Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, licence OFL).
+Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, licence OFL).
 
 **Fichiers du projet**
 
@@ -147,6 +154,8 @@ tools/          génération de sw.js et de FEUILLE_DE_ROUTE.md
 
 **Étape 4** — 25 scénarios (`tests/e2e-etape4.mjs`), dont : **deux versements → total juste dans le projet et le journal, sans double compte** ; correction tracée ; colonne de liste liée au paiement ; report de compte sans mélanger les années ; achat de matériel = une seule dépense ; **étiquettes à taille réelle (24 par planche, colonnes, pagination)** ; version actualisée après changement d'académie ; géométrie exacte et cartes sourcées ; instruments à l'échelle ; jeux jouables ; schéma EPS modifié retrouvé dans la fiche ; dossier de la semaine.
 
+**Ajouts de l'agenda** — 13 scénarios (`tests/e2e-etape4b.mjs`), dont : une case du tableau « Informations élèves » met à jour la fiche (et la semaine type de cantine, la sortie habituelle) ; colonnes confidentielles masquées, stockées à part, jamais imprimées par défaut ni trouvées par la recherche ; **texte réellement lu dans une image** puis envoyé au tableau Seyès ; texte d'une image des Fichiers retrouvé par la recherche ; pot enregistré, abaque avec échange, tableau des nombres ; autorisation de sortie depuis un projet, un exemplaire par élève ; appréciation accordée au féminin placée dans le bilan ; incident : mots de jugement signalés, noms remplacés par les initiales.
+
 **Étape 3** — 16 scénarios (`tests/e2e-etape3.mjs`), dont : cocher une assurance dans une liste met à jour la fiche élève (et inversement) ; absence partielle : seules les séances réellement faites pendant l'absence sont proposées, remis ≠ rattrapé ; projection et bilans familles sans aucune donnée privée (besoins, observations, bilans, notes, coordonnées) ; recherche sans données confidentielles ; inscription au service ≠ présence prévue ; timer qui continue entre les pages et après rechargement, une seule alerte ; changer de plan de classe sans perdre d'élève ; ajuster une équipe sans modifier une séance passée ; un exemplaire ne peut avoir deux prêts ; non évalué ≠ non acquis, aucune conversion ; support d'atelier en A4 à taille réelle ; diaporama sans notes projetées ; sauvegarde/restauration ; téléphone sans débordement.
 
 Pour les relancer (nécessite Node.js) :
@@ -155,7 +164,7 @@ Pour les relancer (nécessite Node.js) :
 npm install            # installe Playwright et pdf-lib (outils de test uniquement)
 npx playwright install chromium
 python3 serveur.py &              # ou dans un autre terminal
-npm test                          # étapes 1 à 4
+npm test                          # étapes 1 à 4 et ajouts
 node tools/build-sw.mjs           # après toute modification des fichiers de l'application
 ```
 
@@ -186,7 +195,8 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 
 - **Hébergement des fichiers de l'application en https** (pour l'installer sur téléphone) : plusieurs hébergeurs statiques proposent une offre gratuite (par ex. GitHub Pages, Cloudflare Pages, Netlify). L'application ne contient aucune donnée : héberger le code ne transmet aucune donnée d'élève.
 - **Synchronisation entre appareils et sauvegarde en ligne** (étape 5) : demande une base de données et une authentification en ligne ; offres gratuites à comparer (quotas, localisation des données, conditions) **avant** toute donnée réelle d'enfant.
-- OCR, IA, SMS, emails en masse, domaine personnalisé : facultatifs, non nécessaires.
+- **Lecture de texte (OCR)** : intégrée, gratuite, sur l'appareil — moteur tesseract-wasm (licence BSD) et modèle français tessdata fast (Apache 2.0), dossier `ocr/` (4,7 Mo), téléchargé seulement à la première utilisation. Sources dans `ocr/SOURCES.txt`.
+- IA, SMS, emails en masse, domaine personnalisé : facultatifs, non nécessaires.
 
 ## 6. Limites connues
 
@@ -197,7 +207,8 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 - Avant d'y mettre de vraies données d'élèves : exportez régulièrement la sauvegarde et rangez-la en lieu sûr.
 - Les notifications (rappels de tâches, de séances) arrivent à l'étape 5.
 - Compétences officielles : extraction automatique des PDF, à relire avant validation ; objectifs d'EVAR de maternelle non extraits.
-- OCR (lecture de texte dans les scans) : non intégré, à décider (moteur gratuit mais lourd).
+- Lecture de texte (OCR) : images seulement pour l'instant (pas encore les PDF scannés) ; le texte lu peut contenir des erreurs, à relire.
+- Sonomètre : niveau relatif, non étalonné en décibels.
 - Voix anglaise : celle fournie par l'appareil (qualité variable) ; un enregistrement de votre voix est toujours possible.
 - Les heures de référence par discipline ne sont pas préremplies : à saisir depuis le texte officiel en vigueur.
 - Les champs de date affichent le format de la langue du navigateur.

@@ -23,7 +23,7 @@ export function search(q) {
   for (const c of store.all('class')) if (match(c.name, c.school, (c.levels || []).join(' '))) out.push({ group: 'Classes', title: c.name, detail: store.get(c.yearId)?.label || '', href: '#/reglages/classes' });
   for (const y of store.all('year')) if (match(y.label)) out.push({ group: 'Années', title: y.label, detail: `${model.frShort(y.start)} → ${model.frShort(y.end)}`, href: '#/reglages/annees' });
   if (!isHidden('preparer', 'fichiers')) {
-    for (const f of store.all('file')) if (match(f.name, (f.tags || []).join(' '), f.description, f.subject, f.level, f.project)) out.push({ group: 'Fichiers', title: f.name, detail: [f.kind === 'link' ? 'lien' : 'fichier', f.subject, f.level].filter(Boolean).join(' · '), href: `#/fichiers?open=${f.id}` });
+    for (const f of store.all('file')) if (match(f.name, (f.tags || []).join(' '), f.description, f.subject, f.level, f.project, f.ocrText)) out.push({ group: 'Fichiers', title: f.name, detail: [f.kind === 'link' ? 'lien' : 'fichier', f.subject, f.level].filter(Boolean).join(' · '), href: `#/fichiers?open=${f.id}` });
     for (const d of store.all('folder')) if (match(d.name)) out.push({ group: 'Fichiers', title: d.name, detail: 'dossier', href: `#/fichiers?folder=${d.id}` });
   }
   if (!isHidden('preparer', 'jeux')) {

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (110) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (14) — 135 entrées.
+Légende : ✅ Réalisé (116) · 🟡 Partiel (11) · ⚙️ À configurer (1) · ⬜ À développer (18) — 146 entrées.
 
 ## Étape 1 — Socle
 
@@ -121,7 +121,7 @@ Légende : ✅ Réalisé (110) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | | Section | Fonction | Note |
 |---|---|---|---|
 | ✅ | §5 Préparation | Compétences détaillées des programmes officiels pré-importées (à vérifier puis valider) | 2 080 intitulés extraits des PDF officiels (TPS–CM2), page indiquée, contrôle automatique mot à mot ; EVAR maternelle non extrait. |
-| ⬜ | §5 Préparation | OCR optionnel avec texte incertain signalé | Reporté : un OCR local gratuit demande d’intégrer un moteur (Tesseract, ~10 Mo) ; à décider avec vous. OCR distant : non, sans votre accord. |
+| 🟡 | §5 Préparation | OCR optionnel avec texte incertain signalé | Fait : lecture du texte d’une photo ou capture, sur l’appareil (moteur Tesseract gratuit, 4,7 Mo téléchargés à la première utilisation), dans Outils de classe et dans l’aperçu des images de Fichiers (texte enregistré et cherchable). À venir : PDF scannés (page par page) et surlignage des mots incertains. |
 | ✅ | §6 Planifier | Répartition des préparations avec la binôme | Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme). |
 | ✅ | §11 Fichiers | Charte visuelle enregistrée | Réglages › Charte visuelle : police, couleurs, bordure. |
 | ✅ | §11 Fichiers | Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle | Impression A4 à taille réelle (PDF via « Enregistrer au format PDF ») ; séries versionnées après changement d’académie. |
@@ -143,6 +143,16 @@ Légende : ✅ Réalisé (110) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | ✅ | §19 Atelier | Fenêtre de projection séparée / image dans l’image si supporté | Écran de projection séparé (Aujourd’hui › Projection) ; timer en image dans l’image sur Chrome/Edge. |
 | ✅ | §20 Plans | Fiches de groupes imprimables/projetables (version enseignant séparée) | Plan de classe et groupes › Fiches de groupe / Version enseignante (notes) ; projection des groupes. |
 | ✅ | §20 Plans | Éditeur de schémas EPS lié aux préparations et au cahier journal | Déplacer, redimensionner, orienter, dupliquer, annuler ; modèles ; couleurs d’équipes des groupes ; image, impression, projection ; croquis non coté sauf dimensions saisies. |
+| ✅ | §26 Agenda | Tableau « Informations élèves » de l’agenda (fiche, coopérative, assurance, image, cantine, garderie, bus, PAI, PPRE/PAP/PPS, suivi extérieur, RASED, lunettes, gaucher, situation familiale, profession des parents) | Relié aux fiches sans double saisie ; colonnes ajoutables et masquables ; confidentiel séparé ; impression remplie ou vierge. |
+| ✅ | §26 Agenda | Outils de classe : lire pour moi, sonomètre, pot de récompense, abaque, tableau des nombres, numération et conversion, réglettes, pourcentages (dictée, appel) | Affichables en grand, hors ligne, sans compte. |
+| ✅ | §26 Agenda | Texte d’une photo (tapuscrit) : lire, corriger, agrandir, imprimer, envoyer vers Seyès / Lire pour moi |  |
+| ✅ | §26 Agenda | Aide à la rédaction des appréciations (phrases-types accordées, sans IA) | Dans Livrets et bilans et dans Organisation › Mots, autorisations et registres. |
+| ✅ | §26 Agenda | Mots aux familles et autorisations de sortie avec coupon, un exemplaire par élève | Remplissage depuis un projet d’Argent et projets ; historique. |
+| ✅ | §26 Agenda | Fiche de missions AESH, rapport d’incident factuel (initiales, mots de jugement signalés), registre de soins | Confidentiels : masqués par défaut, jamais projetés ni indexés. |
+| ⬜ | §26 Agenda | Code couleur des syllabes (type « Lire Couleur ») pour l’aide au décodage | Demande un découpage syllabique du français fiable : à construire et vérifier. |
+| ⬜ | §26 Agenda | Parler et transcrire (dictée vocale) | La reconnaissance vocale intégrée aux navigateurs envoie la voix à un service en ligne (Google, Apple) : à décider avec vous avant toute intégration. |
+| ⬜ | §26 Agenda | Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture | Sans IA : banques et modèles paramétrables, avec corrigés. |
+| ⬜ | §26 Agenda | Planning des surveillances de récréation (école) |  |
 | ✅ | §23 Bibliothèque | Scan code-barres/QR (facultatif) | Saisie ou douchette partout ; caméra si le navigateur sait lire les codes. |
 
 ## Étape 5 — Collaboration et connexions
@@ -163,3 +173,4 @@ Légende : ✅ Réalisé (110) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | ⬜ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants |  |
 | ⚙️ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Demande un service distant : tableau gratuit/limites/coûts à valider avant intégration. |
 | ⬜ | §21 PWA | Politique de rétention distante |  |
+| ⬜ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Dépendent de sites extérieurs : simples liens, pas de reproduction. |

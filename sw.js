@@ -1,7 +1,8 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-9992e6b13e63';
+const CACHE = 'classeur-948cc527a7a8';
+const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = [
   "./",
   "css/app.css",
@@ -43,6 +44,7 @@ const ASSETS = [
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
   "index.html",
+  "js/appreciations.js",
   "js/atelier-tools.js",
   "js/backup.js",
   "js/components.js",
@@ -56,11 +58,13 @@ const ASSETS = [
   "js/fonts.js",
   "js/forms.js",
   "js/groups.js",
+  "js/infos.js",
   "js/instruments.js",
   "js/jeux.js",
   "js/labels.js",
   "js/main.js",
   "js/model.js",
+  "js/ocr.js",
   "js/orga.js",
   "js/pages/agenda.js",
   "js/pages/appel.js",
@@ -79,6 +83,7 @@ const ASSETS = [
   "js/pages/files.js",
   "js/pages/heures.js",
   "js/pages/inbox.js",
+  "js/pages/infos.js",
   "js/pages/interventions.js",
   "js/pages/jeux.js",
   "js/pages/lecons.js",
@@ -87,6 +92,7 @@ const ASSETS = [
   "js/pages/manuels.js",
   "js/pages/materiel.js",
   "js/pages/more.js",
+  "js/pages/outils.js",
   "js/pages/pes.js",
   "js/pages/placeholder.js",
   "js/pages/plan.js",
@@ -94,6 +100,7 @@ const ASSETS = [
   "js/pages/progressions.js",
   "js/pages/projection.js",
   "js/pages/rattrapage.js",
+  "js/pages/redaction.js",
   "js/pages/referentiels.js",
   "js/pages/remplacement.js",
   "js/pages/responsabilites.js",
@@ -142,5 +149,11 @@ self.addEventListener('message', (e) => { if (e.data === 'skipWaiting') self.ski
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  // Moteur de lecture de texte (dossier ocr/, ≈ 4,7 Mo) : téléchargé à la première utilisation seulement,
+  // puis gardé dans un cache à part, conservé d'une version de l'application à l'autre.
+  if (new URL(req.url).pathname.includes('/ocr/')) {
+    e.respondWith(caches.open(OCR_CACHE).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }))));
+    return;
+  }
   e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).catch(() => caches.match('./'))));
 });

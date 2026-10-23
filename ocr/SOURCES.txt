@@ -1,0 +1,14 @@
+Lecture du texte des images (OCR) — fichiers tiers, inchangés.
+
+tesseract-worker.js, tesseract-core.wasm, tesseract-core-fallback.wasm
+  Projet tesseract-wasm (Robert Knight et contributeurs), licence BSD 2 clauses (LICENSE-tesseract-wasm.md).
+  Moteur Tesseract (Apache 2.0) compilé en WebAssembly.
+  Source : https://github.com/robertknight/tesseract-wasm (branche gh-pages, docs/build, commit c805b99).
+
+fra.traineddata
+  Modèle français « tessdata fast » (LSTM), licence Apache 2.0 (LICENSE-tessdata.txt).
+  Source : https://github.com/naptha/tessdata (4.0.0_fast/fra.traineddata.gz, décompressé),
+  copie de https://github.com/tesseract-ocr/tessdata_fast.
+
+Tout s'exécute sur l'appareil : aucune image n'est envoyée sur Internet.
+Ces fichiers ne sont téléchargés qu'à la première utilisation, puis gardés pour le hors-connexion.

@@ -11,6 +11,7 @@ import { bound } from '../forms.js';
 import { resultsOf, scale, levelKind } from './evaluations.js';
 import { toCsv } from '../csv.js';
 import { printDocument } from '../print.js';
+import { appreciationDialog } from './redaction.js';
 
 let selPeriod = null;
 const MATERNELLE = ['TPS', 'PS', 'MS', 'GS'];
@@ -74,7 +75,8 @@ export function render({ rerender }) {
             sm[sub] && !rep?.subjects?.[sub] ? h('button', { class: 'btn btn-link small', type: 'button', onclick: () => saveReport(cls, per, s, { subjects: { ...(reportOf(cls.id, per.id, s.id)?.subjects || {}), [sub]: draft(sub, sm[sub], sc) } }, `Brouillon ${sub}`).then(rerender) }, 'proposer un brouillon factuel') : null)),
           h('div', { class: 'row' }, h('select', { 'aria-label': 'Ajouter une discipline', onchange: (e) => { if (!e.target.value) return; saveReport(cls, per, s, { subjects: { ...(rep?.subjects || {}), [e.target.value]: rep?.subjects?.[e.target.value] || '' } }, 'Discipline ajoutée').then(rerender); } },
             h('option', { value: '' }, '+ discipline'), subjects.filter(x => !subs.includes(x)).map(x => h('option', { value: x }, x)))),
-          bound({ label: mat ? 'Synthèse des acquis' : 'Appréciation générale', value: rep?.general, testid: 'report-general', onSave: (v) => saveReport(cls, per, s, { general: v }, 'Appréciation générale') }))));
+          bound({ label: mat ? 'Synthèse des acquis' : 'Appréciation générale', value: rep?.general, testid: 'report-general', onSave: (v) => saveReport(cls, per, s, { general: v }, 'Appréciation générale') }),
+          h('button', { class: 'btn btn-link small', type: 'button', 'data-testid': 'report-help', onclick: () => appreciationDialog(s, { initial: reportOf(cls.id, per.id, s.id)?.general || '', onUse: (text) => saveReport(cls, per, s, { general: text }, 'Appréciation générale').then(rerender) }) }, 'Aide à la rédaction (phrases-types)'))));
   };
 
   return h('div', { class: 'page' },

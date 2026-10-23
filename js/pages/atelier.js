@@ -253,6 +253,13 @@ const PARAMS = {
   horloges: [['heures', 'Heures (ex. 08:15, 14:30)', 'text'], ['aiguilles', 'Aiguilles dessinées (sinon l’élève les dessine)', 'checkbox'], ['numeros', 'Chiffres sur le cadran', 'checkbox']],
 };
 
+/** Ouvre l'Atelier sur un outil d'écriture avec un texte déjà rempli (ex. texte lu dans une photo). */
+export function openWithText(text, tool = 'ecriture') {
+  state.tool = tool;
+  if (tool === 'texte') state.texte.source = text; else state.ecriture.texte = text;
+  location.hash = '#/atelier';
+}
+
 export function render({ rerender }) {
   const o = state[state.tool];
   const preview = h('div', { class: 'atelier-preview', 'data-testid': 'atelier-preview' });

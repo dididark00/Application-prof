@@ -276,7 +276,8 @@ function projectDetails(p) {
       h('input', { value: x.label || '', 'aria-label': 'Étape', onchange: (e) => saveSteps(steps.map((y, j) => (j === i ? { ...y, label: e.target.value } : y))) }),
       h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Retirer', onclick: () => saveSteps(steps.filter((_, j) => j !== i)) }, '×')))) : h('p', { class: 'muted small' }, 'Aucune étape.'),
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => saveSteps([...steps, { date: '', label: '', done: false }]) }, '+ étape'),
-    h('p', { class: 'muted small' }, 'Les autorisations de sortie se suivent dans Ma classe › Listes (colonne liée à la fiche élève) ; les paiements, dans le tableau des participants ci-dessus.'));
+    h('p', { class: 'muted small' }, 'Les autorisations de sortie se suivent dans Ma classe › Listes ou Informations élèves (colonne liée à la fiche élève) ; les paiements, dans le tableau des participants ci-dessus.'),
+    h('a', { class: 'btn btn-small', href: `#/redaction?t=mot&modele=sortie&projet=${p.id}`, 'data-testid': 'project-auth' }, 'Rédiger le mot d’autorisation de sortie'));
 }
 
 function printPayments(p) {

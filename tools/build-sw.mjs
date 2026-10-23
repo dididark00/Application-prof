@@ -22,6 +22,7 @@ const sw = `// Fichier généré par tools/build-sw.mjs — ne pas modifier à l
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
 const CACHE = 'classeur-${version}';
+const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = ${JSON.stringify(['./', ...files], null, 2)};
 
 self.addEventListener('install', (e) => {
@@ -38,6 +39,12 @@ self.addEventListener('message', (e) => { if (e.data === 'skipWaiting') self.ski
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  // Moteur de lecture de texte (dossier ocr/, ≈ 4,7 Mo) : téléchargé à la première utilisation seulement,
+  // puis gardé dans un cache à part, conservé d'une version de l'application à l'autre.
+  if (new URL(req.url).pathname.includes('/ocr/')) {
+    e.respondWith(caches.open(OCR_CACHE).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }))));
+    return;
+  }
   e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).catch(() => caches.match('./'))));
 });
 `;

@@ -138,6 +138,24 @@ export function guessMime(name) {
     xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', mp3: 'audio/mpeg', mp4: 'video/mp4', odt: 'application/vnd.oasis.opendocument.text' })[ext] || 'application/octet-stream';
 }
 
+/** Texte lu dans une image (OCR sur l'appareil) : enregistré avec le fichier, donc retrouvé par la recherche. */
+function ocrBlock(f, blob) {
+  const out = h('textarea', { rows: 6, class: 'ocr-text', 'data-testid': 'file-ocr-text', placeholder: 'Le texte lu apparaîtra ici, modifiable.', onchange: (e) => store.update(f.id, { ocrText: e.target.value }, `Texte de ${f.name}`, { quiet: true }) }, f.ocrText || '');
+  const status = h('span', { class: 'muted small', 'aria-live': 'polite' });
+  const btn = h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'file-ocr', onclick: async () => {
+    btn.disabled = true;
+    try {
+      const O = await import('../ocr.js');
+      const text = await O.recognize(blob, { onStatus: (t) => { status.textContent = t; }, onProgress: (p) => { status.textContent = `Lecture du texte… ${p} %`; } });
+      out.value = text; status.textContent = text ? 'Texte lu : vérifiez-le, il peut contenir des erreurs.' : 'Aucun texte reconnu.';
+      await store.update(f.id, { ocrText: text }, `Texte lu dans ${f.name}`, { quiet: true });
+    } catch (e) { status.textContent = `Lecture impossible : ${e.message}`; }
+    finally { btn.disabled = false; }
+  } }, f.ocrText ? 'Relire le texte' : 'Lire le texte de l’image');
+  return h('section', { class: 'ocr-block' }, h('h3', {}, 'Texte de l’image'), h('div', { class: 'row' }, btn, status), out,
+    h('p', { class: 'muted small' }, 'Lecture faite sur l’appareil : l’image n’est envoyée nulle part. Le texte est enregistré avec le fichier et retrouvé par la recherche.'));
+}
+
 async function preview(f) {
   const versions = f.versions || [];
   const cur = versions[versions.length - 1];
@@ -148,7 +166,7 @@ async function preview(f) {
   else {
     const mime = cur.mime || blob.type;
     const url = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: mime })); urls.push(url);
-    if (mime.startsWith('image/')) body.append(h('img', { src: url, alt: f.name, class: 'preview-img' }));
+    if (mime.startsWith('image/')) body.append(h('img', { src: url, alt: f.name, class: 'preview-img' }), ocrBlock(f, blob));
     else if (mime === 'application/pdf') body.append(h('iframe', { src: url, title: f.name, class: 'preview-frame' }));
     else if (mime.startsWith('text/')) body.append(h('pre', { class: 'preview-text' }, (await blob.text()).slice(0, 200000)));
     else if (mime.startsWith('audio/')) body.append(h('audio', { src: url, controls: true }));

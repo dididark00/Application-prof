@@ -53,7 +53,7 @@ export const ROADMAP = [
   R(2, '§5 Préparation', 'Fiche de séquence complète', 'fait'),
   R(2, '§5 Préparation', 'Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication', 'fait', 'Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge.'),
   R(2, '§5 Préparation', 'Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes', 'fait'),
-  R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'afaire', 'Reporté : un OCR local gratuit demande d’intégrer un moteur (Tesseract, ~10 Mo) ; à décider avec vous. OCR distant : non, sans votre accord.'),
+  R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'partiel', 'Fait : lecture du texte d’une photo ou capture, sur l’appareil (moteur Tesseract gratuit, 4,7 Mo téléchargés à la première utilisation), dans Outils de classe et dans l’aperçu des images de Fichiers (texte enregistré et cherchable). À venir : PDF scannés (page par page) et surlignage des mots incertains.'),
   R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)'),
   R(2, '§5 Préparation', 'Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle', 'fait'),
   R(2, '§5 Préparation', 'Photos du tableau et corrections ; suivi des apprentissages à reprendre', 'partiel', 'Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3).'),
@@ -178,6 +178,19 @@ export const ROADMAP = [
   R(2, '§22 Visites', 'Modèle structuré pour visite/inspection, allégeable, export PDF et version vierge', 'fait'),
   R(2, '§22 Visites', 'Import/reproduction du modèle personnel de l’utilisatrice', 'fait', 'Modèles de l’enseignante reproduits (programmation, progression, séquence, séance).'),
 
+  // ── §26 Inspirations : agenda de l'enseignante et outils de ses captures
+  R(4, '§26 Agenda', 'Tableau « Informations élèves » de l’agenda (fiche, coopérative, assurance, image, cantine, garderie, bus, PAI, PPRE/PAP/PPS, suivi extérieur, RASED, lunettes, gaucher, situation familiale, profession des parents)', 'fait', 'Relié aux fiches sans double saisie ; colonnes ajoutables et masquables ; confidentiel séparé ; impression remplie ou vierge.'),
+  R(4, '§26 Agenda', 'Outils de classe : lire pour moi, sonomètre, pot de récompense, abaque, tableau des nombres, numération et conversion, réglettes, pourcentages (dictée, appel)', 'fait', 'Affichables en grand, hors ligne, sans compte.'),
+  R(4, '§26 Agenda', 'Texte d’une photo (tapuscrit) : lire, corriger, agrandir, imprimer, envoyer vers Seyès / Lire pour moi', 'fait'),
+  R(4, '§26 Agenda', 'Aide à la rédaction des appréciations (phrases-types accordées, sans IA)', 'fait', 'Dans Livrets et bilans et dans Organisation › Mots, autorisations et registres.'),
+  R(4, '§26 Agenda', 'Mots aux familles et autorisations de sortie avec coupon, un exemplaire par élève', 'fait', 'Remplissage depuis un projet d’Argent et projets ; historique.'),
+  R(4, '§26 Agenda', 'Fiche de missions AESH, rapport d’incident factuel (initiales, mots de jugement signalés), registre de soins', 'fait', 'Confidentiels : masqués par défaut, jamais projetés ni indexés.'),
+  R(4, '§26 Agenda', 'Code couleur des syllabes (type « Lire Couleur ») pour l’aide au décodage', 'afaire', 'Demande un découpage syllabique du français fiable : à construire et vérifier.'),
+  R(4, '§26 Agenda', 'Parler et transcrire (dictée vocale)', 'afaire', 'La reconnaissance vocale intégrée aux navigateurs envoie la voix à un service en ligne (Google, Apple) : à décider avec vous avant toute intégration.'),
+  R(4, '§26 Agenda', 'Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture', 'afaire', 'Sans IA : banques et modèles paramétrables, avec corrigés.'),
+  R(4, '§26 Agenda', 'Planning des surveillances de récréation (école)', 'afaire'),
+  R(5, '§26 Agenda', 'Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens', 'afaire', 'Dépendent de sites extérieurs : simples liens, pas de reproduction.'),
+
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
   R(3, '§23 Bibliothèque', 'Vues par livre/élève, retards, retour en un clic, impressions, grille vierge', 'fait'),
@@ -194,6 +207,7 @@ export const RUBRIQUES = [
     { id: 'services', titre: 'Cantine et services', route: 'services' },
     { id: 'taches', titre: 'Tâches et rendez-vous', route: 'taches' },
     { id: 'projection', titre: 'Projection', route: 'projection' },
+    { id: 'outils', titre: 'Outils de classe', route: 'outils' },
   ]},
   { id: 'preparer', titre: 'Préparer', icone: 'book', sous: [
     { id: 'programmes', titre: 'Programmes et référentiels', route: 'referentiels' },
@@ -220,6 +234,7 @@ export const RUBRIQUES = [
   ]},
   { id: 'classe', titre: 'Ma classe', icone: 'users', sous: [
     { id: 'eleves', titre: 'Élèves', route: 'eleves' },
+    { id: 'infos', titre: 'Informations élèves', route: 'infos' },
     { id: 'trombi', titre: 'Trombinoscope', route: 'trombi' },
     { id: 'evaluations', titre: 'Évaluations', route: 'evaluations' },
     { id: 'livrets', titre: 'Livrets et bilans', route: 'livrets' },
@@ -244,6 +259,7 @@ export const RUBRIQUES = [
     { id: 'transmissions', titre: 'Transmissions binôme', route: 'transmissions' },
     { id: 'argent', titre: 'Argent et projets', route: 'argent' },
     { id: 'materiel', titre: 'Matériel', route: 'materiel' },
+    { id: 'redaction', titre: 'Mots, autorisations et registres', route: 'redaction' },
     { id: 'contacts', titre: 'Contacts', route: 'contacts' },
     { id: 'remplacement', titre: 'Dossiers remplacement et visite', route: 'remplacement' },
     { id: 'pes', titre: 'PES et visites', route: 'pes' },
