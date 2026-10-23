@@ -158,8 +158,8 @@ export const ROADMAP = [
   R(3, '§19 Atelier', 'Maths : droites graduées, numération, fractions, horloges', 'fait'),
   R(4, '§19 Atelier', 'Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections', 'partiel', 'Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, avec corrections. Instruments virtuels : en cours.'),
   R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées', 'fait', 'Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée.'),
-  R(4, '§19 Atelier', 'Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes'),
-  R(4, '§19 Atelier', 'Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé'),
+  R(4, '§19 Atelier', 'Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes', 'fait', 'Imprimables et jouables en grand (tactile), reliés aux séances.'),
+  R(4, '§19 Atelier', 'Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé', 'fait', 'Audio : voix de synthèse de l’appareil (indiquée comme telle) ou enregistrement de l’enseignante.'),
   R(4, '§19 Atelier', 'Modes concevoir/animer plein écran, annotation, tactile'),
   R(4, '§19 Atelier', 'Fenêtre de projection séparée / image dans l’image si supporté'),
 
@@ -206,6 +206,7 @@ export const RUBRIQUES = [
     { id: 'fichiers', titre: 'Fichiers et ressources', route: 'fichiers' },
     { id: 'diaporamas', titre: 'Diaporamas', route: 'diaporamas' },
     { id: 'atelier', titre: 'Atelier pédagogique', route: 'atelier' },
+    { id: 'jeux', titre: 'Jeux et anglais', route: 'jeux' },
     { id: 'etiquettes', titre: 'Étiquettes et affichages', route: 'etiquettes' },
   ]},
   { id: 'planifier', titre: 'Planifier', icone: 'calendar', sous: [

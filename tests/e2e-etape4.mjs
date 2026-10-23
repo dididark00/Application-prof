@@ -38,7 +38,7 @@ const ids = await S(`const cls = store.all('class').find(c => c.name === 'CE2 (d
   return { cls: cls.id, lou: st('Lou'), nino: st('Nino'), year: cls.yearId };`);
 
 await test('Pages de l’organisation sans erreur ni faux bouton', async () => {
-  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel', '#/etiquettes', '#/etiquettes?t=series', '#/etiquettes?t=academies', '#/reglages/charte']) {
+  for (const r of ['#/reunions', '#/heures', '#/heures?t=apc', '#/transmissions', '#/contacts', '#/remplacement', '#/pes', '#/argent', '#/argent?t=journal', '#/argent?t=comptes', '#/materiel', '#/etiquettes', '#/etiquettes?t=series', '#/etiquettes?t=academies', '#/reglages/charte', '#/jeux']) {
     await go(r);
     assert(!(await page.locator('.page').innerText()).includes('à venir à l’étape'), `${r} affiche encore « à venir »`);
   }
@@ -365,6 +365,53 @@ await test('Atelier cartes : planisphère et France sourcés, version vierge num
   for (const n of ['Bretagne', 'Occitanie', 'Loire', 'Seine', 'Alpes', 'Pyrénées']) assert(fr.names.includes(n), `nom présent dans la correction : ${n}`);
   assert(fr.src, 'source IGN affichée');
   await page.screenshot({ path: `${OUT}etape4-carte.png` });
+});
+
+await test('Jeux : memory joué jusqu’au bout, quiz, bingo, flashcards d’anglais, lien avec la séance', async () => {
+  const newGame = async (title, kind, lines) => {
+    await go('#/jeux'); await page.getByTestId('new-game').click();
+    await page.getByTestId('game-title').fill(title); await page.getByTestId('game-kind').selectOption(kind);
+    await page.getByTestId('game-create').click(); await page.waitForTimeout(250);
+    await page.getByTestId('game-paste').click(); await page.getByTestId('paste-area').fill(lines.join('\n'));
+    await page.getByTestId('paste-add').click(); await page.waitForTimeout(250);
+    return page.evaluate(() => location.hash.split('/')[2]);
+  };
+  await newGame('Tables de 3', 'memory', ['3 × 2 | 6', '3 × 4 | 12', '3 × 5 | 15', '3 × 7 | 21']);
+  eq(await page.getByTestId('game-row').count(), 4, '4 paires saisies');
+  await page.getByTestId('game-play').click(); await page.waitForTimeout(200);
+  eq(await page.getByTestId('memory-card').count(), 8, '8 cartes');
+  for (let p = 0; p < 4; p++) { const cards = page.locator(`[data-testid=memory-card][data-pair="${p}"]`); await cards.nth(0).click(); await cards.nth(1).click(); await page.waitForTimeout(80); }
+  assert((await page.getByTestId('memory-info').innerText()).includes('Toutes les paires'), 'partie terminée');
+  await page.getByTestId('game-close').click();
+
+  await newGame('Capitales', 'quiz', ['Capitale de la France ? | Paris | Lyon ; Marseille', 'Capitale de l’Italie ? | Rome | Milan ; Naples']);
+  await page.getByTestId('game-play').click(); await page.waitForTimeout(150);
+  await page.getByTestId('quiz-choice').filter({ hasText: /^Paris$/ }).click(); await page.getByTestId('quiz-next').click();
+  await page.getByTestId('quiz-choice').filter({ hasText: /^Milan$/ }).click(); await page.getByTestId('quiz-next').click();
+  eq(await page.getByTestId('quiz-end').innerText(), 'Terminé : 1/2', 'score du quiz');
+  await page.getByTestId('game-close').click();
+
+  const bingo = await newGame('Loto des nombres', 'bingo', Array.from({ length: 30 }, (_, i) => String((i + 1) * 7)));
+  const cards = await page.evaluate(async (id) => { const J = await import('./js/jeux.js'); const s = await import('./js/store.js'); return J.bingoCards(s.get(id), 6, 4, 1); }, bingo);
+  eq(cards.length, 6, '6 cartons'); assert(cards.every(c => c.length === 16 && new Set(c).size === 16), 'cartons de 16 cases distinctes');
+  eq(new Set(cards.map(c => [...c].sort().join())).size, 6, 'cartons tous différents');
+  await page.getByTestId('game-play').click(); await page.getByTestId('bingo-draw').click();
+  assert((await page.getByTestId('bingo-current').innerText()).match(/^\d+$/), 'tirage affiché');
+  await page.getByTestId('game-close').click();
+
+  await newGame('Animals', 'flashcards', ['cat | chat', 'dog | chien', 'bird | oiseau']);
+  assert((await page.getByTestId('audio-note').innerText()).includes('voix de synthèse'), 'origine de l’audio indiquée');
+  await page.getByTestId('game-play').click(); await page.waitForTimeout(150);
+  const first = await page.getByTestId('flash-card').innerText();
+  await page.getByTestId('flash-card').click();
+  eq(first.trim(), 'cat', 'face anglaise'); eq((await page.getByTestId('flash-card').innerText()).trim(), 'chat', 'carte retournée : traduction');
+  await page.getByTestId('game-close').click();
+  // Lien avec une séance : visible depuis la fiche de séance.
+  const sid = await S(`const s = store.all('session').find(x => x.classId === a); return s.id`, ids.cls);
+  const gid = await page.evaluate(() => location.hash.split('/')[2]);
+  await S(`await store.update(a.g, { sessionId: a.s }, 'test')`, { g: gid, s: sid });
+  await go(`#/seance/${sid}`);
+  assert((await page.locator('.page').innerText()).includes('Animals'), 'jeu listé dans la fiche de séance');
 });
 
 await test('Captures', async () => {

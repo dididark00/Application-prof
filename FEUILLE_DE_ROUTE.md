@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (102) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (22) — 135 entrées.
+Légende : ✅ Réalisé (104) · 🟡 Partiel (10) · ⚙️ À configurer (1) · ⬜ À développer (20) — 135 entrées.
 
 ## Étape 1 — Socle
 
@@ -137,8 +137,8 @@ Légende : ✅ Réalisé (102) · 🟡 Partiel (10) · ⚙️ À configurer (1) 
 | ⬜ | §14 Exports | Dossier de semaine ; finances ; étiquettes à taille réelle |  |
 | 🟡 | §19 Atelier | Géométrie : quadrillages, figures, instruments virtuels, fiches et corrections | Quadrillages, symétrie, reproduction, figures aux dimensions réelles, angles, avec corrections. Instruments virtuels : en cours. |
 | ✅ | §19 Atelier | Cartes monde/continents/France à partir de données sourcées | Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée. |
-| ⬜ | §19 Atelier | Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes |  |
-| ⬜ | §19 Atelier | Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé |  |
+| ✅ | §19 Atelier | Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes | Imprimables et jouables en grand (tactile), reliés aux séances. |
+| ✅ | §19 Atelier | Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé | Audio : voix de synthèse de l’appareil (indiquée comme telle) ou enregistrement de l’enseignante. |
 | ⬜ | §19 Atelier | Modes concevoir/animer plein écran, annotation, tactile |  |
 | ⬜ | §19 Atelier | Fenêtre de projection séparée / image dans l’image si supporté |  |
 | ⬜ | §20 Plans | Fiches de groupes imprimables/projetables (version enseignant séparée) |  |

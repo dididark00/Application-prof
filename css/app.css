@@ -716,3 +716,65 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .tool-families { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 6px 0 12px; }
 .tool-family { display: flex; flex-direction: column; gap: 4px; }
 .table tr.to-check td { background: var(--warn-soft); }
+
+/* ── Jeux et anglais */
+.game-items { display: flex; flex-direction: column; gap: 6px; }
+.game-row { display: grid; grid-template-columns: 28px repeat(var(--cols), minmax(0, 1fr)) auto auto auto; gap: 6px; align-items: center; }
+.game-row.head { font-size: .8rem; color: var(--ink-2); font-weight: 600; }
+.game-thumb { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
+.game-play { position: fixed; inset: 0; z-index: 80; background: var(--bg); display: flex; flex-direction: column; }
+.game-bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; }
+.game-bar .spacer { flex: 1; }
+.game-stage { flex: 1; overflow: auto; padding: 3vh 4vw; display: flex; flex-direction: column; align-items: center; gap: 2vh; font-size: clamp(16px, 2.2vw, 32px); }
+.game-info { font-weight: 700; }
+.memory-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(90px, 1fr)); gap: 12px; width: min(100%, 1100px); }
+.memory-card { position: relative; aspect-ratio: 4 / 3; border-radius: 14px; border: 2px solid var(--line); background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 800; cursor: pointer; }
+.memory-card .face { display: none; }
+.memory-card.up, .memory-card.found { background: var(--surface); color: var(--ink); }
+.memory-card.up .face, .memory-card.found .face { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 100%; }
+.memory-card.up .back, .memory-card.found .back { display: none; }
+.memory-card.found { border-color: var(--ok); background: var(--ok-soft); }
+.memory-card img, .assoc-item img { max-height: 60%; max-width: 80%; object-fit: contain; }
+.assoc { display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; width: min(100%, 1000px); }
+.assoc > div, .class-pool { display: flex; flex-direction: column; gap: 10px; }
+.class-pool { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+.assoc-item { font: inherit; padding: .5em .8em; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center; }
+.assoc-item.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.assoc-item.done { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.assoc-item.wrong { border-color: var(--danger); background: var(--danger-soft); }
+.class-bins { display: flex; gap: 2vw; flex-wrap: wrap; justify-content: center; width: 100%; }
+.class-bin { min-width: 220px; min-height: 160px; border: 3px dashed var(--line-strong); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+.order-list { width: min(100%, 800px); display: flex; flex-direction: column; gap: 8px; }
+.order-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: .4em .8em; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); }
+.order-list li.done { border-color: var(--ok); background: var(--ok-soft); }
+.quiz-box { width: min(100%, 900px); display: flex; flex-direction: column; gap: 14px; align-items: stretch; text-align: center; }
+.quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bingo-big { font-size: 2.6em; font-weight: 800; padding: .6em 1em; border-radius: 20px; background: var(--surface); border: 3px solid var(--accent); min-width: 50%; text-align: center; }
+.bingo-hist { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 900px; font-size: .7em; }
+.flash { font: inherit; font-size: 2em; font-weight: 800; width: min(90vw, 700px); aspect-ratio: 3 / 2; border-radius: 24px; border: 3px solid var(--accent); background: var(--surface); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer; }
+.flash-b { color: var(--accent); }
+.flash-img { max-height: 55%; max-width: 80%; object-fit: contain; }
+.dialogue { width: min(100%, 900px); display: flex; flex-direction: column; gap: 10px; }
+.bubble { padding: .5em .9em; border-radius: 16px; background: var(--surface); border: 2px solid var(--line); max-width: 80%; }
+.bubble.s1 { align-self: flex-end; border-color: var(--accent); }
+/* Impression des jeux */
+.pcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.pcards.big { grid-template-columns: repeat(2, 1fr); }
+.pcard { border: 1px dashed #999; min-height: 45mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4mm; text-align: center; font-size: 14pt; break-inside: avoid; }
+.pcards.big .pcard { min-height: 70mm; font-size: 22pt; }
+.pcard img { max-height: 30mm; max-width: 90%; object-fit: contain; }
+.pcards.big .pcard img { max-height: 45mm; }
+.pfold { display: grid; grid-template-columns: 1fr 1fr; break-inside: avoid; }
+.pcards.fold { grid-template-columns: 1fr; }
+.pcard.back { background: #f6f6f6; }
+.pbox { display: inline-block; width: 10mm; height: 10mm; border: 1px solid #555; }
+.bingo-sheet { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+.bingo-card { display: grid; grid-template-columns: repeat(var(--n), 1fr); border: 2px solid #333; break-inside: avoid; }
+.bingo-title { grid-column: 1 / -1; font-weight: 700; padding: 2mm; border-bottom: 2px solid #333; }
+.bingo-cell { border: 1px solid #999; min-height: 18mm; display: flex; align-items: center; justify-content: center; text-align: center; padding: 1mm; font-size: 11pt; }
+.bingo-call { grid-column: 1 / -1; break-before: page; }
+.pquiz > li { margin-bottom: 4mm; break-inside: avoid; }
+.pquiz li.good { font-weight: 700; }
+.print-table.assoc td.dot { width: 10mm; text-align: center; font-size: 16pt; }
+.print-table td.tall { height: 60mm; vertical-align: top; }
+@media (max-width: 700px) { .game-row { grid-template-columns: 22px repeat(var(--cols), minmax(0, 1fr)); } .game-row > :nth-last-child(-n+3) { grid-column: 2 / -1; } .quiz-choices { grid-template-columns: 1fr; } }

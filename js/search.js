@@ -26,6 +26,9 @@ export function search(q) {
     for (const f of store.all('file')) if (match(f.name, (f.tags || []).join(' '), f.description, f.subject, f.level, f.project)) out.push({ group: 'Fichiers', title: f.name, detail: [f.kind === 'link' ? 'lien' : 'fichier', f.subject, f.level].filter(Boolean).join(' · '), href: `#/fichiers?open=${f.id}` });
     for (const d of store.all('folder')) if (match(d.name)) out.push({ group: 'Fichiers', title: d.name, detail: 'dossier', href: `#/fichiers?folder=${d.id}` });
   }
+  if (!isHidden('preparer', 'jeux')) {
+    for (const g of store.all('game')) if (match(g.title, g.subject, (g.items || []).map(i => `${i.a} ${i.b}`).join(' '))) out.push({ group: 'Jeux', title: g.title, detail: g.subject || '', href: `#/jeux/${g.id}` });
+  }
   if (!isHidden('organisation', 'argent')) {
     for (const p of store.all('project')) if (match(p.title, p.kind, p.description)) out.push({ group: 'Projets', title: p.title, detail: p.kind, href: `#/argent/projet/${p.id}` });
   }
