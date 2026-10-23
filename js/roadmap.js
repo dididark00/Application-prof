@@ -68,7 +68,7 @@ export const ROADMAP = [
   R(2, '§6 Planifier', 'Rituels récurrents ; liste consolidée matériel/photocopies', 'fait'),
   R(2, '§6 Planifier', 'Agenda personnel et professionnel, tâches, échéances', 'fait'),
   R(4, '§6 Planifier', 'Répartition des préparations avec la binôme', 'fait', 'Vue « Qui prépare quoi » d’après le responsable de chaque séquence (Transmissions binôme).'),
-  R(5, '§6 Planifier', 'Notifications configurables'),
+  R(5, '§6 Planifier', 'Notifications configurables', 'partiel', 'Rappels locaux paramétrables sur les tâches, visibles lorsque l’application est ouverte ; aucune notification système ou en arrière-plan.'),
 
   // ── §7 Appel et quotidien
   R(3, '§7 Quotidien', 'Appel matin/après-midi (absent, retard, départ, absence partielle), validation', 'fait'),
