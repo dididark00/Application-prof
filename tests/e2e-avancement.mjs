@@ -20,6 +20,7 @@ page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+const modalBtn = (name) => page.locator('.modal').getByRole('button', { name, exact: true });
 const go = async (hash) => { await page.evaluate(h => { location.hash = h; }, hash); await page.waitForTimeout(350); };
 const S = (fn, arg) => page.evaluate(async ([src, a]) => {
   const m = { store: await import('./js/store.js'), model: await import('./js/model.js'), P: await import('./js/pedago.js'), A: await import('./js/avancement.js'), CP: await import('./js/cahier-plus.js') };
@@ -183,7 +184,29 @@ await test('Liens Drive, Docs, Slides, Canva : aperçu intégré ; messagerie ac
   eq(await S(`return store.getSettings().webmailUrl;`), 'https://messagerie.ac-versailles.fr/', 'messagerie enregistrée');
 });
 
+await test('EDT : plusieurs emplois du temps dans une période, lisibles et modifiables chacun', async () => {
+  await S(`const cls = store.all('class').find(c => c.name === 'Test import (exemple)'); await store.setSettings({ currentYearId: cls.yearId, currentClassId: cls.id });`);
+  await go('#/edt'); await page.getByTestId('edt-period-2').click(); await page.waitForTimeout(250);
+  assert((await page.getByTestId('edt-period-2').innerText()).includes('2 EDT'), 'P2 annonce 2 EDT');
+  const tabs = page.getByTestId('edt-version');
+  eq(await tabs.count(), 2, 'deux onglets en P2');
+  assert((await tabs.nth(0).innerText()).includes('Du 2 nov. au 7 déc.'), await tabs.nth(0).innerText());
+  assert((await tabs.nth(1).innerText()).includes('Du 8 déc. au 18 déc.'), await tabs.nth(1).innerText());
+  await tabs.nth(1).click(); await page.waitForTimeout(200);
+  const jeudi = page.locator('[data-testid=edt-grid] .edt-day').nth(2);
+  assert((await jeudi.innerText()).includes('Natation') && (await jeudi.locator('.edt-changed').count()) === 1, 'natation visible et marquée « changé »');
+  await jeudi.getByTestId('edt-slot').first().click();
+  await page.locator('.modal input[name=label]').fill('Natation (bassin)'); await modalBtn('Enregistrer').click(); await page.waitForTimeout(250);
+  const r = await S(`const t = (await import('./js/planning.js')).timetablesOf(store.getSettings().currentClassId)[0]; return t.versions.map(v => (v.from || '') + ':' + v.slots.map(x => x.label).join('/'));`);
+  eq(JSON.stringify(r), JSON.stringify([':Géométrie/Calcul', '2026-12-08:Natation (bassin)/Géométrie']), 'seule la version du 8 décembre est modifiée');
+  await page.getByTestId('edt-add-change').click(); await page.getByTestId('edt-change-date').fill('2026-12-14'); await page.getByTestId('edt-change-name').fill('Sortie (exemple)');
+  await page.getByTestId('edt-change-create').click(); await page.waitForTimeout(250);
+  eq(await page.getByTestId('edt-version').count(), 3, 'trois EDT en P2 après le changement');
+  assert((await page.getByTestId('edt-version').nth(2).innerText()).includes('Sortie (exemple)'), 'nom du changement');
+});
+
 await test('Téléphone : rien ne dépasse', async () => {
+  await S(`const cls = store.all('class').find(c => c.name === 'CE2 (démo)'); await store.setSettings({ currentYearId: cls.yearId, currentClassId: cls.id });`);
   await page.setViewportSize({ width: 390, height: 844 });
   await go(`#/avancement?p=${ids.p2}`); await page.screenshot({ path: `${OUT}avancement-telephone.png`, fullPage: true });
   eq(await page.evaluate(() => document.documentElement.scrollWidth <= 392), true, 'largeur');

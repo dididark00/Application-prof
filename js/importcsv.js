@@ -15,8 +15,8 @@ export const KINDS = {
     example: [['Français', 'CE2', 'P2', '1', 'Le récit', 'Découvrir le texte', 'Identifier les personnages', 'Album', 'Lecture', '']] },
   sequences: { label: 'Séquences et séances', cols: ['Discipline', 'Niveau', 'Période', 'Séquence', 'N° séance', 'Séance', 'Objectif', 'Durée (min)', 'Compétences', 'Déroulé', 'Matériel'],
     example: [['Questionner le monde', 'CE2', 'P2', 'Les états de l’eau', '1', 'Solide, liquide', 'Observer les changements d’état', '45', '', '5 min Mise en route : rappel de la séance précédente | 20 min Recherche : observer des glaçons qui fondent | 10 min Mise en commun : trace écrite | 10 min Bilan : qu’avons-nous appris ?', 'glaçons, coupelles']] },
-  edt: { label: 'Emploi du temps (créneaux de la semaine)', cols: ['Jour', 'Début', 'Fin', 'Discipline', 'Intitulé', 'Niveaux', 'Mode', 'Période', 'À partir du'],
-    example: [['Lundi', '08:30', '09:00', 'Français', 'Rituels', '', 'rituel', 'P1', ''], ['Lundi', '09:00', '10:00', 'Mathématiques', 'Calcul', 'CE2', 'dirigé', 'P1', '']] },
+  edt: { label: 'Emploi du temps (créneaux de la semaine)', cols: ['Jour', 'Début', 'Fin', 'Discipline', 'Intitulé', 'Niveaux', 'Mode', 'Période', 'À partir du', 'Nom de l’EDT'],
+    example: [['Lundi', '08:30', '09:00', 'Français', 'Rituels', '', 'rituel', 'P1', '', ''], ['Lundi', '09:00', '10:00', 'Mathématiques', 'Calcul', 'CE2', 'dirigé', 'P1', '', ''], ['Jeudi', '13:30', '15:00', 'EPS', 'Natation', '', 'dirigé', 'P1', '01/10/2026', 'natation']] },
   cahier: { label: 'Cahier journal (séances datées)', cols: ['Date', 'Début', 'Fin', 'Discipline', 'Séance', 'Statut', 'Bilan'],
     example: [['05/01/2027', '08:30', '09:15', 'Français', 'Découvrir le texte', 'prévue', '']] },
 };
@@ -84,7 +84,7 @@ export function analyse(kind, text, cls) {
       if (get(r, 7) && !pers.length) msg.push('période illisible (P1, P2, P1-P3…)');
       const from = get(r, 8) ? parseDateFr(get(r, 8)) : '';
       if (get(r, 8) && !from) msg.push('date « À partir du » illisible (JJ/MM/AAAA)');
-      return { line, ok: !msg.length, msg, data: { day, start, end, subject: subjectFrom(get(r, 3)), label: get(r, 4), levels, mode, periodIds: pers.map(p => p.id), from } };
+      return { line, ok: !msg.length, msg, data: { day, start, end, subject: subjectFrom(get(r, 3)), label: get(r, 4), levels, mode, periodIds: pers.map(p => p.id), from, vname: get(r, 9) } };
     }
     if (kind === 'cahier') {
       const date = parseDateFr(get(r, 0)); const start = timeFrom(get(r, 1)); const end = timeFrom(get(r, 2));
@@ -212,7 +212,7 @@ export async function importRows(kind, rows, cls) {
     const all = model.periodsOf(year);
     const tts = PL.timetablesOf(cls.id).map(t => ({ id: t.id, periodIds: [...(t.periodIds || [])], versions: [...(t.versions || [])], existing: true, changed: false }));
     const groups = new Map();
-    for (const d of ok) { const k = `${d.periodIds.join(',')}|${d.from}`; if (!groups.has(k)) groups.set(k, { periodIds: d.periodIds, from: d.from, rows: [] }); groups.get(k).rows.push(d); }
+    for (const d of ok) { const k = `${d.periodIds.join(',')}|${d.from}`; if (!groups.has(k)) groups.set(k, { periodIds: d.periodIds, from: d.from, rows: [], name: '' }); const g = groups.get(k); g.rows.push(d); if (d.vname && !g.name) g.name = d.vname; }
     const slotsOf = (rows) => rows.map(d => ({ id: store.uid(), day: d.day, start: d.start, end: d.end, subject: d.subject, label: d.label, mode: d.mode, levels: d.levels }));
     const name = (ids) => { const n = ids.map(id => all.findIndex(p => p.id === id) + 1).filter(Boolean).sort((a, b) => a - b); return n.length ? `EDT ${n.map(x => 'P' + x).join(', ')} (importé)` : `EDT importé le ${model.frShort(model.todayIso())}`; };
     report.moved = 0; report.versions = 0;
@@ -221,12 +221,12 @@ export async function importRows(kind, rows, cls) {
         const per = model.periodOfDate(year, g.from);
         const t = tts.find(x => per && x.periodIds.includes(per.id) && !x.existing) || tts.find(x => per && x.periodIds.includes(per.id));
         if (!t) { report.skipped += g.rows.length; continue; }
-        t.versions = t.versions.filter(v => v.from !== g.from).concat({ from: g.from, slots: slotsOf(g.rows) }); t.changed = true; report.versions++; report.created += g.rows.length;
+        t.versions = t.versions.filter(v => v.from !== g.from).concat({ from: g.from, name: g.name, slots: slotsOf(g.rows) }); t.changed = true; report.versions++; report.created += g.rows.length;
         continue;
       }
       let ids = g.periodIds.length ? g.periodIds : all.map(p => p.id).filter(id => !tts.some(t => t.periodIds.includes(id)));
       for (const t of tts) { const before = t.periodIds.length; t.periodIds = t.periodIds.filter(id => !ids.includes(id)); if (t.periodIds.length !== before) { t.changed = true; report.moved++; } }
-      tts.push({ id: store.uid(), periodIds: ids, versions: [{ from: '', slots: slotsOf(g.rows) }], existing: false, changed: true, name: name(ids) });
+      tts.push({ id: store.uid(), periodIds: ids, versions: [{ from: '', name: g.name, slots: slotsOf(g.rows) }], existing: false, changed: true, name: name(ids) });
       report.created += g.rows.length; report.periods = (report.periods || 0) + ids.length; if (!ids.length) report.unassigned = true;
     }
     for (const t of tts.filter(x => x.changed)) items.push(t.existing ? { id: t.id, patch: { periodIds: t.periodIds, versions: t.versions } } : { create: { type: 'timetable', data: { id: t.id, classId: cls.id, name: t.name, periodIds: t.periodIds, versions: t.versions } } });

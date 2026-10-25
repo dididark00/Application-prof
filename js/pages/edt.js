@@ -10,9 +10,23 @@ import { levelChips } from '../pedago-ui.js';
 import { printDocument } from '../print.js';
 import { printTimetable } from '../printdocs.js';
 
-let selTt = null;
-let effective = null;
+let selTt = null;      // EDT choisi (sinon celui de la période choisie)
+let selPer = null;     // période affichée
+let selFrom = null;    // version affichée (clé « from », '' = version de départ)
+let effective = null;  // date d'effet d'une modification sur une version déjà en usage
 let rerender = () => {};
+
+const sortedVersions = (tt) => (tt.versions || []).slice().sort((a, b) => (a.from || '').localeCompare(b.from || ''));
+/** Plages de dates de chaque version : [{ v, start, end }]. */
+function versionRanges(tt, year) {
+  const first = PL.firstDayOf(tt) || year?.start || '';
+  const ps = model.periodsOf(year).filter(p => (tt.periodIds || []).includes(p.id));
+  const last = ps.length ? ps.at(-1).end : (year?.end || '9999-12-31');
+  const vs = sortedVersions(tt);
+  return vs.map((v, i) => ({ v, start: v.from && v.from > first ? v.from : first, end: vs[i + 1]?.from ? model.addDays(vs[i + 1].from, -1) : last }));
+}
+const slotKey = (x) => `${x.day}|${x.start}|${x.end}|${x.subject || ''}|${x.label || ''}|${x.mode || ''}|${(x.levels || []).join(',')}`;
+const short = (d) => model.frDate(d, { day: 'numeric', month: 'short' });
 
 export function render({ rerender: rr }) {
   rerender = rr;
@@ -23,27 +37,51 @@ export function render({ rerender: rr }) {
   const periods = model.periodsOf(year);
   const tts = PL.timetablesOf(cls.id);
   const today = model.todayIso();
-  const tt = tts.find(t => t.id === selTt) || PL.timetableForDate(cls, today).timetable || tts[0] || null;
   const covered = new Set(tts.flatMap(t => t.periodIds || []));
+  const per = periods.find(p => p.id === selPer) || model.periodOfDate(year, today) || periods.find(p => p.start > today) || periods.at(-1) || null;
+  const orphan = tts.filter(t => !(t.periodIds || []).length);
+  const tt = tts.find(t => t.id === selTt) || (per ? tts.find(t => (t.periodIds || []).includes(per.id)) : null) || (per ? null : tts[0]) || null;
 
   const head = pageHeader('Emploi du temps', { favKey: 'planifier/edt', subtitle: `${cls.name} · ${model.classDays(cls).map(d => model.JOURS[d]).join(', ')}`,
     actions: [
       h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-edt', onclick: () => newTimetable(cls, periods, covered) }, icon('plus', 16), 'Nouvel EDT'),
       tt ? h('button', { class: 'btn', type: 'button', 'data-testid': 'print-edt', onclick: () => printDocument(printTimetable(tt, shownVersion(tt), cls), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer') : null] });
-  if (!tt) return h('div', { class: 'page' }, head, subTabs(), emptyState('Aucun emploi du temps', 'Créez l’EDT de référence : il fournit les créneaux du cahier journal pour les périodes choisies. Vous pourrez le dupliquer pour d’autres périodes.'));
 
-  const first = PL.firstDayOf(tt);
-  const started = first && first <= today;
-  const version = shownVersion(tt);
+  // Choix de la période, puis des emplois du temps successifs de cette période.
+  const perTabs = periods.length ? h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Période', 'data-testid': 'edt-periods' },
+    periods.map((p, i) => { const t = tts.find(x => (x.periodIds || []).includes(p.id)); const n = t ? versionRanges(t, year).filter(r => r.start <= p.end && r.end >= p.start).length : 0;
+      return h('button', { type: 'button', class: p.id === per?.id && (!selTt || tt?.periodIds?.includes(p.id)) ? 'on' : '', title: t ? (t.name || 'EDT') : 'Pas d’EDT', 'data-testid': `edt-period-${i + 1}`,
+        onclick: () => { selPer = p.id; selTt = null; selFrom = null; effective = null; rerender(); } }, `P${i + 1}`, n > 1 ? h('span', { class: 'seg-count' }, ` · ${n} EDT`) : !t ? h('span', { class: 'seg-count' }, ' · aucun') : null); }),
+    orphan.map(t => h('button', { type: 'button', class: t.id === tt?.id ? 'on' : '', onclick: () => { selTt = t.id; selFrom = null; effective = null; rerender(); } }, `${t.name || 'EDT'} (sans période)`))) : null;
+
+  if (!tt) return h('div', { class: 'page' }, head, subTabs(), perTabs,
+    emptyState(per ? `Pas d’emploi du temps pour ${per.name || 'cette période'}` : 'Aucun emploi du temps', 'Créez l’EDT (bouton « Nouvel EDT »), dupliquez celui d’une autre période, ou importez-le : Préparer › Importer un tableau › Emploi du temps.'));
+
+  const ranges = versionRanges(tt, year);
+  const inPer = per && tt.periodIds?.includes(per.id) ? ranges.filter(r => r.start <= per.end && r.end >= per.start) : ranges;
+  const nowR = ranges.find(r => today >= r.start && today <= r.end);
+  const chosen = inPer.find(r => (r.v.from || '') === selFrom) || (nowR && inPer.includes(nowR) ? nowR : inPer[0]) || ranges[0];
+  selFrom = chosen ? (chosen.v.from || '') : null;
+  const version = chosen?.v || null;
+  const idx = sortedVersions(tt).indexOf(version);
+  const prev = idx > 0 ? sortedVersions(tt)[idx - 1] : null;
+  const prevKeys = new Set((prev?.slots || []).map(slotKey));
+  const inUse = chosen && chosen.start <= today;
   const days = model.classDays(cls);
   const slots = version?.slots || [];
+  const clip = (r) => [per && r.start < per.start && tt.periodIds?.includes(per.id) ? per.start : r.start, per && r.end > per.end && tt.periodIds?.includes(per.id) ? per.end : r.end];
+  const rangeLabel = (r) => { const [a, b] = clip(r); return `Du ${short(a)} au ${short(b)}`; };
 
-  return h('div', { class: 'page' }, head, subTabs(),
-    tts.length > 1 ? h('div', { class: 'seg', role: 'group', 'aria-label': 'Emplois du temps' }, tts.map(t => h('button', { type: 'button', class: t.id === tt.id ? 'on' : '', onclick: () => { selTt = t.id; effective = null; rerender(); } },
-      `${t.name || 'EDT'} (${(t.periodIds || []).map(p => model.periodLabel(year, p)).join(', ')})`))) : null,
+  return h('div', { class: 'page' }, head, subTabs(), perTabs,
+    inPer.length > 1 ? h('section', { class: 'card stack', 'data-testid': 'edt-versions' },
+      h('h2', {}, `${inPer.length} emplois du temps successifs${per && tt.periodIds?.includes(per.id) ? ` en ${per.name || 'cette période'}` : ''}`),
+      h('div', { class: 'edt-vtabs' }, inPer.map((r, i) => h('button', { type: 'button', class: `edt-vtab ${r === chosen ? 'on' : ''}`, 'data-testid': 'edt-version', onclick: () => { selFrom = r.v.from || ''; effective = null; rerender(); } },
+        h('strong', {}, r.v.name || (i === 0 ? 'EDT de départ' : `Changement n° ${i}`)), h('span', {}, rangeLabel(r)),
+        today >= r.start && today <= r.end ? badge('en cours', 'ok') : r.start > today ? badge('à venir', 'muted') : badge('passé', 'muted')))),
+      h('p', { class: 'muted small' }, 'Le cahier journal utilise automatiquement le bon emploi du temps selon la date. Les créneaux marqués « changé » diffèrent de l’emploi du temps précédent.')) : null,
     h('section', { class: 'card' },
       h('div', { class: 'grid-3' },
-        bound({ label: 'Nom', type: 'text', value: tt.name, onSave: (v) => store.update(tt.id, { name: v }, 'Nom de l’EDT', { quiet: true }) }),
+        bound({ label: 'Nom de l’EDT', type: 'text', value: tt.name, onSave: (v) => store.update(tt.id, { name: v }, 'Nom de l’EDT', { quiet: true }) }),
         h('div', { class: 'field' }, h('label', {}, 'Périodes concernées'), h('div', { class: 'chips' }, periods.map((p, i) => {
           const mine = (tt.periodIds || []).includes(p.id); const other = !mine && covered.has(p.id);
           return h('label', { class: 'chip', title: other ? 'Déjà couverte par un autre EDT' : '' }, h('input', { type: 'checkbox', checked: mine, disabled: other, onchange: async (e) => {
@@ -51,48 +89,75 @@ export function render({ rerender: rr }) {
             await store.update(tt.id, { periodIds: next }, 'Périodes de l’EDT');
           } }), `P${i + 1}`);
         }))),
-        h('div', { class: 'field' }, h('label', {}, ' '), h('div', { class: 'row' },
+        h('div', { class: 'field' }, h('label', {}, ' '), h('div', { class: 'row' },
           h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'dup-edt', onclick: () => duplicateDialog(tt, cls, periods, covered) }, icon('copy', 14), 'Dupliquer vers d’autres périodes'),
+          h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edt-add-change', onclick: () => changeDialog(tt, per) }, '+ Changement à partir d’une date'),
           iconBtn('trash', 'Mettre l’EDT à la corbeille', async () => {
             if (!await confirmDialog('Mettre l’EDT à la corbeille ?', 'Les séances datées déjà saisies au cahier journal sont conservées ; les créneaux non préparés disparaîtront des journées concernées.', { confirmLabel: 'Mettre à la corbeille', danger: true })) return;
-            await store.remove(tt.id, 'EDT mis à la corbeille'); selTt = null;
+            await store.remove(tt.id, 'EDT mis à la corbeille'); selTt = null; selFrom = null;
           })))),
-      started ? h('div', { class: 'effective', 'data-testid': 'effective' },
+      chosen ? h('div', { class: 'row wrap edt-current' }, h('span', {}, h('strong', {}, chosen.v.name || (idx <= 0 ? 'EDT de départ' : 'Changement')), ` — ${idx <= 0 && !chosen.v.from ? `à partir du ${short(chosen.start)}` : rangeLabel(chosen)}`),
+        bound({ type: 'text', compact: true, value: version.name || '', placeholder: 'nommer (ex. natation)', onSave: (v) => store.update(tt.id, { versions: (store.get(tt.id).versions || []).map(x => (x.from || '') === (version.from || '') ? { ...x, name: v } : x) }, 'Nom de la version', { quiet: true }) }),
+        idx > 0 ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edt-remove-change', onclick: async () => {
+          if (!await confirmDialog('Supprimer ce changement ?', `L’emploi du temps précédent s’appliquera aussi à partir du ${short(chosen.start)}. Les séances déjà notées au cahier journal sont conservées.`, { confirmLabel: 'Supprimer', danger: true })) return;
+          await store.update(tt.id, { versions: (store.get(tt.id).versions || []).filter(x => (x.from || '') !== (version.from || '')) }, 'Changement d’EDT supprimé'); selFrom = null;
+        } }, 'Supprimer ce changement') : null) : null,
+      inUse ? h('div', { class: 'effective', 'data-testid': 'effective' },
         h('label', { class: 'inline' }, h('strong', {}, 'Les modifications s’appliquent à partir du '),
-          h('input', { type: 'date', value: effective || today, min: first, 'data-testid': 'effective-date', onchange: (e) => { effective = e.target.value || null; rerender(); } })),
-        h('span', { class: 'muted small' }, ' Les journées antérieures gardent l’emploi du temps qui était en vigueur.')) : null,
-      (tt.versions || []).length > 1 ? h('details', {}, h('summary', {}, `Historique : ${tt.versions.length} versions`),
-        h('ul', { class: 'plain' }, tt.versions.slice().sort((a, b) => (a.from || '').localeCompare(b.from || '')).map(v => h('li', {}, v.from ? `À partir du ${model.frDate(v.from)}` : 'Version initiale', ` — ${v.slots.length} créneau(x)`,
-          v === version ? badge('affichée', 'info') : h('button', { class: 'btn btn-link small', type: 'button', onclick: () => { effective = v.from || first; rerender(); } }, 'afficher'))))) : null),
+          h('input', { type: 'date', value: effective || (today > chosen.start ? today : chosen.start), min: chosen.start, 'data-testid': 'effective-date', onchange: (e) => { effective = e.target.value || null; rerender(); } })),
+        h('span', { class: 'muted small' }, ' Les journées antérieures gardent l’emploi du temps qui était en vigueur.')) : null),
     h('div', { class: 'edt-grid', style: { gridTemplateColumns: `repeat(${days.length}, minmax(150px, 1fr))` }, 'data-testid': 'edt-grid' }, days.map(d => h('div', { class: 'edt-day' },
       h('h3', {}, model.JOURS[d]),
-      slots.filter(s => s.day === d).sort((a, b) => a.start.localeCompare(b.start)).map(s => h('button', { class: 'edt-slot', type: 'button', style: { borderLeftColor: model.subjectColor(s.subject) }, 'data-testid': 'edt-slot', onclick: () => slotDialog(tt, cls, s) },
-        h('span', { class: 'edt-time' }, `${s.start}–${s.end}`), h('strong', {}, s.subject || '—'), s.label ? h('span', {}, s.label) : null,
-        h('span', { class: 'muted small' }, [(s.levels || []).join(', '), s.mode !== 'dirigé' ? s.mode : ''].filter(Boolean).join(' · ')))),
+      slots.filter(s => s.day === d).sort((a, b) => a.start.localeCompare(b.start)).map(s => { const changed = prev && !prevKeys.has(slotKey(s));
+        return h('button', { class: `edt-slot ${changed ? 'edt-changed' : ''}`, type: 'button', style: { borderLeftColor: model.subjectColor(s.subject) }, 'data-testid': 'edt-slot', onclick: () => slotDialog(tt, cls, s) },
+          h('span', { class: 'edt-time' }, `${s.start}–${s.end}`, changed ? badge('changé', 'warn') : null), h('strong', {}, s.subject || '—'), s.label ? h('span', {}, s.label) : null,
+          h('span', { class: 'muted small' }, [(s.levels || []).join(', '), s.mode !== 'dirigé' ? s.mode : ''].filter(Boolean).join(' · '))); }),
       h('button', { class: 'btn btn-small btn-dashed', type: 'button', 'data-testid': `add-slot-${d}`, onclick: () => slotDialog(tt, cls, null, d) }, '+ créneau')))),
     timeTable(cls, slots));
 }
 
 function shownVersion(tt) {
+  const vs = tt.versions || [];
+  const v = selFrom != null ? vs.find(x => (x.from || '') === selFrom) : null;
+  if (v) return v;
   const first = PL.firstDayOf(tt); const today = model.todayIso();
-  const started = first && first <= today;
-  return PL.versionAt(tt, started ? (effective || today) : (first || '9999'));
+  return PL.versionAt(tt, first && first > today ? first : today);
+}
+
+/** Nouveau changement d'EDT à partir d'une date (copie de l'EDT en vigueur ce jour-là, à modifier ensuite). */
+function changeDialog(tt, per) {
+  const date = h('input', { type: 'date', value: per && per.start > model.todayIso() ? per.start : model.todayIso(), 'data-testid': 'edt-change-date' });
+  const name = h('input', { placeholder: 'ex. natation, intervenant', 'data-testid': 'edt-change-name' });
+  modal({ title: 'Changement d’emploi du temps', body: h('div', { class: 'form' }, field('À partir du', date), field('Nom (facultatif)', name),
+    h('p', { class: 'muted small' }, 'Copie l’emploi du temps en vigueur à cette date ; modifiez ensuite les créneaux qui changent. Les journées d’avant ne bougent pas.')),
+  actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, testid: 'edt-change-create', onClick: async () => {
+    const d = date.value; if (!d) return false;
+    const cur = store.get(tt.id); if ((cur.versions || []).some(v => v.from === d)) { toast('Un changement existe déjà à cette date.', { kind: 'error' }); return false; }
+    const base = PL.versionAt(cur, d);
+    await store.update(tt.id, { versions: [...(cur.versions || []), { from: d, name: name.value.trim(), slots: structuredClone(base?.slots || []).map(x => ({ ...x, id: store.uid() })) }] }, `Changement d’EDT à partir du ${model.frShort(d)}`);
+    selFrom = d; effective = null;
+  } }] });
 }
 
 /** Modifie les créneaux dans la bonne version (création d'une version datée si l'EDT est déjà en usage). */
 async function editSlots(tt, fn, label) {
   tt = store.get(tt.id);
-  const first = PL.firstDayOf(tt); const today = model.todayIso();
-  const started = first && first <= today;
-  let from = started ? (effective || today) : '';
-  if (from && first && from <= first) from = '';
+  const year = store.get(store.get(tt.classId)?.yearId);
+  const today = model.todayIso();
+  const shown = shownVersion(tt);
+  const r = versionRanges(tt, year).find(x => x.v === shown || (x.v.from || '') === (shown?.from || ''));
+  const start = r?.start || '';
+  // Version pas encore en usage : modifiée telle quelle. Déjà en usage : nouvelle version datée (le passé ne change pas).
+  let from = shown?.from || '';
+  if (start && start <= today) { const eff = effective || today; if (eff > start) from = eff; }
   const versions = structuredClone(tt.versions?.length ? tt.versions : [{ from: '', slots: [] }]);
   let v = versions.find(x => (x.from || '') === from);
   if (!v) { const base = PL.versionAt(tt, from); v = { from, slots: structuredClone(base?.slots || []) }; versions.push(v); }
   v.slots = fn(v.slots);
   const later = versions.filter(x => (x.from || '') > from).length;
   await store.update(tt.id, { versions }, from ? `${label} (à partir du ${model.frShort(from)})` : label);
-  if (later) toast(`Attention : ${later} version(s) plus récente(s) existent et ne sont pas modifiées.`, { kind: 'error' });
+  if (from !== (shown?.from || '')) { selFrom = from; }
+  if (later) toast(`Attention : ${later} changement(s) plus récent(s) existent et ne sont pas modifiés.`, { kind: 'error' });
 }
 
 function slotDialog(tt, cls, slot, day) {
@@ -134,7 +199,7 @@ function newTimetable(cls, periods, covered) {
   actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, onClick: async () => {
     if (!chosen.size) return false;
     const t = await store.create('timetable', { classId: cls.id, name: name.value.trim() || 'EDT', periodIds: [...chosen], versions: [{ from: '', slots: [] }] }, 'Nouvel EDT');
-    selTt = t.id;
+    selTt = t.id; selFrom = null;
   } }] });
 }
 
@@ -149,7 +214,7 @@ function duplicateDialog(tt, cls, periods, covered) {
     if (!chosen.size) return false;
     const v = shownVersion(tt);
     const t = await store.create('timetable', { classId: cls.id, name: `${tt.name || 'EDT'} (copie)`, periodIds: [...chosen], copiedFrom: tt.id, versions: [{ from: '', slots: (v?.slots || []).map(s => ({ ...s, id: store.uid() })) }] }, 'EDT dupliqué');
-    selTt = t.id; effective = null;
+    selTt = t.id; selFrom = null; effective = null;
   } }] });
 }
 

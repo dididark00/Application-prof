@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (154) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 167 entrées.
+Légende : ✅ Réalisé (155) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 168 entrées.
 
 ## Étape 1 — Socle
 
@@ -187,6 +187,7 @@ Légende : ✅ Réalisé (154) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §15 Familles | Familles sans ENT : canal choisi (cahier de liaison papier, e-mail, application de l’école) ; mot imprimable pour le cahier de liaison, e-mail à toutes les familles |  |
 | ✅ | §3 Données | Import CSV : emploi du temps par période et changement daté (piscine, intervenant…), progression par sous-domaine (séances placées dans les bons créneaux), déroulé des séances en phases et matériel | Préparer › Importer un tableau. Les anciens EDT sont conservés. |
 | ✅ | §3 Données | Programmation et progression importées séparément et reliées : lignes de progression reliées aux notions (colonne Notions ou même titre), état des notions déduit |  |
+| ✅ | §6 Planifier | Emploi du temps : onglets par période et emplois du temps successifs d’une période (dates, nom, « en cours / à venir »), créneaux changés signalés, changement à partir d’une date |  |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |
