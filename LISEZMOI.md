@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.8).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par le **cahier de liaison, l'e-mail ou l'application de l'école** (au choix, sans ENT), sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
+**État : les cinq étapes sont réalisées et testées (version 0.5.9).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par le **cahier de liaison, l'e-mail ou l'application de l'école** (au choix, sans ENT), sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -125,7 +125,8 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 3. **Préparer › Importer un tableau** : téléchargez le modèle (programmation, progression, séquences et séances, emploi du temps, cahier journal), remplissez-le dans votre tableur, importez : aperçu et erreurs ligne par ligne, puis tout est relié (séquences retrouvées par leur titre, créneaux de l'EDT, compétences des référentiels).
 4. **Préparer › Où j'en suis** : avancement par discipline et par période (notions, séances faites, progression, heures faites), comparé au temps écoulé (trait vertical sur les barres), couverture des compétences des programmes et suggestions pour la suite. Les trois suggestions principales apparaissent aussi sur « Aujourd'hui ».
 5. **Cahier journal** : sur une semaine pas encore préparée, un bandeau propose « Préparer maintenant » ; dans la fenêtre, « Pré-remplir : jusqu'aux vacances » prépare toutes les semaines de la période d'un coup (une séance n'est jamais proposée deux fois). Tout reste modifiable.
-6. **Plus** (téléphone) : champ « Trouver une page », rubriques repliables, pages les plus utilisées en haut. **Aujourd'hui** : carte « Premiers pas » (masquable).
+6. **Importer un tableau**, compléments : l’emploi du temps accepte les colonnes « Période » (P1, P2-P3…) et « À partir du » (changement en cours de période, ex. piscine) ; la progression accepte « Sous-domaine » (un mot de l’intitulé des créneaux : les séances vont dans ces créneaux) ; les séquences acceptent « Déroulé » (« 10 min Recherche : consigne | 15 min Entraînement : … ») et « Matériel ».
+6 bis. **Plus** (téléphone) : champ « Trouver une page », rubriques repliables, pages les plus utilisées en haut. **Aujourd'hui** : carte « Premiers pas » (masquable).
 7. **Préparer › Programmes et référentiels** : « À quoi ça sert ? » explique la chaîne programme → référentiel → séquences et fiches → cahier journal → évaluations ; la colonne « Travaillée » montre la couverture de chaque compétence.
 8. Polices pour les plus petits : **Andika** (script des débutants) et **Marelle Bâton** ; dans le tableau d'écriture, « Écriture : CAPITALES D'IMPRIMERIE ».
 

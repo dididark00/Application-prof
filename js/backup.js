@@ -3,7 +3,7 @@ import * as db from './db.js';
 import * as store from './store.js';
 
 export const FORMAT = 'classeur-sauvegarde';
-export const APP_VERSION = '0.5.8';
+export const APP_VERSION = '0.5.9';
 
 function bufToB64(buf) {
   const bytes = new Uint8Array(buf);

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (138) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 157 entrées.
+Légende : ✅ Réalisé (139) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 158 entrées.
 
 ## Étape 1 — Socle
 
@@ -177,6 +177,7 @@ Légende : ✅ Réalisé (138) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §5 Préparation | Où j’en suis : avancement par discipline et par période (notions, séances faites, lignes de progression, temps fait), comparé au temps écoulé ; couverture des compétences ; suggestions pour la suite | Préparer › Où j’en suis. Tout est déduit de l’existant, rien n’est modifié automatiquement. |
 | ✅ | §6 Planifier | Cahier journal : bandeau « semaine pas encore préparée » et pré-remplissage jusqu’aux vacances (une séance n’est jamais proposée deux fois) |  |
 | ✅ | §15 Familles | Familles sans ENT : canal choisi (cahier de liaison papier, e-mail, application de l’école) ; mot imprimable pour le cahier de liaison, e-mail à toutes les familles |  |
+| ✅ | §3 Données | Import CSV : emploi du temps par période et changement daté (piscine, intervenant…), progression par sous-domaine (séances placées dans les bons créneaux), déroulé des séances en phases et matériel | Préparer › Importer un tableau. Les anciens EDT sont conservés. |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |

@@ -122,6 +122,30 @@ await test('Ergonomie : premiers pas, « Pour la suite », menu Plus filtrable e
   assert(await page.getByTestId('more-top').count() === 1, 'pages les plus utilisées');
 });
 
+await test('Import EDT par période avec changement daté, progression par sous-domaine, déroulé des séances', async () => {
+  const r = await S(`const IC = await import('./js/importcsv.js'); const PL = await import('./js/planning.js');
+    const y = await store.create('year', { label: 'Test', start: '2026-09-01', end: '2027-07-02', periods: [{ id: 'q1', name: 'P1', start: '2026-09-01', end: '2026-10-16' }, { id: 'q2', name: 'P2', start: '2026-11-02', end: '2026-12-18' }], noSchoolDays: [] }, 'y');
+    const cls = await store.create('class', { yearId: y.id, name: 'Test import (exemple)', levels: ['CE2'], classDays: [1, 2, 4, 5] }, 'c');
+    const edt = 'Jour;Début;Fin;Discipline;Intitulé;Niveaux;Mode;Période;À partir du\\nLundi;09:00;10:00;Maths;Géométrie;;;P1-P2;\\nLundi;10:00;11:00;Maths;Calcul;;;P1-P2;\\nJeudi;13:30;15:00;EPS;Natation;;;P2;08/12/2026\\nLundi;09:00;10:00;Maths;Géométrie;;;P2;08/12/2026';
+    const e = await IC.importRows('edt', IC.analyse('edt', edt, cls).rows, cls);
+    const tts = PL.timetablesOf(cls.id);
+    const prog = 'Discipline;Niveau;Période;Semaine;Séquence;Séance;Objectif;Support;Sous-domaine\\nMaths;CE2;P2;1;Calcul P2;Calcul 1;o;;Calcul\\nMaths;CE2;P2;1;Géométrie P2;Géo 1;o;;Géométrie';
+    await IC.importRows('progression', IC.analyse('progression', prog, cls).rows, store.get(cls.id));
+    const CP = await import('./js/cahier-plus.js');
+    const props = CP.weekProposals(store.get(cls.id), '2026-11-02').map(x => x.entry.slot.label + '>' + store.get(x.sessionId).title);
+    const seqs = 'Discipline;Niveau;Période;Séquence;N° séance;Séance;Objectif;Durée (min);Compétences;Déroulé;Matériel\\nQLM;CE2;P2;L’eau (exemple);1;Fondre (exemple);o;45;;5 min Mise en route : rappel | 20 min Recherche : observer des glaçons | 10 min Mise en commun : trace | 10 min Bilan : qu’avons-nous appris ?;glaçons';
+    await IC.importRows('sequences', IC.analyse('sequences', seqs, cls).rows, store.get(cls.id));
+    const ses = store.all('session').find(x => x.title === 'Fondre (exemple)');
+    return { tts: tts.length, versions: tts[0].versions.map(v => v.from + ':' + v.slots.length), per: tts[0].periodIds.length, e, props,
+      phases: ses.phases.map(p => p.kind + ':' + p.duration), consigne: ses.phases[1].consigne, materiel: ses.materiel,
+      dec10: PL.dayPlan(store.get(cls.id), '2026-12-10').entries.map(x => x.title).join(), dec3: PL.dayPlan(store.get(cls.id), '2026-12-03').entries.length };`);
+  eq(r.tts, 1, 'un seul EDT pour P1-P2'); eq(r.per, 2, 'posé sur 2 périodes'); eq(JSON.stringify(r.versions), JSON.stringify([':2', '2026-12-08:2']), 'version datée du 8 décembre');
+  eq(r.dec10, 'Natation', 'à partir du 8 décembre : natation le jeudi'); eq(r.dec3, 0, 'avant : pas de créneau le jeudi');
+  eq(JSON.stringify(r.props.sort()), JSON.stringify(['Calcul>Calcul 1', 'Géométrie>Géo 1']), 'chaque séance va dans le créneau de son sous-domaine');
+  eq(JSON.stringify(r.phases), JSON.stringify(['rappel:5', 'recherche:20', 'institution:10', 'bilan:10']), 'phases du déroulé');
+  eq(r.consigne, 'observer des glaçons', 'consigne de la phase'); eq(r.materiel, 'glaçons', 'matériel');
+});
+
 await test('Téléphone : rien ne dépasse', async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   await go(`#/avancement?p=${ids.p2}`); await page.screenshot({ path: `${OUT}avancement-telephone.png`, fullPage: true });

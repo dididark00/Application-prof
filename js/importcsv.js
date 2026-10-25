@@ -11,12 +11,12 @@ import { parseCsv, toCsv, parseDateFr } from './csv.js';
 export const KINDS = {
   programmation: { label: 'Programmation (notions par période)', cols: ['Discipline', 'Niveau', 'Période', 'Sous-domaine', 'Notion', 'Compétences', 'Ressources'],
     example: [['Mathématiques', 'CE2', 'P1', 'Nombres', 'Nombres jusqu’à 1 000', 'Comprendre et utiliser les nombres entiers', 'Manuel p. 10']] },
-  progression: { label: 'Progression (semaine par semaine)', cols: ['Discipline', 'Niveau', 'Période', 'Semaine', 'Séquence', 'Séance', 'Objectif', 'Support'],
-    example: [['Français', 'CE2', 'P2', '1', 'Le récit', 'Découvrir le texte', 'Identifier les personnages', 'Album']] },
-  sequences: { label: 'Séquences et séances', cols: ['Discipline', 'Niveau', 'Période', 'Séquence', 'N° séance', 'Séance', 'Objectif', 'Durée (min)', 'Compétences'],
-    example: [['Questionner le monde', 'CE2', 'P2', 'Les états de l’eau', '1', 'Solide, liquide', 'Observer les changements d’état', '45', '']] },
-  edt: { label: 'Emploi du temps (créneaux de la semaine)', cols: ['Jour', 'Début', 'Fin', 'Discipline', 'Intitulé', 'Niveaux', 'Mode'],
-    example: [['Lundi', '08:30', '09:00', 'Français', 'Rituels', '', 'rituel'], ['Lundi', '09:00', '10:00', 'Mathématiques', 'Calcul', 'CE2', 'dirigé']] },
+  progression: { label: 'Progression (semaine par semaine)', cols: ['Discipline', 'Niveau', 'Période', 'Semaine', 'Séquence', 'Séance', 'Objectif', 'Support', 'Sous-domaine'],
+    example: [['Français', 'CE2', 'P2', '1', 'Le récit', 'Découvrir le texte', 'Identifier les personnages', 'Album', 'Lecture']] },
+  sequences: { label: 'Séquences et séances', cols: ['Discipline', 'Niveau', 'Période', 'Séquence', 'N° séance', 'Séance', 'Objectif', 'Durée (min)', 'Compétences', 'Déroulé', 'Matériel'],
+    example: [['Questionner le monde', 'CE2', 'P2', 'Les états de l’eau', '1', 'Solide, liquide', 'Observer les changements d’état', '45', '', '5 min Mise en route : rappel de la séance précédente | 20 min Recherche : observer des glaçons qui fondent | 10 min Mise en commun : trace écrite | 10 min Bilan : qu’avons-nous appris ?', 'glaçons, coupelles']] },
+  edt: { label: 'Emploi du temps (créneaux de la semaine)', cols: ['Jour', 'Début', 'Fin', 'Discipline', 'Intitulé', 'Niveaux', 'Mode', 'Période', 'À partir du'],
+    example: [['Lundi', '08:30', '09:00', 'Français', 'Rituels', '', 'rituel', 'P1', ''], ['Lundi', '09:00', '10:00', 'Mathématiques', 'Calcul', 'CE2', 'dirigé', 'P1', '']] },
   cahier: { label: 'Cahier journal (séances datées)', cols: ['Date', 'Début', 'Fin', 'Discipline', 'Séance', 'Statut', 'Bilan'],
     example: [['05/01/2027', '08:30', '09:15', 'Français', 'Découvrir le texte', 'prévue', '']] },
 };
@@ -25,6 +25,18 @@ export const modelCsv = (k) => toCsv([KINDS[k].cols, ...KINDS[k].example]);
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ').trim();
 const colIndex = (header, k) => { const cols = KINDS[k].cols.map(norm); return cols.map(c => header.findIndex(h => norm(h).startsWith(c.split(' (')[0]))); };
 
+/** « P2 », « P1-P3 », « P1, P4 » → périodes. */
+export function periodsFrom(year, v) {
+  const ps = model.periodsOf(year); const t = String(v || '');
+  const out = new Set();
+  for (const part of t.split(/[,;+ ]+(?:et\s+)?/i)) {
+    const m = part.match(/(\d+)\s*(?:-|à|–)\s*P?(\d+)/i) || part.match(/(\d+)/);
+    if (!m) continue;
+    const a = Number(m[1]), b = Number(m[2] || m[1]);
+    for (let i = a; i <= b; i++) if (ps[i - 1]) out.add(ps[i - 1]);
+  }
+  return [...out];
+}
 export function periodFrom(year, v) {
   const ps = model.periodsOf(year); const m = String(v || '').match(/(\d+)/);
   return m ? ps[Number(m[1]) - 1] || null : null;
@@ -68,7 +80,11 @@ export function analyse(kind, text, cls) {
       else if (end <= start) msg.push('la fin est avant le début');
       const levels = get(r, 5).split(/[\s,;/+]+/).map(x => x.toUpperCase()).filter(l => model.NIVEAUX.includes(l));
       const mode = PL.MODES.find(m => norm(m[0]) === norm(get(r, 6)))?.[0] || 'dirigé';
-      return { line, ok: !msg.length, msg, data: { day, start, end, subject: subjectFrom(get(r, 3)), label: get(r, 4), levels, mode } };
+      const pers = periodsFrom(year, get(r, 7));
+      if (get(r, 7) && !pers.length) msg.push('période illisible (P1, P2, P1-P3…)');
+      const from = get(r, 8) ? parseDateFr(get(r, 8)) : '';
+      if (get(r, 8) && !from) msg.push('date « À partir du » illisible (JJ/MM/AAAA)');
+      return { line, ok: !msg.length, msg, data: { day, start, end, subject: subjectFrom(get(r, 3)), label: get(r, 4), levels, mode, periodIds: pers.map(p => p.id), from } };
     }
     if (kind === 'cahier') {
       const date = parseDateFr(get(r, 0)); const start = timeFrom(get(r, 1)); const end = timeFrom(get(r, 2));
@@ -82,18 +98,38 @@ export function analyse(kind, text, cls) {
     if (!per) msg.push('période illisible (P1 à P5)');
     if (kind === 'programmation') { if (!get(r, 4)) msg.push('notion manquante'); return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, subdomain: get(r, 3), title: get(r, 4), comp: get(r, 5), resources: get(r, 6) } }; }
     if (kind === 'progression') { const w = Number(get(r, 3)); if (!w) msg.push('semaine manquante (1, 2, 3…)'); if (!get(r, 4) && !get(r, 5)) msg.push('séquence ou séance manquante');
-      return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, week: w, seq: get(r, 4), ses: get(r, 5), objective: get(r, 6), support: get(r, 7) } }; }
+      return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, week: w, seq: get(r, 4), ses: get(r, 5), objective: get(r, 6), support: get(r, 7), subdomain: get(r, 8) } }; }
     if (!get(r, 3)) msg.push('séquence manquante');
-    return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, seq: get(r, 3), num: Number(get(r, 4)) || null, ses: get(r, 5), objective: get(r, 6), duration: Number(get(r, 7)) || null, comp: get(r, 8) } };
+    return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, seq: get(r, 3), num: Number(get(r, 4)) || null, ses: get(r, 5), objective: get(r, 6), duration: Number(get(r, 7)) || null, comp: get(r, 8), deroule: get(r, 9), materiel: get(r, 10) } };
   });
   return { rows, errors: [] };
 }
 
 // ───── Écriture
+// ───── Déroulé d'une séance écrit dans une cellule : phases séparées par « | » ou par des retours à la ligne,
+// chacune « 10 min Recherche : consigne… ». Le type de phase est reconnu par son nom.
+const PHASE_WORDS = [['rappel', /^(mise en route|rappel|rituel|accueil|reactivation|installation)/], ['recherche', /^(recherche|decouverte|situation|manipulation|observation|lecture)/],
+  ['institution', /^(mise en commun|institutionnalisation|synthese|trace|structuration|lecon)/], ['entrainement', /^(entrainement|application|exercice|reinvestissement|production|ecriture|consolidation)/],
+  ['bilan', /^(bilan|retour|conclusion|cloture)/]];
+export function parsePhases(text) {
+  const parts = String(text || '').split(/\s*(?:\||\n|\r)+\s*/).map(x => x.trim()).filter(Boolean);
+  return parts.map(p => {
+    let rest = p, duration = null;
+    const dm = rest.match(/^(\d+)\s*(?:min(?:utes?)?|’|')\s*[-–—:]?\s*/i) || rest.match(/\((\d+)\s*min\)\s*/i);
+    if (dm) { duration = Number(dm[1]); rest = rest.replace(dm[0], '').trim(); }
+    let title = '', body = rest;
+    const cm = rest.match(/^([^:]{2,60})\s*:\s*(.*)$/s);
+    if (cm) { title = cm[1].trim(); body = cm[2].trim(); }
+    const kind = (PHASE_WORDS.find(([, re]) => re.test(norm(title || rest))) || ['libre'])[0];
+    const field = kind === 'bilan' ? 'question' : kind === 'institution' ? 'but' : 'consigne';
+    return { id: store.uid(), kind, title: title || '', duration, [field]: body };
+  });
+}
 function sessionData(cls, seqId, order, d) {
   const cm = matchCompetencies(d.comp);
-  return { classId: cls.id, sequenceId: seqId, order, title: d.ses || '', subject: d.subject, subdomain: '', levels: d.level ? [d.level] : [], mode: 'quotidien', teacherMode: 'dirigé', phases: P.defaultPhases(),
-    objective: d.objective || '', duration: d.duration || null, competencyIds: cm.ids, competencesText: cm.rest, fileIds: [], manualRefs: [], copies: [], variants: [], checklist: {} };
+  const phases = d.deroule ? parsePhases(d.deroule) : P.defaultPhases();
+  return { classId: cls.id, sequenceId: seqId, order, title: d.ses || '', subject: d.subject, subdomain: d.subdomain || '', levels: d.level ? [d.level] : [], mode: 'quotidien', teacherMode: 'dirigé', phases,
+    objective: d.objective || '', duration: d.duration || null, competencyIds: cm.ids, competencesText: cm.rest, materiel: d.materiel || '', fileIds: [], manualRefs: [], copies: [], variants: [], checklist: {} };
 }
 /** Trouve (ou prépare la création de) une séquence par son titre. */
 function seqFinder(cls, items) {
@@ -144,11 +180,11 @@ export async function importRows(kind, rows, cls) {
       const seqId = d.seq ? findSeq(d) : null;
       const sesId = findSes(seqId, d);
       if (kind === 'progression') {
-        const key = `${d.subject}|${d.level}|${d.periodId}`;
+        const key = `${d.subject}|${d.level}|${d.periodId}|${norm(d.subdomain)}`;
         let pr = progs.get(key);
         if (!pr) {
-          const ex = P.ofClass('progression', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level && x.periodId === d.periodId);
-          pr = ex ? { id: ex.id, rows: structuredClone(ex.rows || []), existing: true } : { id: store.uid(), rows: [], data: { classId: cls.id, subject: d.subject, level: d.level, subdomain: '', periodId: d.periodId, programmationId: P.ofClass('programmation', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level)?.id || null, owner: '', extraColumns: [] } };
+          const ex = P.ofClass('progression', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level && x.periodId === d.periodId && norm(x.subdomain) === norm(d.subdomain));
+          pr = ex ? { id: ex.id, rows: structuredClone(ex.rows || []), existing: true } : { id: store.uid(), rows: [], data: { classId: cls.id, subject: d.subject, level: d.level, subdomain: d.subdomain || '', periodId: d.periodId, programmationId: P.ofClass('programmation', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level)?.id || null, owner: '', extraColumns: [] } };
           progs.set(key, pr);
         }
         pr.rows.push({ id: store.uid(), week: d.week, sequenceId: seqId, sessionId: sesId, title: sesId || seqId ? '' : (d.ses || d.seq), objective: d.objective, support: d.support, status: 'À venir', adjustments: '', extra: {}, notionIds: [] });
@@ -157,13 +193,31 @@ export async function importRows(kind, rows, cls) {
     }
     for (const pr of progs.values()) items.push(pr.existing ? { id: pr.id, patch: { rows: pr.rows } } : { create: { type: 'progression', data: { id: pr.id, ...pr.data, rows: pr.rows } } });
   } else if (kind === 'edt') {
-    // Jamais d'écrasement : un nouvel emploi du temps, posé sur les périodes qui n'en ont pas encore.
+    // Jamais d'écrasement des créneaux existants. Lignes groupées par (périodes, « à partir du ») :
+    // - sans date : un nouvel EDT pour ces périodes (sans période indiquée : celles qui n'ont pas encore d'EDT) ;
+    // - avec date : une nouvelle version de l'EDT de cette période, en vigueur à partir de cette date.
     const year = store.get(cls.yearId);
-    const covered = new Set(PL.timetablesOf(cls.id).flatMap(t => t.periodIds || []));
-    const free = model.periodsOf(year).map(p => p.id).filter(id => !covered.has(id));
-    const slots = ok.map(d => ({ id: store.uid(), day: d.day, start: d.start, end: d.end, subject: d.subject, label: d.label, mode: d.mode, levels: d.levels }));
-    items.push({ create: { type: 'timetable', data: { classId: cls.id, name: `EDT importé le ${model.frShort(model.todayIso())}`, periodIds: free, versions: [{ from: '', slots }] } } });
-    report.created = slots.length; report.unassigned = !free.length; report.periods = free.length;
+    const all = model.periodsOf(year);
+    const tts = PL.timetablesOf(cls.id).map(t => ({ id: t.id, periodIds: [...(t.periodIds || [])], versions: [...(t.versions || [])], existing: true, changed: false }));
+    const groups = new Map();
+    for (const d of ok) { const k = `${d.periodIds.join(',')}|${d.from}`; if (!groups.has(k)) groups.set(k, { periodIds: d.periodIds, from: d.from, rows: [] }); groups.get(k).rows.push(d); }
+    const slotsOf = (rows) => rows.map(d => ({ id: store.uid(), day: d.day, start: d.start, end: d.end, subject: d.subject, label: d.label, mode: d.mode, levels: d.levels }));
+    const name = (ids) => { const n = ids.map(id => all.findIndex(p => p.id === id) + 1).filter(Boolean).sort((a, b) => a - b); return n.length ? `EDT ${n.map(x => 'P' + x).join(', ')} (importé)` : `EDT importé le ${model.frShort(model.todayIso())}`; };
+    report.moved = 0; report.versions = 0;
+    for (const g of [...groups.values()].sort((a, b) => (a.from || '').localeCompare(b.from || ''))) {
+      if (g.from) {
+        const per = model.periodOfDate(year, g.from);
+        const t = tts.find(x => per && x.periodIds.includes(per.id) && !x.existing) || tts.find(x => per && x.periodIds.includes(per.id));
+        if (!t) { report.skipped += g.rows.length; continue; }
+        t.versions = t.versions.filter(v => v.from !== g.from).concat({ from: g.from, slots: slotsOf(g.rows) }); t.changed = true; report.versions++; report.created += g.rows.length;
+        continue;
+      }
+      let ids = g.periodIds.length ? g.periodIds : all.map(p => p.id).filter(id => !tts.some(t => t.periodIds.includes(id)));
+      for (const t of tts) { const before = t.periodIds.length; t.periodIds = t.periodIds.filter(id => !ids.includes(id)); if (t.periodIds.length !== before) { t.changed = true; report.moved++; } }
+      tts.push({ id: store.uid(), periodIds: ids, versions: [{ from: '', slots: slotsOf(g.rows) }], existing: false, changed: true, name: name(ids) });
+      report.created += g.rows.length; report.periods = (report.periods || 0) + ids.length; if (!ids.length) report.unassigned = true;
+    }
+    for (const t of tts.filter(x => x.changed)) items.push(t.existing ? { id: t.id, patch: { periodIds: t.periodIds, versions: t.versions } } : { create: { type: 'timetable', data: { id: t.id, classId: cls.id, name: t.name, periodIds: t.periodIds, versions: t.versions } } });
   } else if (kind === 'cahier') {
     const sessions = store.all('session').filter(s => s.classId === cls.id);
     const claimed = new Set();

@@ -19,30 +19,41 @@ export async function setHabitual(cls, slotId, sessionId) {
 
 export function weekDays(cls, monday) { return model.classDays(cls).map(d => model.addDays(monday, d - 1)); }
 
+const nrm = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const subKeys = (sub) => nrm(sub).split(/\s*[/,;]\s*/).map(x => x.trim()).filter(x => x.length > 2);
+const labelKey = (e) => nrm(`${e.slot?.label || ''} ${e.title || ''}`);
+
 /** Propositions pour la semaine : [{ entry, sessionId, source }] */
 export function weekProposals(cls, monday, shared = null) {
   const year = store.get(cls.yearId);
   const days = weekDays(cls, monday);
   // « shared » : séances déjà proposées les semaines précédentes (préparation sur plusieurs semaines).
   const used = shared || new Set(store.all('occurrence').filter(o => o.classId === cls.id && o.sessionId && !['annulée', 'reportée'].includes(o.status)).map(o => o.sessionId));
-  const queues = {};
+  // Une file de séances par progression (discipline, niveau, sous-domaine) et par semaine.
+  const queues = []; const seen = new Set();
   for (const d of days) {
     const per = model.periodOfDate(year, d); if (!per) continue;
     const wk = model.weeksOfPeriod(per).find(w => d >= w.monday && d <= model.addDays(w.monday, 6)); if (!wk) continue;
     for (const pr of P.ofClass('progression', cls.id).filter(x => x.periodId === per.id)) {
-      const key = `${pr.subject}|${pr.level || ''}`;
-      if (queues[key]) continue;
+      if (seen.has(pr.id)) continue; seen.add(pr.id);
       const ids = [];
       for (const r of (pr.rows || []).filter(r => r.week === wk.n && !['Réalisé', 'Reporté'].includes(r.status))) {
         if (r.sessionId) ids.push(r.sessionId);
         else if (r.sequenceId) ids.push(...P.sessionsOfSequence(r.sequenceId).map(s => s.id));
       }
-      queues[key] = ids.filter(id => !used.has(id) && store.get(id) && !store.get(id).deletedAt);
+      queues.push({ subject: pr.subject, level: pr.level || '', keys: subKeys(pr.subdomain), ids: ids.filter(id => !used.has(id) && store.get(id) && !store.get(id).deletedAt) });
     }
   }
-  const take = (subject, levels) => {
-    const keys = Object.keys(queues).filter(k => k.split('|')[0] === subject && (!levels?.length || !k.split('|')[1] || levels.includes(k.split('|')[1])));
-    for (const k of keys) if (queues[k].length) return queues[k].shift();
+  // Sous-domaine d'une progression (« Géométrie », « Picot », « Temps / Espace ») : ses séances vont dans les
+  // créneaux dont l'intitulé contient ce mot. Si aucun créneau de la semaine ne le contient, comportement simple :
+  // première séance disponible de la discipline.
+  const weekLabels = days.flatMap(d => PL.dayPlan(cls, d, { ignoreBlank: true }).entries.filter(e => e.kind === 'slot').map(e => ({ subject: e.subject, label: labelKey(e) })));
+  for (const q of queues) q.placeable = !q.keys.length || weekLabels.some(w => w.subject === q.subject && q.keys.some(k => w.label.includes(k)));
+  const take = (subject, levels, label) => {
+    const mine = queues.filter(q => q.subject === subject && (!levels?.length || !q.level || levels.includes(q.level)) && q.ids.length);
+    const exact = mine.filter(q => q.keys.length && q.keys.some(k => label.includes(k)));
+    const pool = exact.length ? exact : mine.filter(q => !q.keys.length || !q.placeable);
+    for (const q of pool) { const id = q.ids.shift(); if (id) return id; }
     return null;
   };
   const out = [];
@@ -53,7 +64,7 @@ export function weekProposals(cls, monday, shared = null) {
       if (e.kind !== 'slot' || e.sessionId || e.status !== 'prévue') continue;
       const hab = habitualOf(cls, e.slot.id);
       if (hab) { out.push({ entry: e, sessionId: hab.id, source: 'habituelle' }); continue; }
-      const sid = take(e.subject, e.levels);
+      const sid = take(e.subject, e.levels, labelKey(e));
       if (sid) { used.add(sid); out.push({ entry: e, sessionId: sid, source: 'progression' }); }
     }
   }
