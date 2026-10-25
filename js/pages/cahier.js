@@ -16,6 +16,7 @@ import { addFiles } from './files.js';
 import { printDocument } from '../print.js';
 import { printDay, printWeek, printMaterials, printWeekDossier } from '../printdocs.js';
 import * as CP from '../cahier-plus.js';
+import { activityDialog, activityDetails, durLabel } from './cahier-activite.js';
 import { competencyIndex, competencyLabel } from './referentiels.js';
 import { download } from '../ui.js';
 
@@ -58,7 +59,7 @@ function dayView(cls, date, nav) {
   return h('div', { class: 'page' },
     pageHeader('Cahier journal', { favKey: 'planifier/cahier', subtitle: `${cls.name} · ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${per ? ` · P${model.periodsOf(year).indexOf(per) + 1}${wk ? ` S${wk.n}` : ''}` : ''}`,
       actions: [
-        h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => adhocDialog(cls, date) }, icon('plus', 16), 'Activité'),
+        h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => activityDialog(cls, null, date) }, icon('plus', 16), 'Activité'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDocument(printDay(cls, date)) }, icon('print', 16), 'Imprimer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…')] }),
@@ -114,7 +115,7 @@ function entryCard(cls, e, inConflict) {
   }
 
   const header = h('div', { class: 'entry-head' },
-    h('span', { class: 'entry-time' }, `${e.start}–${e.end}`),
+    h('span', { class: 'entry-time' }, `${e.start}–${e.end}`), durLabel(e.start, e.end) ? h('span', { class: 'muted small' }, durLabel(e.start, e.end)) : null,
     h('span', { class: 'dot', style: { background: model.subjectColor(e.subject) } }), e.subject && e.subject !== e.title ? h('span', { class: 'muted' }, e.subject) : null,
     s ? h('a', { class: 'entry-title', href: `#/seance/${s.id}` }, e.title) : h('strong', { class: 'entry-title' }, e.title),
     mode, statusBadge, e.kind === 'intervention' || e.intervention ? badge('intervention', 'info') : null,
@@ -122,8 +123,9 @@ function entryCard(cls, e, inConflict) {
 
   const body = [];
   // Compétences officielles de la fiche (et de sa séquence) : le lien programme → cahier journal reste visible.
-  const comps = shown ? [...new Set([...(shown.competencyIds || []), ...(store.get(shown.sequenceId)?.competencyIds || [])])] : [];
+  const comps = [...new Set([...(shown?.competencyIds || []), ...(store.get(shown?.sequenceId)?.competencyIds || []), ...(e.occ?.competencyIds || []), ...(store.get(e.occ?.sequenceId)?.competencyIds || [])])];
   if (comps.length) { const idx = competencyIndex(); body.push(h('p', { class: 'small entry-comps', 'data-testid': 'entry-comps', title: comps.map(c => competencyLabel(c, idx)).join('\n') }, '🎯 ', comps.slice(0, 3).map(c => { const x = idx.get(c); return x ? (x.code || x.label.slice(0, 60)) : ''; }).filter(Boolean).join(' · '), comps.length > 3 ? ` (+${comps.length - 3})` : '')); }
+  body.push(...activityDetails(e, shown));
   if (e.status === 'reportée') {
     const to = e.occ?.postponedTo && store.get(e.occ.postponedTo);
     body.push(h('p', { class: 'small' }, 'Reportée', to ? [' au ', h('a', { href: `#/cahier?d=${to.date}` }, `${model.frDate(to.date)} ${to.start}`)] : '', '. Les supports restent attachés à la fiche.'));
@@ -153,7 +155,7 @@ function entryCard(cls, e, inConflict) {
     active && e.status !== 'faite' ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'postpone', onclick: () => postponeDialog(cls, e) }, 'Reporter…') : null,
     active ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => PL.setStatus(e, cls, e.status === 'annulée' ? 'prévue' : 'annulée') }, e.status === 'annulée' ? 'Rétablir' : 'Annuler') : null,
     h('details', { class: 'more' }, h('summary', { class: 'btn btn-small', 'data-testid': 'entry-more' }, 'Plus'), h('div', { class: 'more-menu', onclick: (ev) => { if (ev.target.closest('button')) ev.currentTarget.parentElement.open = false; } },
-      h('button', { class: 'btn btn-small', type: 'button', onclick: () => adjustDialog(cls, e) }, 'Modifier pour ce jour'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edit-activity', onclick: () => activityDialog(cls, e) }, 'Modifier l’activité (objectif, déroulement…)'),
       s && (e.slot?.id || e.occ?.slotId) ? (() => { const slotId = e.slot?.id || e.occ.slotId; const isHab = store.get(cls.id).habitual?.[slotId] === s.id;
         return h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'set-habitual', title: 'Cette fiche sera proposée sur ce créneau chaque semaine par « Pré-remplir la semaine »', onclick: () => CP.setHabitual(cls, slotId, isHab ? null : s.id).then(() => toast(isHab ? 'Fiche habituelle retirée' : `★ Fiche habituelle du créneau ${model.JOURS[model.weekday(e.date)].toLowerCase()} ${e.start}`)) }, isHab ? '☆ Ne plus en faire la fiche habituelle' : '★ Fiche habituelle de ce créneau'); })() : null,
       s && active ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'detach', title: 'Crée une copie de la fiche utilisée seulement à cette date', onclick: async () => {
@@ -170,7 +172,6 @@ function entryCard(cls, e, inConflict) {
         await store.remove(e.occ.id, 'Activité ponctuelle supprimée');
       } }, 'Supprimer') : null)));
 
-  const boardFiles = (e.occ?.fileIds || []).map(id => store.get(id)).filter(f => f && !f.deletedAt);
   const occ = e.occ || {};
   const bilan = active && (s || e.kind === 'occ' || e.date <= model.todayIso()) ? h('div', { class: 'entry-bilan' },
     bound({ label: 'Bilan express', value: occ.note, placeholder: 'ce qui a été fait, ajustements…', testid: 'bilan', compact: true,
@@ -178,7 +179,7 @@ function entryCard(cls, e, inConflict) {
     s ? h('details', { class: 'after' }, h('summary', {}, 'Après la séance'),
       h('div', { class: 'grid-2' }, P.AFTER_FIELDS.map(f => bound({ ...f, value: occ.after?.[f.key], compact: true,
         onSave: (v) => PL.patchEntry(e, cls, { after: { ...(e.kind === 'occ' ? store.get(e.occ.id).after : {}), [f.key]: v } }, `Après la séance : ${f.label}`, { quiet: e.kind === 'occ' }) })))) : null,
-    boardFiles.length ? h('p', { class: 'small' }, 'Tableau : ', boardFiles.map(f => h('a', { href: `#/fichiers?open=${f.id}` }, f.name)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])) : null) : null;
+    null) : null;
 
   const diags = s ? diagramsOfSession(s.id) : [];
   const diagLinks = diags.length ? h('p', { class: 'small', 'data-testid': 'entry-diagrams' }, 'Schémas EPS : ', diags.map(x => h('a', { href: `#/eps/${x.id}` }, x.title)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])) : null;
@@ -213,40 +214,6 @@ export function postponeDialog(cls, e) {
       field('Fin', h('input', { type: 'time', value: custom.end, onchange: (ev) => { custom.end = ev.target.value; } }))),
     h('button', { class: 'btn', type: 'button', onclick: () => { if (!custom.date || !custom.start || custom.end <= custom.start) { toast('Date ou horaire invalide', { kind: 'error' }); return; } doIt({ date: custom.date, start: custom.start, end: custom.end }); } }, 'Reporter à cette date')),
   actions: [{ label: 'Fermer' }] });
-}
-
-function adhocDialog(cls, date) {
-  let levels = [];
-  const sessions = P.ofClass('session', cls.id);
-  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
-    h('div', { class: 'grid-3' }, field('Début', h('input', { name: 'start', type: 'time', value: '09:00' })), field('Fin', h('input', { name: 'end', type: 'time', value: '09:45' })),
-      field('Discipline', h('select', { name: 'subject' }, h('option', { value: '' }, '—'), model.subjects().map(s => h('option', { value: s }, s))))),
-    field('Intitulé', h('input', { name: 'title', placeholder: 'ex. Rituel, séance décrochée, évaluation' })),
-    field('Fiche de séance (facultatif)', h('select', { name: 'sessionId' }, h('option', { value: '' }, '—'), sessions.map(s => h('option', { value: s.id }, `${P.sessionTitle(s)} (${s.subject || ''})`)))),
-    field('Encadrement', h('select', { name: 'mode' }, PL.MODES.map(([v, l]) => h('option', { value: v }, l)))),
-    (cls.levels || []).length > 1 ? h('div', { class: 'field' }, h('label', {}, 'Niveaux (aucun = toute la classe)'), levelChips([], cls.levels, (v) => { levels = v; })) : null);
-  modal({ title: `Activité ponctuelle — ${model.frDate(date)}`, body: form, actions: [{ label: 'Annuler' }, { label: 'Ajouter', primary: true, onClick: async () => {
-    const d = formData(form);
-    if (!d.start || !d.end || d.end <= d.start) { toast('Horaire invalide', { kind: 'error' }); return false; }
-    const s = d.sessionId ? store.get(d.sessionId) : null;
-    await store.create('occurrence', { classId: cls.id, date, start: d.start, end: d.end, subject: d.subject || s?.subject || '', title: d.title, sessionId: d.sessionId || null, mode: d.mode, levels, status: 'prévue' }, `Activité ajoutée le ${model.frShort(date)}`);
-  } }] });
-}
-
-function adjustDialog(cls, e) {
-  let levels = e.levels || [];
-  const form = h('form', { class: 'form', onsubmit: (ev) => ev.preventDefault() },
-    h('div', { class: 'grid-3' }, field('Début', h('input', { name: 'start', type: 'time', value: e.start })), field('Fin', h('input', { name: 'end', type: 'time', value: e.end })),
-      field('Discipline', h('select', { name: 'subject' }, h('option', { value: '' }, '—'), model.subjects().map(s => h('option', { value: s, selected: s === e.subject }, s))))),
-    field('Intitulé', h('input', { name: 'title', value: e.occ?.title || (e.session ? '' : e.title) })),
-    field('Encadrement', h('select', { name: 'mode' }, PL.MODES.map(([v, l]) => h('option', { value: v, selected: v === e.mode }, l)))),
-    (cls.levels || []).length > 1 ? h('div', { class: 'field' }, h('label', {}, 'Niveaux (aucun = toute la classe)'), levelChips(levels, cls.levels, (v) => { levels = v; })) : null,
-    h('p', { class: 'muted small' }, 'Ne change que cette date. L’emploi du temps et la fiche de séance restent inchangés.'));
-  modal({ title: `Modifier pour le ${model.frDate(e.date)}`, body: form, actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, onClick: async () => {
-    const d = formData(form);
-    if (!d.start || !d.end || d.end <= d.start) { toast('Horaire invalide', { kind: 'error' }); return false; }
-    await PL.patchEntry(e, cls, { start: d.start, end: d.end, subject: d.subject, title: d.title, mode: d.mode, levels }, `Ajustement du ${model.frShort(e.date)}`);
-  } }] });
 }
 
 async function boardPhoto(cls, e) {

@@ -92,7 +92,11 @@ export function printTimetable(tt, version, cls) {
 
 function entryRow(e, cls, multi) {
   const s = e.status === 'faite' || e.status === 'partielle' ? (e.occ?.snapshot || e.session) : e.session;
-  const details = s ? [s.objective && `Objectif : ${s.objective}`, (s.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ` : ${ph.consigne}` : ''}`).join(' · ')].filter(Boolean).join('\n') : '';
+  const o = e.occ || {};
+  const details = [o.domain, [o.org === 'groupes' ? 'groupes' : '', o.decloisonnement ? 'décloisonnement' : '', o.horsHoraires ? 'hors horaires' : '', o.lieu && o.lieu !== 'Classe' ? o.lieu : ''].filter(Boolean).join(' · '),
+    (o.objective || s?.objective) && `Objectif : ${o.objective || s.objective}`,
+    o.deroule ? o.deroule : s ? (s.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ` : ${ph.consigne}` : ''}`).join(' · ') : '',
+    o.materiel && `Matériel : ${o.materiel}`, o.notes && `Notes : ${o.notes}`].filter(Boolean).join('\n');
   return h('tr', {}, h('td', { class: 'nowrap' }, `${e.start}–${e.end}`), h('td', {}, e.subject || ''), multi ? h('td', {}, (e.levels?.length ? e.levels : cls.levels).join(', ')) : null,
     h('td', {}, h('strong', {}, e.title), e.mode && e.mode !== 'dirigé' ? ` (${e.mode})` : '', details ? h('div', { class: 'small pre' }, details) : null),
     h('td', {}, e.status !== 'prévue' ? e.status : '', e.occ?.note ? h('div', { class: 'small' }, e.occ.note) : null));

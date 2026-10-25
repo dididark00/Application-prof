@@ -157,7 +157,9 @@ export function coverage() {
   const sessComps = new Map(store.all('session').map(x => [x.id, x.competencyIds || []]));
   const seqComps = new Map(store.all('sequence').map(x => [x.id, x.competencyIds || []]));
   for (const o of store.all('occurrence')) {
-    if (!o.sessionId || !['faite', 'partielle'].includes(o.status)) continue;
+    if (!['faite', 'partielle'].includes(o.status)) continue;
+    for (const c of new Set([...(o.competencyIds || []), ...(seqComps.get(o.sequenceId) || [])])) add(c, 'day', o.date);
+    if (!o.sessionId) continue;
     const se = store.get(o.sessionId);
     for (const c of new Set([...(sessComps.get(o.sessionId) || []), ...(seqComps.get(se?.sequenceId) || [])])) add(c, 'day', o.date);
   }

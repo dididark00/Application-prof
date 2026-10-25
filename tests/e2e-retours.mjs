@@ -141,6 +141,30 @@ await test('Étiquettes : aucun prénom ne dépasse, tous formats et polices', a
   await page.screenshot({ path: `${OUT}etiquettes.png` });
 });
 
+await test('Cahier journal : fiche d’activité complète (durée, organisation, domaine, déroulement, lieu, compétences…)', async () => {
+  await S(`await store.create('referential', { name: 'Réf. test (exemple)', version: '1', levels: ['CE2'], status: 'validé', items: [{ id: 'k1', code: 'NC1', label: 'Calculer mentalement (exemple)' }] }, 'r');`);
+  await go('#/cahier?d=2026-11-03');
+  await page.getByTestId('add-activity').click();
+  await page.getByTestId('act-start').fill('13:30'); await page.getByTestId('act-duration').fill('45'); await page.getByTestId('act-duration').dispatchEvent('change');
+  eq(await page.getByTestId('act-end').inputValue(), '14:15', 'fin calculée depuis la durée');
+  await page.getByTestId('act-org-groupes').check(); await page.getByTestId('act-declo').check(); await page.getByTestId('act-hors').check();
+  await page.getByTestId('act-domain').fill('Nombres, calcul et résolution de problèmes'); await page.getByTestId('act-subject').selectOption('Mathématiques');
+  await page.getByTestId('act-title').fill('Calcul mental (exemple)'); await page.getByTestId('act-objective').fill('Ajouter 9 (exemple)');
+  await page.getByTestId('act-deroule').fill('5 min Rappel\n20 min Jeu du furet'); await page.getByTestId('act-materiel').fill('ardoises'); await page.getByTestId('act-lieu').fill('BCD / bibliothèque');
+  await page.getByTestId('act-notes').fill('Prévoir la BCD libre'); await page.getByTestId('act-comp-search').fill('NC1'); await page.getByTestId('act-comp-item').first().click();
+  await page.getByTestId('act-save').click(); await page.waitForTimeout(350);
+  const o = await S(`return store.all('occurrence').find(x => x.title === 'Calcul mental (exemple)');`);
+  eq(JSON.stringify([o.start, o.end, o.org, o.decloisonnement, o.horsHoraires, o.domain, o.lieu, o.competencyIds]), JSON.stringify(['13:30', '14:15', 'groupes', true, true, 'Nombres, calcul et résolution de problèmes', 'BCD / bibliothèque', ['k1']]), 'champs enregistrés');
+  const card = page.getByTestId('entry').filter({ hasText: 'Calcul mental (exemple)' });
+  const t = await card.innerText();
+  for (const x of ['45 min', 'décloisonnement', 'hors horaires', 'BCD', 'Ajouter 9', 'ardoises', 'Prévoir la BCD', 'NC1']) assert(t.includes(x), `carte : ${x}`);
+  // Modifier : la fiche reprend les valeurs
+  await card.getByTestId('entry-more').click(); await card.getByTestId('edit-activity').click();
+  eq(await page.getByTestId('act-lieu').inputValue(), 'BCD / bibliothèque', 'valeurs reprises');
+  await page.getByTestId('act-lieu').fill('Cour'); await page.getByTestId('act-save').click(); await page.waitForTimeout(300);
+  eq(await S(`return store.all('occurrence').find(x => x.title === 'Calcul mental (exemple)').lieu;`), 'Cour', 'modification enregistrée');
+});
+
 await test('Téléphone : plan, carnet, atelier sans débordement', async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const r of ['#/plan', '#/messages', '#/atelier']) { await go(r); eq(await page.evaluate(() => document.documentElement.scrollWidth <= 392), true, `${r} déborde`); }

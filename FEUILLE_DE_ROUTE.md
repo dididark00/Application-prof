@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (159) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 172 entrées.
+Légende : ✅ Réalisé (160) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 173 entrées.
 
 ## Étape 1 — Socle
 
@@ -192,6 +192,7 @@ Légende : ✅ Réalisé (159) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §3 Données | Programmation et progression importées séparément et reliées : lignes de progression reliées aux notions (colonne Notions ou même titre), état des notions déduit |  |
 | ✅ | §6 Planifier | Emploi du temps : onglets par période et emplois du temps successifs d’une période (dates, nom, « en cours / à venir »), créneaux changés signalés, changement à partir d’une date |  |
 | ✅ | §13 Familles | Carnet de liaison et comportement : noter en un geste (comportement, travail, oubli, retard, félicitations, information), mots à faire signer et relances, bilan par élève, impression du suivi | Remplace la page « Messages » (pas d’envoi possible) ; la rédaction d’un mot à partir d’un modèle reste disponible. |
+| ✅ | §6 Planifier | Cahier journal : fiche d’activité complète — durée, classe entière ou groupes, domaine, discipline, décloisonnement, hors horaires, intitulé, objectif, séquence, déroulement, matériel, lieu, pièces jointes, notes, compétences (comptées dans la couverture des programmes) | « + Activité » ou « Plus › Modifier l’activité » sur un créneau ; ne change que cette date. |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |
