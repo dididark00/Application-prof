@@ -1,6 +1,7 @@
 // Feuille de route : liste de suivi de TOUT le périmètre du cahier des charges.
 // Statuts : 'fait' (réalisé et testé), 'partiel' (une partie réalisée, le reste précisé),
-// 'configurer' (réalisé mais demande un réglage ou un service externe), 'afaire' (à développer).
+// 'configurer' (réalisé mais demande un réglage ou un service externe), 'afaire' (à développer),
+// 'retire' (impossible gratuitement et sans serveur : retiré à la demande de l'enseignante, gardé ici pour mémoire).
 // Aucune fonction n'est supprimée : on change seulement son statut.
 
 export const STATUTS = {
@@ -8,6 +9,7 @@ export const STATUTS = {
   partiel: 'Partiel',
   configurer: 'À configurer',
   afaire: 'À développer',
+  retire: 'Retiré (impossible gratuitement, sans serveur)',
 };
 
 const R = (etape, section, titre, statut = 'afaire', note = '') => ({ etape, section, titre, statut, note });
@@ -20,7 +22,7 @@ export const ROADMAP = [
   R(1, '§2 Navigation', 'Favoris personnalisables', 'fait'),
   R(1, '§2 Navigation', 'Recherche globale', 'fait', 'Élèves, classes, fichiers, notes, pages. Les modules masqués sont exclus.'),
   R(1, '§2 Navigation', 'Bouton d’ajout rapide', 'fait', 'Élève, note, fichier, lien. S’enrichira à chaque étape.'),
-  R(1, '§2 Navigation', 'Liens contextuels entre pages', 'partiel', 'Élèves, classes, fichiers, programmation ↔ progression ↔ séquence ↔ séance ↔ cahier journal ↔ leçons/devoirs. Suite avec les modules des étapes 3-5.'),
+  R(1, '§2 Navigation', 'Liens contextuels entre pages', 'fait', 'Élèves, classes, fichiers, programmation ↔ progression ↔ séquence ↔ séance ↔ cahier journal ↔ leçons/devoirs, évaluations, familles.'),
   R(1, '§2 Navigation', 'Modules masquables sans effacer les données', 'fait'),
   R(1, '§2 Navigation', 'Sélecteur d’année et de classe visible', 'fait'),
   R(1, '§2 Navigation', 'Boîte de réception (photo, PDF, note à classer plus tard)', 'fait'),
@@ -30,7 +32,7 @@ export const ROADMAP = [
   R(1, '§3 Données', 'Historique auteur/date des modifications', 'fait'),
   R(2, '§3 Données', 'Chaîne programme → programmation → progression → séquence → séances/préparations', 'fait'),
   R(2, '§3 Données', 'Distinguer « lier » et « dupliquer » ; modèle réutilisable vs séance datée', 'fait'),
-  R(2, '§3 Données', 'Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé', 'partiel', 'Prévu/réalisé (instantané figé) et EDT versionné : faits. Publié : avec le portail familles (étape 5).'),
+  R(2, '§3 Données', 'Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé', 'fait', 'Prévu/réalisé (instantané figé), EDT versionné ; « publié » = marqué « diffusé » dans Familles.'),
   R(3, '§3 Données', 'Distinguer remis/rattrapé, non évalué/non acquis, inscription/présence prévue', 'fait'),
 
   // ── §4 Années, niveaux, multiniveau
@@ -54,9 +56,10 @@ export const ROADMAP = [
   R(2, '§5 Préparation', 'Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication', 'fait', 'Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge.'),
   R(2, '§5 Préparation', 'Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes', 'fait'),
   R(4, '§5 Préparation', 'OCR optionnel avec texte incertain signalé', 'partiel', 'Fait : lecture du texte d’une photo ou capture, sur l’appareil (moteur Tesseract gratuit, 4,7 Mo téléchargés à la première utilisation), dans Outils de classe et dans l’aperçu des images de Fichiers (texte enregistré et cherchable). À venir : PDF scannés (page par page) et surlignage des mots incertains.'),
-  R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)', 'partiel', 'Uniquement l’IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier » un texte, « Reformuler » une appréciation. Boutons affichés seulement si l’appareil la propose en français. Aucune IA en ligne, aucun abonnement.'),
+  R(5, '§5 Préparation', 'Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée)', 'fait', 'IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier », « Reformuler ». Boutons affichés seulement si l’appareil la propose en français.'),
+  R(5, '§5 Préparation', 'IA en ligne', 'retire', 'Retiré le 25/10/2026 à votre demande : payante ou envoyant des données hors de l’appareil.'),
   R(2, '§5 Préparation', 'Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle', 'fait'),
-  R(2, '§5 Préparation', 'Photos du tableau et corrections ; suivi des apprentissages à reprendre', 'partiel', 'Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3).'),
+  R(2, '§5 Préparation', 'Photos du tableau et corrections ; suivi des apprentissages à reprendre', 'fait', 'Photos du tableau et corrections ; liste « à reprendre » par élève (Rattrapage).'),
 
   // ── §6 Agenda, EDT, cahier journal
   R(2, '§6 Planifier', 'EDT de référence par période, duplication, récurrences', 'fait', 'Versions datées : une modification ne réécrit pas les journées passées.'),
@@ -82,21 +85,23 @@ export const ROADMAP = [
   R(3, '§8 Élèves', 'Statuts documentaires (à recevoir/reçu/à compléter, relance), assurance avec validité', 'fait'),
   R(3, '§8 Élèves', 'Droit à l’image par usage (autorisé/refusé/à renseigner), justificatif', 'fait'),
   R(3, '§8 Élèves', 'Observations datées par domaine, réussites, difficultés, actions', 'fait'),
-  R(3, '§8 Élèves', 'Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint', 'partiel', 'Masqués par défaut (code facultatif), hors recherche et projection. Contrôle d’accès par compte : étape 5.'),
+  R(3, '§8 Élèves', 'Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint', 'fait', 'Masqués par défaut (code facultatif), hors recherche et projection.'),
+  R(5, '§8 Élèves', 'Droits d’accès par compte utilisateur', 'retire', 'Retiré le 25/10/2026 à votre demande : des comptes exigent un serveur. Chacune a ses données sur son appareil ; partage par Nuage.'),
   R(3, '§8 Élèves', 'Niveau par domaine daté ; aides efficaces et historique', 'fait'),
   R(3, '§8 Élèves', 'Différenciation dans les préparations (sans adaptation automatique sur diagnostic)', 'fait'),
   R(3, '§8 Élèves', 'Portfolio lié aux compétences ; historique des échanges', 'fait'),
 
   // ── §9 Listes
   R(3, '§9 Listes', 'Listes personnalisables (colonnes case/date/texte/montant/choix, filtres, tri, actions groupées)', 'fait'),
-  R(3, '§9 Listes', 'Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement)', 'partiel', 'Documents, autorisations et droit à l’image : faits. Paiements : avec le module Argent et projets (étape 4).'),
+  R(3, '§9 Listes', 'Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement)', 'fait', 'Documents, autorisations, droit à l’image, paiements d’un projet (Argent et projets).'),
   R(3, '§9 Listes', 'Modèles réutilisables d’une année à l’autre ; impression vierge ou remplie', 'fait'),
 
   // ── §10 Devoirs, évaluations, rattrapage
-  R(2, '§10 Suivi', 'Devoirs datés liés aux séances/leçons, destinataires, publication volontaire', 'partiel', 'Préparé / donné : fait. Publication aux familles : étape 5.'),
+  R(2, '§10 Suivi', 'Devoirs datés liés aux séances/leçons, destinataires, publication volontaire', 'fait', 'Préparé / donné ; transmis aux familles par le cahier de texte, un mot, un e-mail ou l’application de l’école.'),
   R(3, '§10 Suivi', 'Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse', 'fait'),
   R(3, '§10 Suivi', 'Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle', 'fait', 'Export tabulaire des appréciations à reporter dans le LSU ; vocabulaire adapté en maternelle.'),
-  R(5, '§10 Suivi', 'Export compatible LSU (à vérifier séparément, sans remplacer le service officiel)', 'partiel', 'Export tableau des appréciations à recopier. L’import direct dans le LSU est réservé aux éditeurs validés par le ministère (Éduscol, « Interfaces entre les applications nationales ») : non accessible à cette application.'),
+  R(5, '§10 Suivi', 'Export compatible LSU (à vérifier séparément, sans remplacer le service officiel)', 'fait', 'Export tableau des appréciations à recopier dans le LSU.'),
+  R(5, '§10 Suivi', 'Import direct dans le LSU', 'retire', 'Retiré le 25/10/2026 à votre demande : réservé aux éditeurs validés par le ministère.'),
   R(3, '§10 Suivi', 'Rattrapage : absences × séances réellement faites × supports distribués ; remis/rattrapé', 'fait'),
 
   // ── §11 Fichiers, diaporamas, charte
@@ -113,7 +118,8 @@ export const ROADMAP = [
 
   // ── §12 Organisation et finances
   R(4, '§12 Organisation', 'Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves', 'fait'),
-  R(4, '§12 Organisation', 'Transmissions binôme (fait/à terminer/information, accusé de lecture)', 'partiel', 'Préremplies depuis le cahier journal ; lecture notée sur l’appareil, copie/impression pour l’envoi. Partage automatique avec les comptes (étape 5).'),
+  R(4, '§12 Organisation', 'Transmissions binôme (fait/à terminer/information, accusé de lecture)', 'fait', 'Préremplies depuis le cahier journal ; copie/impression pour l’envoi ; partage possible par la synchronisation Nuage.'),
+  R(5, '§12 Organisation', 'Envoi automatique des transmissions sur le compte de la binôme', 'retire', 'Retiré le 25/10/2026 à votre demande : exige des comptes et un serveur.'),
   R(4, '§12 Organisation', 'Répertoire de l’école et des intervenants', 'fait'),
   R(4, '§12 Organisation', '108 h : activités, prévu/réalisé, totaux, export (règles à vérifier)', 'fait', 'Objectifs indicatifs modifiables (quotité, consignes de la circonscription) ; réunions et APC comptées une seule fois.'),
   R(4, '§12 Organisation', 'APC : objectifs, élèves, séances, présences, bilan, comptage unique', 'fait'),
@@ -123,13 +129,17 @@ export const ROADMAP = [
   R(4, '§12 Organisation', 'Projets transdisciplinaires ; matériel (stocks, achats, prêts)', 'fait', 'Achat de matériel → une seule dépense au journal financier.'),
 
   // ── §13 Familles et connexions
-  R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)', 'configurer', 'Choix du 23/10/2026 : pas de serveur de l’application. Pas de comptes parents (pas d’ENT à l’école) : l’application prépare ce qui est diffusé, élève par élève, par cahier de liaison, e-mail ou application de l’école.'),
-  R(5, '§13 Familles', 'Messages, documents, devoirs, autorisations ; consultation/réponse/retour', 'partiel', 'Fait : messages à partir de modèles (impression pour le cahier de liaison, e-mail, ou copie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La réponse des familles passe par le cahier de liaison, l’e-mail ou l’application de l’école.'),
+  R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)', 'retire', 'Retiré le 25/10/2026 à votre demande : exige un serveur. L’application prépare ce qui est diffusé, élève par élève, par cahier de liaison, e-mail ou application de l’école.'),
+  R(5, '§13 Familles', 'Messages, documents, devoirs, autorisations ; consultation/réponse/retour', 'fait', 'Messages à partir de modèles (cahier de liaison, e-mail, copie), notés dans l’historique ; documents manquants et relances ; autorisations avec coupon. Réponses par le cahier de liaison ou l’e-mail.'),
+  R(5, '§13 Familles', 'Portail en ligne pour les familles (consultation et réponse dans l’application)', 'retire', 'Retiré le 25/10/2026 à votre demande : exige un serveur et des comptes parents.'),
   R(5, '§13 Familles', 'Préparation privée jusqu’à publication ; aperçu « comme ce parent »', 'fait', 'Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée.'),
-  R(5, '§13 Familles', 'Réservation de rendez-vous sur créneaux ouverts, sans double réservation', 'partiel', 'Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent sur papier ou par e-mail.'),
-  R(5, '§13 Familles', 'Mail académique (selon fournisseur et accès autorisés)', 'partiel', 'Réglages › Général : adresse et messagerie en ligne (Versailles proposée). « Copier et ouvrir ma messagerie académique », copie des adresses des familles. Envoi automatique impossible : la messagerie académique n’est pas ouverte aux applications externes.'),
+  R(5, '§13 Familles', 'Réservation de rendez-vous sur créneaux ouverts, sans double réservation', 'fait', 'Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique.'),
+  R(5, '§13 Familles', 'Réservation en ligne par les familles elles-mêmes', 'retire', 'Retiré le 25/10/2026 à votre demande : exige un serveur.'),
+  R(5, '§13 Familles', 'Mail académique', 'fait', 'Réglages › Général : adresse et messagerie en ligne (Versailles proposée). « Copier et ouvrir ma messagerie académique », copie des adresses des familles.'),
+  R(5, '§13 Familles', 'Envoi automatique par la messagerie académique', 'retire', 'Retiré le 25/10/2026 à votre demande : la messagerie académique n’est pas ouverte aux applications externes.'),
   R(1, '§13 Connexions', 'Statut des connexions affiché honnêtement (Drive, Canva, agendas, LSU, mail)', 'fait'),
-  R(5, '§13 Connexions', 'Connexions Drive, Canva, agendas, LSU vérifiées une par une', 'partiel', 'Agendas : export .ics. Drive, Docs, Slides, Sheets, Canva : liens avec aperçu intégré (Fichiers, diaporamas, écran de projection) ; fichiers du Drive ajoutés par le sélecteur de l’appareil. Connexion directe au compte Google ou Canva non faite : elle exige l’inscription de l’application chez Google (identifiants) ou un serveur (Canva). LSU : export tableau des appréciations.'),
+  R(5, '§13 Connexions', 'Connexions Drive, Canva, agendas, LSU vérifiées une par une', 'fait', 'Agendas : export .ics. Drive, Docs, Slides, Sheets, Canva : liens avec aperçu intégré (Fichiers, diaporamas, écran de projection) ; fichiers du Drive ajoutés par le sélecteur de l’appareil. LSU : export tableau.'),
+  R(5, '§13 Connexions', 'Connexion directe au compte Google Drive ou Canva (parcourir, importer automatiquement)', 'retire', 'Retiré le 25/10/2026 à votre demande : exige l’inscription de l’application chez Google, ou un serveur pour Canva.'),
 
   // ── §14 Impression et exports
   R(1, '§14 Exports', 'Liste d’élèves : aperçu, A4 portrait/paysage, colonnes, version vierge, impression', 'fait'),
@@ -145,9 +155,9 @@ export const ROADMAP = [
   R(1, '§15 Fiabilité', 'Sauvegarde persistante sur l’appareil, état visible', 'fait'),
   R(1, '§15 Fiabilité', 'Annulation et corbeille (récupération après suppression)', 'fait'),
   R(1, '§15 Fiabilité', 'Hors connexion : application entière (données locales)', 'fait'),
-  R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur', 'configurer', 'Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Pas de compte parent.'),
+  R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur', 'retire', 'Retiré le 25/10/2026 à votre demande : exige un serveur. Une utilisatrice par appareil, synchronisée par Nuage.'),
   R(5, '§15 Fiabilité', 'Synchronisation, file de modifications et conflits explicites', 'fait', 'Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées.'),
-  R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche', 'partiel', 'Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5.'),
+  R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche', 'fait', 'Masquage (code facultatif), exclusion de la recherche et de la projection.'),
   R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants', 'fait', 'Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Familles : cahier de liaison, e-mail ou application de l’école, au choix.'),
 
   R(3, '§2 Interface', 'Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages', 'fait'),

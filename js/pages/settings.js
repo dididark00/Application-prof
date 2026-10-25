@@ -409,12 +409,12 @@ async function rappelsTab() {
 function connexions() {
   const rows = [
     ['Synchronisation entre appareils', 'Par Nuage (apps.education.fr)', 'ok', 'Fichier chiffré par appareil, fusion élément par élément (Réglages › Synchronisation).'],
-    ['Google Drive (Docs, Slides, Sheets)', 'Liens avec aperçu intégré', 'ok', 'Fichiers › Lien : aperçu dans l’application, dans les diaporamas et à l’écran de projection si le document est partagé par lien. Pour ajouter un fichier de votre Drive dans l’application : « Ajouter des fichiers » ouvre le sélecteur de l’appareil, qui donne accès à Google Drive (Android, iPhone avec l’app Drive, ordinateur avec Drive pour ordinateur). Pas de connexion directe à votre compte : elle exigerait une inscription de l’application chez Google.'],
-    ['Canva', 'Liens avec aperçu intégré', 'ok', 'Collez le lien de partage (« Partager › lien de vue ») : la création s’affiche dans Fichiers, les diaporamas et à l’écran de projection ; « Ouvrir dans Canva » pour la modifier. Pas d’import automatique : l’API de Canva exige un serveur.'],
+    ['Google Drive (Docs, Slides, Sheets)', 'Liens avec aperçu intégré', 'ok', 'Fichiers › Lien : aperçu dans l’application, dans les diaporamas et à l’écran de projection si le document est partagé par lien. Pour ajouter un fichier de votre Drive dans l’application : « Ajouter des fichiers » ouvre le sélecteur de l’appareil, qui donne accès à Google Drive (Android, iPhone avec l’app Drive, ordinateur avec Drive pour ordinateur).'],
+    ['Canva', 'Liens avec aperçu intégré', 'ok', 'Collez le lien de partage (« Partager › lien de vue ») : la création s’affiche dans Fichiers, les diaporamas et à l’écran de projection ; « Ouvrir dans Canva » pour la modifier.'],
     ['Agendas externes', 'Export .ics', 'ok', 'Réglages › Rappels et agenda, ou Agenda › « Vers mon agenda ».'],
-    ['LSU', 'Export tableau', 'ok', 'Livrets et bilans › Exporter les appréciations. Import direct réservé aux éditeurs validés par le ministère.'],
+    ['LSU', 'Export tableau', 'ok', 'Livrets et bilans › Exporter les appréciations, à recopier dans le LSU.'],
     ['IA', 'Sur l’appareil seulement', 'muted', 'Si le navigateur (Chrome) propose son IA intégrée en français : boutons « Simplifier » / « Reformuler ». Aucune IA en ligne.'],
-    ['Mail académique', store.getSettings().webmailUrl ? 'Ouverture de votre messagerie' : 'À régler', store.getSettings().webmailUrl ? 'ok' : 'warn', 'Réglages › Général › Messagerie académique. Familles › Messages : « Copier et ouvrir ma messagerie académique » (le message est copié, vous le collez et l’envoyez), et copie des adresses des familles. Aucun mot de passe dans l’application : un accès direct (envoi automatique) n’est pas ouvert par l’académie aux applications externes.'],
+    ['Mail académique', store.getSettings().webmailUrl ? 'Ouverture de votre messagerie' : 'À régler', store.getSettings().webmailUrl ? 'ok' : 'warn', 'Réglages › Général › Messagerie académique. Familles › Messages : « Copier et ouvrir ma messagerie académique » (le message est copié, vous le collez et l’envoyez), et copie des adresses des familles. Aucun mot de passe dans l’application.'],
     ['Communication avec les familles', 'Cahier de liaison, e-mail ou application de l’école', 'ok', 'Familles › Messages, Publications, Rendez-vous, Documents, Aperçu parent : préparé ici, puis imprimé, envoyé par e-mail ou copié (au choix dans Familles).'],
   ];
   return h('div', { class: 'stack' },
@@ -531,7 +531,7 @@ function reprise() {
 function feuille() {
   const counts = {};
   for (const r of ROADMAP) counts[r.statut] = (counts[r.statut] || 0) + 1;
-  const kind = { fait: 'ok', partiel: 'info', configurer: 'warn', afaire: 'muted' };
+  const kind = { fait: 'ok', partiel: 'info', configurer: 'warn', afaire: 'muted', retire: 'muted' };
   const etapes = { 1: 'Socle', 2: 'Préparation liée', 3: 'Usage en classe', 4: 'Organisation', 5: 'Collaboration et connexions' };
   return h('div', { class: 'stack' },
     h('p', {}, `Tout le périmètre du cahier des charges, suivi fonction par fonction : ${ROADMAP.length} entrées — `,

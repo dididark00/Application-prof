@@ -1,5 +1,5 @@
 // Devoirs : datés, liés aux séances et leçons, destinataires classe / niveau / élèves.
-// Préparé ≠ donné en classe ≠ publié aux familles (par l'ENT, jamais automatique).
+// Préparé ≠ donné en classe ≠ transmis aux familles (jamais automatique).
 import * as store from '../store.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';

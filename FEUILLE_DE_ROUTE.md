@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 159 entrées.
+Légende : ✅ Réalisé (154) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 167 entrées.
 
 ## Étape 1 — Socle
 
@@ -14,7 +14,7 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §2 Navigation | Favoris personnalisables |  |
 | ✅ | §2 Navigation | Recherche globale | Élèves, classes, fichiers, notes, pages. Les modules masqués sont exclus. |
 | ✅ | §2 Navigation | Bouton d’ajout rapide | Élève, note, fichier, lien. S’enrichira à chaque étape. |
-| 🟡 | §2 Navigation | Liens contextuels entre pages | Élèves, classes, fichiers, programmation ↔ progression ↔ séquence ↔ séance ↔ cahier journal ↔ leçons/devoirs. Suite avec les modules des étapes 3-5. |
+| ✅ | §2 Navigation | Liens contextuels entre pages | Élèves, classes, fichiers, programmation ↔ progression ↔ séquence ↔ séance ↔ cahier journal ↔ leçons/devoirs, évaluations, familles. |
 | ✅ | §2 Navigation | Modules masquables sans effacer les données |  |
 | ✅ | §2 Navigation | Sélecteur d’année et de classe visible |  |
 | ✅ | §2 Navigation | Boîte de réception (photo, PDF, note à classer plus tard) |  |
@@ -45,7 +45,7 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 |---|---|---|---|
 | ✅ | §3 Données | Chaîne programme → programmation → progression → séquence → séances/préparations |  |
 | ✅ | §3 Données | Distinguer « lier » et « dupliquer » ; modèle réutilisable vs séance datée |  |
-| 🟡 | §3 Données | Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé | Prévu/réalisé (instantané figé) et EDT versionné : faits. Publié : avec le portail familles (étape 5). |
+| ✅ | §3 Données | Distinguer prévu/réalisé, préparé/publié ; le futur ne réécrit pas le passé | Prévu/réalisé (instantané figé), EDT versionné ; « publié » = marqué « diffusé » dans Familles. |
 | ✅ | §4 Années | Reprendre modèles, séquences, ressources d’une année précédente (sans paiements, autorisations, résultats) |  |
 | ✅ | §4 Années | Référentiels sourcés, datés, versionnés ; import vérifié avant intégration | Aucun contenu officiel prérempli : import puis validation par l’enseignante. |
 | ✅ | §4 Années | Multiniveau : programmations/progressions par niveau, séquences communes, consignes distinctes |  |
@@ -57,7 +57,7 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §5 Préparation | Fiche de préparation (phases minutées, différenciation, critères, bilan), modèles, duplication | Phases typées du modèle de l’enseignante ; modes quotidien/visite ; version vierge. |
 | ✅ | §5 Préparation | Manuels (Picot, Accès, Retz… configurables, sans contenu prérempli), pages et pièces jointes |  |
 | ✅ | §5 Préparation | Leçons numérotées liées aux séances, devoirs, évaluations ; distribution réelle |  |
-| 🟡 | §5 Préparation | Photos du tableau et corrections ; suivi des apprentissages à reprendre | Photos du tableau et corrections : faites. Liste « à reprendre » par élève : avec le rattrapage (étape 3). |
+| ✅ | §5 Préparation | Photos du tableau et corrections ; suivi des apprentissages à reprendre | Photos du tableau et corrections ; liste « à reprendre » par élève (Rattrapage). |
 | ✅ | §6 Planifier | EDT de référence par période, duplication, récurrences | Versions datées : une modification ne réécrit pas les journées passées. |
 | ✅ | §6 Planifier | Exceptions datées (sortie, absence, visite, réunion, report) |  |
 | ✅ | §6 Planifier | Interventions (contact, lieu, dates, créneaux, groupes) ; « à planifier » sans bloquer |  |
@@ -66,7 +66,7 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §6 Planifier | Cahier journal depuis l’EDT : bilan express, faite/partielle/reportée, historique |  |
 | ✅ | §6 Planifier | Rituels récurrents ; liste consolidée matériel/photocopies |  |
 | ✅ | §6 Planifier | Agenda personnel et professionnel, tâches, échéances |  |
-| 🟡 | §10 Suivi | Devoirs datés liés aux séances/leçons, destinataires, publication volontaire | Préparé / donné : fait. Publication aux familles : étape 5. |
+| ✅ | §10 Suivi | Devoirs datés liés aux séances/leçons, destinataires, publication volontaire | Préparé / donné ; transmis aux familles par le cahier de texte, un mot, un e-mail ou l’application de l’école. |
 | ✅ | §11 Fichiers | Réutilisation par lien (sans duplication) depuis séances et préparations |  |
 | ✅ | §14 Exports | Impression EDT, cahier journal, préparations, séquences, progressions |  |
 | ✅ | §22 Visites | Préparations liées au référentiel, à la programmation, progression, séquence, cahier journal |  |
@@ -88,12 +88,12 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §8 Élèves | Statuts documentaires (à recevoir/reçu/à compléter, relance), assurance avec validité |  |
 | ✅ | §8 Élèves | Droit à l’image par usage (autorisé/refusé/à renseigner), justificatif |  |
 | ✅ | §8 Élèves | Observations datées par domaine, réussites, difficultés, actions |  |
-| 🟡 | §8 Élèves | Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint | Masqués par défaut (code facultatif), hors recherche et projection. Contrôle d’accès par compte : étape 5. |
+| ✅ | §8 Élèves | Besoins particuliers (confirmé vs observation) ; PPRE/PAP/PPS/PAI/AESH à accès restreint | Masqués par défaut (code facultatif), hors recherche et projection. |
 | ✅ | §8 Élèves | Niveau par domaine daté ; aides efficaces et historique |  |
 | ✅ | §8 Élèves | Différenciation dans les préparations (sans adaptation automatique sur diagnostic) |  |
 | ✅ | §8 Élèves | Portfolio lié aux compétences ; historique des échanges |  |
 | ✅ | §9 Listes | Listes personnalisables (colonnes case/date/texte/montant/choix, filtres, tri, actions groupées) |  |
-| 🟡 | §9 Listes | Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement) | Documents, autorisations et droit à l’image : faits. Paiements : avec le module Argent et projets (étape 4). |
+| ✅ | §9 Listes | Colonnes liées qui actualisent la donnée (assurance, autorisation, paiement) | Documents, autorisations, droit à l’image, paiements d’un projet (Argent et projets). |
 | ✅ | §9 Listes | Modèles réutilisables d’une année à l’autre ; impression vierge ou remplie |  |
 | ✅ | §10 Suivi | Évaluations : grille, notes et/ou maîtrise, non évalué, versions adaptées, aucune conversion silencieuse |  |
 | ✅ | §10 Suivi | Bilans et appréciations modifiables ; livrets par période ; adaptation maternelle | Export tabulaire des appréciations à reporter dans le LSU ; vocabulaire adapté en maternelle. |
@@ -104,7 +104,7 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §11 Fichiers | Mode projection séparé sans données privées ; notes présentateur |  |
 | ✅ | §14 Exports | Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans |  |
 | 🟡 | §14 Exports | Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut | Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4). |
-| 🟡 | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche | Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5. |
+| ✅ | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche | Masquage (code facultatif), exclusion de la recherche et de la projection. |
 | ✅ | §2 Interface | Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages |  |
 | ✅ | §19 Atelier | Timer de couleur persistant (widget flottant, plein écran, heure cible) | Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge). |
 | ✅ | §19 Atelier | Écriture : lignes Seyès, réglures, textes à compléter |  |
@@ -126,7 +126,7 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §11 Fichiers | Charte visuelle enregistrée | Réglages › Charte visuelle : police, couleurs, bordure. |
 | ✅ | §11 Fichiers | Générateur d’étiquettes, affichages, cartes d’ateliers ; académies (noms, couleurs, emblèmes), série, PDF à taille réelle | Impression A4 à taille réelle (PDF via « Enregistrer au format PDF ») ; séries versionnées après changement d’académie. |
 | ✅ | §12 Organisation | Réunions : notes, compte rendu, décisions, tâches, liens agenda/élèves |  |
-| 🟡 | §12 Organisation | Transmissions binôme (fait/à terminer/information, accusé de lecture) | Préremplies depuis le cahier journal ; lecture notée sur l’appareil, copie/impression pour l’envoi. Partage automatique avec les comptes (étape 5). |
+| ✅ | §12 Organisation | Transmissions binôme (fait/à terminer/information, accusé de lecture) | Préremplies depuis le cahier journal ; copie/impression pour l’envoi ; partage possible par la synchronisation Nuage. |
 | ✅ | §12 Organisation | Répertoire de l’école et des intervenants |  |
 | ✅ | §12 Organisation | 108 h : activités, prévu/réalisé, totaux, export (règles à vérifier) | Objectifs indicatifs modifiables (quotité, consignes de la circonscription) ; réunions et APC comptées une seule fois. |
 | ✅ | §12 Organisation | APC : objectifs, élèves, séances, présences, bilan, comptage unique |  |
@@ -159,16 +159,24 @@ Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 
 | | Section | Fonction | Note |
 |---|---|---|---|
-| 🟡 | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) | Uniquement l’IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier » un texte, « Reformuler » une appréciation. Boutons affichés seulement si l’appareil la propose en français. Aucune IA en ligne, aucun abonnement. |
+| ✅ | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) | IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier », « Reformuler ». Boutons affichés seulement si l’appareil la propose en français. |
+| ✖️ | §5 Préparation | IA en ligne | Retiré le 25/10/2026 à votre demande : payante ou envoyant des données hors de l’appareil. |
 | ✅ | §6 Planifier | Notifications configurables | Réglages › Rappels et agenda : tâches, rendez-vous, événements, séances de demain sans fiche ; bandeau et notification quand l’application est ouverte ; export .ics pour que l’agenda du téléphone sonne même application fermée. |
-| 🟡 | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) | Export tableau des appréciations à recopier. L’import direct dans le LSU est réservé aux éditeurs validés par le ministère (Éduscol, « Interfaces entre les applications nationales ») : non accessible à cette application. |
-| ⚙️ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) | Choix du 23/10/2026 : pas de serveur de l’application. Pas de comptes parents (pas d’ENT à l’école) : l’application prépare ce qui est diffusé, élève par élève, par cahier de liaison, e-mail ou application de l’école. |
-| 🟡 | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Fait : messages à partir de modèles (impression pour le cahier de liaison, e-mail, ou copie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La réponse des familles passe par le cahier de liaison, l’e-mail ou l’application de l’école. |
+| ✖️ | §8 Élèves | Droits d’accès par compte utilisateur | Retiré le 25/10/2026 à votre demande : des comptes exigent un serveur. Chacune a ses données sur son appareil ; partage par Nuage. |
+| ✅ | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) | Export tableau des appréciations à recopier dans le LSU. |
+| ✖️ | §10 Suivi | Import direct dans le LSU | Retiré le 25/10/2026 à votre demande : réservé aux éditeurs validés par le ministère. |
+| ✖️ | §12 Organisation | Envoi automatique des transmissions sur le compte de la binôme | Retiré le 25/10/2026 à votre demande : exige des comptes et un serveur. |
+| ✖️ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) | Retiré le 25/10/2026 à votre demande : exige un serveur. L’application prépare ce qui est diffusé, élève par élève, par cahier de liaison, e-mail ou application de l’école. |
+| ✅ | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Messages à partir de modèles (cahier de liaison, e-mail, copie), notés dans l’historique ; documents manquants et relances ; autorisations avec coupon. Réponses par le cahier de liaison ou l’e-mail. |
+| ✖️ | §13 Familles | Portail en ligne pour les familles (consultation et réponse dans l’application) | Retiré le 25/10/2026 à votre demande : exige un serveur et des comptes parents. |
 | ✅ | §13 Familles | Préparation privée jusqu’à publication ; aperçu « comme ce parent » | Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée. |
-| 🟡 | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation | Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent sur papier ou par e-mail. |
-| 🟡 | §13 Familles | Mail académique (selon fournisseur et accès autorisés) | Réglages › Général : adresse et messagerie en ligne (Versailles proposée). « Copier et ouvrir ma messagerie académique », copie des adresses des familles. Envoi automatique impossible : la messagerie académique n’est pas ouverte aux applications externes. |
-| 🟡 | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une | Agendas : export .ics. Drive, Docs, Slides, Sheets, Canva : liens avec aperçu intégré (Fichiers, diaporamas, écran de projection) ; fichiers du Drive ajoutés par le sélecteur de l’appareil. Connexion directe au compte Google ou Canva non faite : elle exige l’inscription de l’application chez Google (identifiants) ou un serveur (Canva). LSU : export tableau des appréciations. |
-| ⚙️ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur | Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Pas de compte parent. |
+| ✅ | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation | Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. |
+| ✖️ | §13 Familles | Réservation en ligne par les familles elles-mêmes | Retiré le 25/10/2026 à votre demande : exige un serveur. |
+| ✅ | §13 Familles | Mail académique | Réglages › Général : adresse et messagerie en ligne (Versailles proposée). « Copier et ouvrir ma messagerie académique », copie des adresses des familles. |
+| ✖️ | §13 Familles | Envoi automatique par la messagerie académique | Retiré le 25/10/2026 à votre demande : la messagerie académique n’est pas ouverte aux applications externes. |
+| ✅ | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une | Agendas : export .ics. Drive, Docs, Slides, Sheets, Canva : liens avec aperçu intégré (Fichiers, diaporamas, écran de projection) ; fichiers du Drive ajoutés par le sélecteur de l’appareil. LSU : export tableau. |
+| ✖️ | §13 Connexions | Connexion directe au compte Google Drive ou Canva (parcourir, importer automatiquement) | Retiré le 25/10/2026 à votre demande : exige l’inscription de l’application chez Google, ou un serveur pour Canva. |
+| ✖️ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur | Retiré le 25/10/2026 à votre demande : exige un serveur. Une utilisatrice par appareil, synchronisée par Nuage. |
 | ✅ | §15 Fiabilité | Synchronisation, file de modifications et conflits explicites | Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées. |
 | ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Familles : cahier de liaison, e-mail ou application de l’école, au choix. |
 | ✅ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone. |

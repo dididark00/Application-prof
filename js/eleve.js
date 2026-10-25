@@ -53,7 +53,7 @@ export const NEED_CATEGORIES = ['dys (lecture, écriture, calcul…)', 'handicap
 export const NEED_SOURCES = ['confirmé par un document', 'observation de l’enseignante'];
 export const PLAN_KINDS = ['PPRE', 'PAP', 'PPS', 'PAI', 'AESH'];
 export const PLAN_STATUS = ['envisagé', 'en cours', 'terminé'];
-export const EXCHANGE_KINDS = ['rendez-vous', 'message ENT', 'mot dans le cahier', 'téléphone', 'mail', 'échange à la sortie', 'autre'];
+export const EXCHANGE_KINDS = ['rendez-vous', 'message (copié)', 'mot dans le cahier', 'téléphone', 'mail', 'échange à la sortie', 'autre'];
 
 export const of = (type, studentId) => store.all(type).filter(r => r.studentId === studentId).sort((a, b) => (b.date || b.createdAt || '').localeCompare(a.date || a.createdAt || ''));
 export function latestLevels(studentId) {

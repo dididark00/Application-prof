@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { ROADMAP, STATUTS } from '../js/roadmap.js';
 
 const ETAPES = { 1: 'Socle', 2: 'Préparation liée', 3: 'Usage en classe', 4: 'Organisation', 5: 'Collaboration et connexions' };
-const mark = { fait: '✅', partiel: '🟡', configurer: '⚙️', afaire: '⬜' };
+const mark = { fait: '✅', partiel: '🟡', configurer: '⚙️', afaire: '⬜', retire: '✖️' };
 const counts = {};
 for (const r of ROADMAP) counts[r.statut] = (counts[r.statut] || 0) + 1;
 
