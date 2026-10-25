@@ -920,11 +920,14 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 /* Exercices */
 .ex-preview { background: #fff; color: #1d1d1d; padding: 16px; border-radius: 6px; }
 .ex-head h1 { font-size: 1.3rem; margin: 0 0 4px; } .ex-head p { margin: 0 0 12px; }
-.ex-calc { columns: 2; font-size: 1.15rem; line-height: 2.1; }
+.ex-calc { columns: 2; column-gap: 2.5em; font-size: 1.15rem; line-height: 2.1; list-style-position: inside; padding-left: 0; }
+.ex-calc li, .ex-dict li { break-inside: avoid; white-space: nowrap; }
 .ex-prob li { margin-bottom: 14px; } .ex-space p { margin: 6px 0 22px; } .ex-corr { color: #15803d; font-weight: 600; }
 .ex-pose { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 24px; font-size: 1.4rem; font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, Consolas, monospace; }
 .pose { width: 5.5em; } .pose-row { display: flex; justify-content: space-between; letter-spacing: .12em; } .pose-line { border-top: 2px solid #1d1d1d; margin-top: 2px; }
-.ex-dict { columns: 2; font-size: 1.15rem; line-height: 2; }
+.ex-dict { columns: 2; column-gap: 2.5em; font-size: 1.15rem; line-height: 2; list-style-position: inside; padding-left: 0; }
+/* Écran étroit : une seule colonne (l’impression A4 garde deux colonnes). */
+@media screen and (max-width: 600px) { .ex-calc, .ex-dict { columns: 1; } .ex-pose { grid-template-columns: repeat(2, 1fr); } }
 .ex-lines li { height: 2.4em; } .ex-line { display: inline-block; width: 85%; border-bottom: 1px solid #999; }
 .flu-table { width: 100%; border-collapse: collapse; line-height: 1.9; } .flu-n { text-align: right; width: 3em; color: #666; font-size: .8em; vertical-align: bottom; }
 .page-break { break-before: page; }

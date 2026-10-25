@@ -64,7 +64,7 @@ function tapuscrit(stage, rerender) {
     m = modal({ title: 'Choisir une image de vos fichiers', body: h('ul', { class: 'plain' }, imgs.map(f => h('li', {}, h('button', { class: 'btn btn-link', type: 'button', onclick: async () => { const b = await store.getBlob(f.versions.at(-1).blobId); m?.close(); read(b instanceof Blob && b.type ? b : new Blob([b], { type: f.versions.at(-1).mime })); } }, f.name)))), actions: [{ label: 'Fermer' }] });
   };
   const sheet = () => {
-    const fam = tap.font ? `"${tap.font}", cursive` : 'Arial, Helvetica, sans-serif';
+    const fam = Fo.family(tap.font);
     return h('div', { class: 'print-doc tap-sheet', style: { fontFamily: fam, fontSize: `${tap.size}pt`, lineHeight: String(tap.spacing) } },
       tap.text.split(/\n{2,}/).map(par => h('p', {}, tap.caps ? par.toUpperCase() : par)));
   };
@@ -167,7 +167,7 @@ export function sylNodes(text, o = syl) {
 }
 function syllabes(stage) {
   const view = h('div', { class: 'syl-view', 'data-testid': 'syl-view' });
-  const draw = () => { view.style.fontSize = `${syl.size}px`; view.style.lineHeight = String(syl.spacing); view.style.fontFamily = syl.font ? `"${syl.font}", cursive` : ''; view.replaceChildren(...syl.text.split('\n').map(l => h('p', {}, sylNodes(l)))); };
+  const draw = () => { view.style.fontSize = `${syl.size}px`; view.style.lineHeight = String(syl.spacing); view.style.fontFamily = syl.font ? Fo.family(syl.font) : ''; view.replaceChildren(...syl.text.split('\n').map(l => h('p', {}, sylNodes(l)))); };
   const chk = (k, label) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: syl[k], 'data-testid': `syl-${k}`, onchange: (e) => { syl[k] = e.target.checked; draw(); } }), label);
   const fonts = Fo.available().filter(([n]) => n);
   stage.append(h('div', { class: 'card stack' },
@@ -177,7 +177,7 @@ function syllabes(stage) {
       chk('colors', 'couleurs'), chk('arcs', 'arcs sous les syllabes'), chk('muettes', 'lettres muettes en gris'),
       h('label', { class: 'inline' }, 'Police', h('select', { onchange: (e) => { syl.font = e.target.value; draw(); } }, h('option', { value: '' }, 'Script'), fonts.map(([n, l]) => h('option', { value: n, selected: syl.font === n }, l)))),
       h('label', { class: 'inline' }, 'Taille', h('input', { type: 'range', min: 20, max: 90, value: syl.size, oninput: (e) => { syl.size = Number(e.target.value); draw(); } })),
-      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'syl-print', onclick: () => printDocument(h('div', { class: 'print-doc syl-print', style: { fontSize: `${Math.round(syl.size * 0.55)}pt`, lineHeight: String(syl.spacing), fontFamily: syl.font ? `"${syl.font}", cursive` : '' } }, syl.text.split('\n').map(l => h('p', {}, sylNodes(l))))) }, icon('print', 14), 'Imprimer')),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'syl-print', onclick: () => printDocument(h('div', { class: 'print-doc syl-print', style: { fontSize: `${Math.round(syl.size * 0.55)}pt`, lineHeight: String(syl.spacing), fontFamily: syl.font ? Fo.family(syl.font) : '' } }, syl.text.split('\n').map(l => h('p', {}, sylNodes(l))))) }, icon('print', 14), 'Imprimer')),
     h('p', { class: 'muted small' }, 'Découpage automatique de l’écrit, à relire : quelques mots peuvent être mal coupés. Pour corriger un mot, écrivez-le avec des barres : « li|on ». Lettres muettes : seulement les plus fréquentes (s, t, d, x en fin de mot, h au début).')),
   view);
   draw();

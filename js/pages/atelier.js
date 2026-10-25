@@ -81,7 +81,7 @@ const DRAW = {
     svg.append(S('line', { x1: x0, x2: x0, y1: top - 4, y2: top + nLines * il, stroke: o.marge_couleur, 'stroke-width': 0.4 }));
     // Découpage en lignes selon la largeur réellement mesurée dans la police.
     const ctx = document.createElement('canvas').getContext('2d');
-    ctx.font = `${size * 10}px "${font}", cursive`;
+    ctx.font = `${size * 10}px ${F.family(font)}`;
     const width = (t) => ctx.measureText(t).width / 10;
     const maxW = right - x0 - 3;
     const lines = [];
@@ -98,7 +98,7 @@ const DRAW = {
     lines.forEach((t, i) => {
       const y = top + (1 + i * gap) * il;
       if (y > top + nLines * il || !t) return;
-      svg.append(S('text', { x: x0 + 2, y, 'font-size': size, 'font-family': `"${font}", cursive`, fill: o.encre, 'data-line': i }, t));
+      svg.append(S('text', { x: x0 + 2, y, 'font-size': size, 'font-family': F.family(font), fill: o.encre, 'data-line': i }, t));
     });
     return svg;
   },

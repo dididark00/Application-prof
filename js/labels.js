@@ -81,7 +81,7 @@ export function layout(fmt) {
 export function fitSize(text, font, maxW, maxSize) {
   try {
     const c = document.createElement('canvas').getContext('2d');
-    c.font = `100px "${font}", sans-serif`;
+    c.font = `100px ${F.family(font)}`;
     const w = c.measureText(text || ' ').width / 100;
     return Math.max(2, Math.min(maxSize, w ? maxW / w : maxSize));
   } catch { return maxSize; }
@@ -114,7 +114,7 @@ export function drawLabel(g, item, w, h, style, urls = {}) {
     const maxSize = availH * ratios[i] * (i === 0 ? 0.78 : 0.7);
     const size = fitSize(String(t), i === 0 ? font : style.font2 || font, availW, maxSize);
     const lh = availH * ratios[i];
-    g.append(S('text', { x: cx, y: y + lh / 2 + size * 0.33, 'font-size': size, 'font-family': `"${i === 0 ? font : style.font2 || font}", sans-serif`, 'text-anchor': 'middle', fill: i === 0 ? (style.ink || ch.ink) : '#444', 'data-line': i }, String(t)));
+    g.append(S('text', { x: cx, y: y + lh / 2 + size * 0.33, 'font-size': size, 'font-family': F.family(i === 0 ? font : style.font2 || font), 'text-anchor': 'middle', fill: i === 0 ? (style.ink || ch.ink) : '#444', 'data-line': i }, String(t)));
     y += lh;
   });
 }

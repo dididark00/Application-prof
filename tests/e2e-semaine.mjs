@@ -136,7 +136,9 @@ await test('Couverture des compétences : la compétence travaillée apparaît (
 
 await test('Polices des débutants (Andika) et capitales d’imprimerie dans le tableau d’écriture', async () => {
   const names = await page.evaluate(async () => (await import('./js/fonts.js')).available().map(x => x[0]));
-  assert(names.includes('Andika') && names.includes('Marelle Baton'), 'Andika et Marelle Bâton proposées');
+  assert(names.includes('Andika') && names.includes('Marelle Baton') && names.includes('Verdana') && names.includes('OpenDyslexic'), 'Andika, Marelle Bâton, Verdana et OpenDyslexic proposées');
+  const fam = await page.evaluate(async () => { const F = await import('./js/fonts.js'); return [F.family('Verdana'), F.family('OpenDyslexic'), F.family('Marelle')]; });
+  assert(fam[0].startsWith('Verdana, Tahoma') && fam[1].includes('sans-serif') && fam[2].includes('cursive'), `familles : ${fam.join(' | ')}`);
   await go('#/atelier');
   await page.getByTestId('p-casse').selectOption('capitales'); await page.waitForTimeout(200);
   const txt = await page.getByTestId('atelier-preview').locator('text').allTextContents();

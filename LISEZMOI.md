@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.6).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
+**État : les cinq étapes sont réalisées et testées (version 0.5.7).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -166,7 +166,7 @@ Ajoutées à l'étape 3 : `attendance` (appel par demi-journée, validé ou non)
 
 Ajoutées à l'étape 4 : `contact`, `meeting`, `h108`, `apc…`, `handover`, `pesitem`, `account` et `movement` (journal financier unique, corrections par mouvement inverse), `project`, `material` / `matmove`, `labelset` (séries d'étiquettes versionnées), `game`, `epsdiagram` (relié à une séance et une phase). Ajoutées à l'étape 5 : `publication` (brouillon privé / publié, photos et élèves visibles), `rdvslot` (créneaux, réservation unique). Réglages propres à l'appareil (identité, mot de passe mémorisé, dossier Nuage, rappels déjà affichés) dans une petite base séparée `classeur-appareil`, jamais synchronisée.
 
-Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle et Andika, licence OFL).
+Ajoutées ensuite (inspirées de l'agenda) : `studentinfo` (cases propres à une année), `infoconf` (informations confidentielles, séparées de la fiche), `rewardjar`, `familynote`, `aeshsheet`, `incident`, `soin` (ces trois derniers confidentiels). Données fournies : `data/programmes/` (compétences extraites des PDF officiels, voir `tools/programmes/`), `data/maps/` (Natural Earth, IGN Admin Express), `fonts/` (Marelle, Andika et OpenDyslexic, licence OFL).
 
 **Fichiers du projet**
 

@@ -63,6 +63,11 @@ await test('Calculs : nombre, sans retenue, même graine = même fiche, corrigé
   for (const t of items) { const m = t.replace(/ /g, '').match(/(\d+) ([+−×÷]) (\d+) = (\d+)/); const [a, op, b, r] = [Number(m[1]), m[2], Number(m[3]), Number(m[4])]; eq(op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : a / b, r, `corrigé de ${t}`); }
   const nc = await page.evaluate(async () => { const X = await import('./js/exercices.js'); return X.calculs({ ops: ['+', '-'], min: 10, max: 99, count: 30, seed: 9, sansRetenue: true }).every(c => { let a = c.a, b = c.b; while (a || b) { if (c.op === '+' ? (a % 10) + (b % 10) > 9 : (a % 10) < (b % 10)) return false; a = Math.floor(a / 10); b = Math.floor(b / 10); } return true; }); });
   assert(nc, 'aucune retenue');
+  for (const w of [390, 1280]) {
+    await page.setViewportSize({ width: w, height: 900 }); await page.waitForTimeout(150);
+    const bad = await page.evaluate(() => { const lis = [...document.querySelectorAll('.ex-calc li')]; let n = 0; for (let i = 0; i < lis.length; i++) for (let j = i + 1; j < lis.length; j++) { const a = lis[i].getBoundingClientRect(), c = lis[j].getBoundingClientRect(); if (a.left < c.right - 1 && c.left < a.right - 1 && a.top < c.bottom - 1 && c.top < a.bottom - 1) n++; } return n; });
+    eq(bad, 0, `aucun calcul ne se chevauche (largeur ${w})`);
+  }
   await page.getByTestId('ex-pose').check();
   assert(await page.locator('.pose').count() >= 20, 'opérations posées');
 });

@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-c83cf0cd0af5';
+const CACHE = 'classeur-65145d448860';
 const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = [
   "./",
@@ -42,7 +42,9 @@ const ASSETS = [
   "fonts/MarelleBaton-Regular.ttf",
   "fonts/MarelleBaton2-Regular.ttf",
   "fonts/OFL-Andika.txt",
+  "fonts/OFL-OpenDyslexic.txt",
   "fonts/OFL.txt",
+  "fonts/OpenDyslexic-Regular.woff2",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",

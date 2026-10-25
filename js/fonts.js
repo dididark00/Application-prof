@@ -15,8 +15,19 @@ export const BUNDLED = [
   // « a » et « g » simples, I / l / 1 bien distincts. Fichiers web d'origine non modifiés.
   { name: 'Andika', label: 'Andika — script des débutants (maternelle, CP)', file: 'fonts/Andika-Regular.woff2' },
   { name: 'Andika Gras', label: 'Andika gras — capitales et grandes lettres', file: 'fonts/Andika-Bold.woff2' },
+  // OpenDyslexic : © Abbie Gonzalez — SIL OFL 1.1 (fonts/OFL-OpenDyslexic.txt). Lettres lestées pour limiter les confusions.
+  { name: 'OpenDyslexic', label: 'OpenDyslexic — lecture facilitée (dyslexie)', file: 'fonts/OpenDyslexic-Regular.woff2' },
 ];
-export const FALLBACKS = [['cursive', 'Cursive du système (approximative)'], ['Arial', 'Script (Arial)']];
+export const FALLBACKS = [['Verdana', 'Verdana — script très lisible (dyslexie)'], ['Arial', 'Script (Arial)'], ['cursive', 'Cursive du système (approximative)']];
+// Familles CSS complètes : si une police système manque (Verdana absente d'Android), une police proche prend le relais.
+const STACKS = { Verdana: 'Verdana, Tahoma, "DejaVu Sans", "Segoe UI", Arial, sans-serif', Arial: 'Arial, Helvetica, "Liberation Sans", sans-serif', cursive: 'cursive' };
+const SCRIPT = new Set(['Marelle', 'Marelle 2']);
+/** Valeur CSS « font-family » à utiliser pour une police choisie. */
+export function family(name) {
+  if (!name) return 'Arial, Helvetica, sans-serif';
+  if (STACKS[name]) return STACKS[name];
+  return `"${name}", ${SCRIPT.has(name) ? 'cursive' : 'Arial, sans-serif'}`;
+}
 
 const loaded = new Set();
 
@@ -51,12 +62,12 @@ export async function importFont(file) {
 /** Rapport hauteur des minuscules (x) / taille de police, mesuré pour aligner sur le Seyès. */
 /** Hauteur des capitales rapportée à la taille de la police. */
 export function capHeightRatio(name) {
-  try { const c = document.createElement('canvas').getContext('2d'); c.font = `100px "${name}", cursive`; const r = (c.measureText('HEMIT').actualBoundingBoxAscent || 0) / 100; return r > 0.3 && r < 1 ? r : 0.7; } catch { return 0.7; }
+  try { const c = document.createElement('canvas').getContext('2d'); c.font = `100px ${family(name)}`; const r = (c.measureText('HEMIT').actualBoundingBoxAscent || 0) / 100; return r > 0.3 && r < 1 ? r : 0.7; } catch { return 0.7; }
 }
 export function xHeightRatio(name) {
   try {
     const c = document.createElement('canvas').getContext('2d');
-    c.font = `100px "${name}", cursive`;
+    c.font = `100px ${family(name)}`;
     const m = c.measureText('xvnmu');
     const r = (m.actualBoundingBoxAscent || 0) / 100;
     return r > 0.15 && r < 0.9 ? r : 0.42;
