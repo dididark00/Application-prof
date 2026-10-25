@@ -3,6 +3,7 @@
 // vue de préparation de la semaine et liste de projection du jour (depuis le cahier journal).
 // Notes présentateur visibles uniquement sur le pupitre.
 import * as store from '../store.js';
+import { embedOf, embedFrame } from '../embeds.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
 import * as PL from '../planning.js';
@@ -74,7 +75,7 @@ export function render({ params, rerender }) {
     h('section', { class: 'card later-card' }, h('h2', {}, 'Formats'),
       h('ul', {}, h('li', {}, 'Affichés directement : images (JPG, PNG, SVG…) et PDF.'),
         h('li', {}, 'PowerPoint (.pptx) : non affichable dans le navigateur. Exportez-le en PDF (PowerPoint, LibreOffice ou Google Slides : Fichier › Exporter / Télécharger en PDF), puis ajoutez le PDF comme diapositive.'),
-        h('li', {}, 'Canva, Google Slides : ajoutez le lien ; il s’ouvre dans un nouvel onglet pour la modification ou la présentation. Les présentations externes ne sont pas fusionnées dans l’application.'))));
+        h('li', {}, 'Canva, Google Slides, Drive : ajoutez le lien ; si le document est partagé par lien, il s’affiche dans la diapositive (et à l’écran de projection). Pour modifier, « Ouvrir » l’ouvre dans un nouvel onglet.'))));
 }
 
 function editor(id, rerender) {
@@ -130,7 +131,7 @@ export function slideView(s, { big = false } = {}) {
     box.append(holder);
   } else if (s.kind === 'lien') {
     const u = safeUrl(s.url || '');
-    box.append(h('div', { class: 'slide-text' }, u ? h('a', { class: 'btn btn-primary', href: u, target: '_blank', rel: 'noopener noreferrer' }, 'Ouvrir la présentation dans un nouvel onglet') : 'Adresse à renseigner'));
+    box.append(u && embedOf(u) ? embedFrame(u, s.title, { note: !big }) : h('div', { class: 'slide-text' }, u ? h('a', { class: 'btn btn-primary', href: u, target: '_blank', rel: 'noopener noreferrer' }, 'Ouvrir la présentation dans un nouvel onglet') : 'Adresse à renseigner'));
   } else if (s.kind === 'timer') {
     box.append(h('div', { class: 'slide-text' }, `${s.minutes || 5} minutes`));
   } else if (s.text) box.append(h('div', { class: 'slide-text pre' }, s.text));

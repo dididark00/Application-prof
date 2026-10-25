@@ -2,6 +2,7 @@
 // L'écran ne reçoit qu'un contenu filtré : programme, consigne, devoirs collectifs, timer, support choisi.
 // Aucune donnée personnelle (bilans, notes, coordonnées, besoins particuliers) n'y est jamais envoyée.
 import * as store from '../store.js';
+import { embedOf, embedFrame } from '../embeds.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
 import * as PL from '../planning.js';
@@ -30,7 +31,7 @@ export function buildPayload(cls, date, c = ctrl) {
   const devoirs = store.all('homework').filter(x => x.classId === cls.id && x.givenDate === date && (!x.targets || x.targets.kind !== 'élèves'))
     .map(x => ({ title: x.title, dueDate: x.dueDate, levels: x.targets?.kind === 'niveau' ? x.targets.values : [] }));
   const support = c.supportFileId ? (() => { const f = store.get(c.supportFileId); if (!f || f.deletedAt) return null; const v = (f.versions || []).at(-1);
-    return f.kind === 'link' ? { kind: 'link', name: f.name } : { kind: 'blob', blobId: v?.blobId, mime: v?.mime, name: f.name }; })() : null;
+    return f.kind === 'link' ? { kind: 'link', name: f.name, url: f.url || '' } : { kind: 'blob', blobId: v?.blobId, mime: v?.mime, name: f.name }; })() : null;
   // Groupes : nom, couleur, prénoms, rôles, activité. Jamais de niveau ni de besoin individuel.
   const occGroups = entry?.occ?.groups;
   const set = c.groupSetId ? store.get(c.groupSetId) : null;
@@ -124,13 +125,14 @@ export function screenView(p, preview = false) {
       if (!b) return; const url = URL.createObjectURL(b);
       supportEl.replaceChildren((p.support.mime || '').startsWith('image/') ? h('img', { src: url, alt: p.support.name }) : (p.support.mime === 'application/pdf' ? h('iframe', { src: url, title: p.support.name }) : h('p', {}, p.support.name)));
     });
-  } else if (p.panels.support && p.support) supportEl.append(h('p', { class: 'muted' }, `Support : ${p.support.name}${p.support.kind === 'link' ? ' (lien externe : ouvrez-le dans un autre onglet)' : ''}`));
+  } else if (p.panels.support && p.support?.kind === 'link' && embedOf(p.support.url || '') && !preview) supportEl.append(embedFrame(p.support.url, p.support.name, { note: false }));
+  else if (p.panels.support && p.support) supportEl.append(h('p', { class: 'muted' }, `Support : ${p.support.name}${p.support.kind === 'link' ? ' (lien externe : ouvrez-le dans un autre onglet)' : ''}`));
   if (p.panels.diapo && p.diapo) {
     const d = p.diapo; const media = h('div', { class: 'slide-media' });
     if (d.blobId && !preview) store.getBlob(d.blobId).then(b => { if (!b) return; const url = URL.createObjectURL(b); media.replaceChildren(d.mime.startsWith('image/') ? h('img', { src: url, alt: d.title }) : h('iframe', { src: url, title: d.title })); });
     return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
       h('div', { class: `slide slide-${d.kind} big` }, d.kicker ? h('div', { class: 'slide-kicker' }, d.kicker) : null, h('div', { class: 'slide-title' }, d.title),
-        d.kind === 'image' ? media : d.kind === 'lien' ? h('div', { class: 'slide-text' }, 'Présentation externe : ouverte sur l’ordinateur de l’enseignante') : d.text ? h('div', { class: 'slide-text pre' }, d.text) : null),
+        d.kind === 'image' ? media : d.kind === 'lien' ? (embedOf(d.url) && !preview ? embedFrame(d.url, d.title, { note: false }) : h('div', { class: 'slide-text' }, embedOf(d.url) ? `Présentation ${embedOf(d.url).service} (affichée sur l’écran projeté)` : 'Présentation externe : ouverte sur l’ordinateur de l’enseignante')) : d.text ? h('div', { class: 'slide-text pre' }, d.text) : null),
       showTimer ? h('section', { class: 'screen-timer corner' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null);
   }
   return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },

@@ -146,6 +146,43 @@ await test('Import EDT par période avec changement daté, progression par sous-
   eq(r.consigne, 'observer des glaçons', 'consigne de la phase'); eq(r.materiel, 'glaçons', 'matériel');
 });
 
+await test('Programmation puis progression importées séparément : notions reliées, état déduit du cahier journal', async () => {
+  const r = await S(`const IC = await import('./js/importcsv.js');
+    const cls = store.all('class').find(c => c.name === 'Test import (exemple)');
+    const pg = 'Discipline;Niveau;Période;Sous-domaine;Notion;Compétences;Ressources\\nMaths;CE2;P2;Calcul;Addition posée (ex);;\\nMaths;CE2;P2;Nombres;Fractions (ex);;';
+    await IC.importRows('programmation', IC.analyse('programmation', pg, cls).rows, cls);
+    const pr = 'Discipline;Niveau;Période;Semaine;Séquence;Séance;Objectif;Support;Sous-domaine;Notions\\nMaths;CE2;P2;2;Addition posée (ex);Add 1 (ex);o;;Calcul;\\nMaths;CE2;P2;3;Partages (ex);Frac 1 (ex);o;;Nombres;Fractions (ex)';
+    const rep = await IC.importRows('progression', IC.analyse('progression', pr, store.get(cls.id)).rows, store.get(cls.id));
+    const prog = P.ofClass('programmation', cls.id).find(p => p.subject === 'Mathématiques');
+    const ns = P.notionsOf(prog.id);
+    const before = ns.map(n => P.notionStatus(n));
+    const row = P.ofClass('progression', cls.id).flatMap(p => p.rows).find(x => store.get(x.sessionId)?.title === 'Add 1 (ex)');
+    await store.update(P.ofClass('progression', cls.id).find(p => p.rows.some(x => x.id === row.id)).id, { rows: P.ofClass('progression', cls.id).find(p => p.rows.some(x => x.id === row.id)).rows.map(x => x.id === row.id ? { ...x, status: 'Réalisé' } : x) }, 'x');
+    return { linked: rep.linked, n: ns.length, before, after: P.notionsOf(prog.id).map(n => n.title + ':' + P.notionStatus(n)), progLinked: !!P.ofClass('progression', cls.id).find(p => p.subdomain === 'Calcul').programmationId };`);
+  eq(r.n, 2, '2 notions'); eq(r.linked, 2, 'deux lignes reliées à leur notion (par titre de séquence et par colonne Notions)');
+  eq(JSON.stringify(r.before), JSON.stringify(['prévue', 'prévue']), 'au départ : prévues');
+  assert(r.after.includes('Addition posée (ex):terminée'), r.after.join()); assert(r.progLinked, 'progression reliée à la programmation');
+});
+
+await test('Liens Drive, Docs, Slides, Canva : aperçu intégré ; messagerie académique', async () => {
+  const e = await page.evaluate(async () => { const E = await import('./js/embeds.js'); return [
+    'https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view?usp=sharing', 'https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/edit#slide=id.p',
+    'https://www.canva.com/design/DAFabc123/AbCdEf123/view?utm_content=x', 'https://www.canva.com/design/DAFabc123/edit', 'https://exemple.fr/page'].map(u => E.embedOf(u)?.src || null); });
+  eq(JSON.stringify(e), JSON.stringify(['https://drive.google.com/file/d/1AbCdEfGhIjKlMn/preview', 'https://docs.google.com/presentation/d/1AbCdEfGhIjKlMnOp/preview',
+    'https://www.canva.com/design/DAFabc123/AbCdEf123/view?embed', 'https://www.canva.com/design/DAFabc123/view?embed', null]), 'liens d’aperçu');
+  const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]').content);
+  assert(csp.includes('https://www.canva.com') && csp.includes('https://drive.google.com'), 'cadres autorisés');
+  await S(`await store.create('file', { kind: 'link', name: 'Diapo Canva (exemple)', url: 'https://www.canva.com/design/DAFabc123/AbCdEf123/view', tags: [] }, 'x');`);
+  await go('#/fichiers');
+  await page.getByTestId('link-preview').first().click(); await page.waitForTimeout(200);
+  eq(await page.locator('.modal iframe.embed-frame').getAttribute('src'), 'https://www.canva.com/design/DAFabc123/AbCdEf123/view?embed', 'aperçu affiché');
+  await page.keyboard.press('Escape');
+  await go('#/reglages/general');
+  await page.getByTestId('webmail-versailles').click(); await page.getByTestId('academic-mail').fill('prenom.nom@ac-versailles.fr');
+  await page.locator('form.card.form button[type=submit]').click(); await page.waitForTimeout(300);
+  eq(await S(`return store.getSettings().webmailUrl;`), 'https://messagerie.ac-versailles.fr/', 'messagerie enregistrée');
+});
+
 await test('Téléphone : rien ne dépasse', async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   await go(`#/avancement?p=${ids.p2}`); await page.screenshot({ path: `${OUT}avancement-telephone.png`, fullPage: true });

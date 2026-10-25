@@ -1,5 +1,6 @@
 import * as store from '../store.js';
 import * as model from '../model.js';
+import { embedOf, previewLink } from '../embeds.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, pickFiles, download, formatSize, badge, emptyState, safeUrl } from '../ui.js';
 import { pageHeader, subTabs, demoBadge } from '../components.js';
 import { toCsv } from '../csv.js';
@@ -105,6 +106,7 @@ function fileRow(f) {
       h('button', { class: `icon-btn fav ${f.favorite ? 'on' : ''}`, type: 'button', 'aria-label': f.favorite ? 'Retirer des favoris' : 'Mettre en favori', 'aria-pressed': f.favorite ? 'true' : 'false',
         onclick: () => store.update(f.id, { favorite: !f.favorite }, f.favorite ? 'Retrait des favoris' : 'Mise en favori') }, icon('star', 16)),
       f.kind === 'blob' ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => preview(f) }, 'Aperçu') : null,
+      f.kind === 'link' && embedOf(f.url) ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'link-preview', onclick: () => previewLink(f) }, 'Aperçu') : null,
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => (f.kind === 'link' ? linkDialog(f) : metaDialog(f)) }, 'Modifier'),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Mettre ${f.name} à la corbeille`, onclick: async () => {
         await store.remove(f.id, `${f.name} mis à la corbeille`);
@@ -113,6 +115,7 @@ function fileRow(f) {
 }
 
 function linkHost(u) {
+  const e = embedOf(u); if (e) return e.service;
   try { const host = new URL(u).hostname.replace(/^www\./, ''); if (host.includes('canva')) return 'Canva'; if (host.includes('drive.google') || host.includes('docs.google')) return 'Google Drive'; return host; } catch { return 'lien'; }
 }
 
@@ -236,7 +239,7 @@ function metaDialog(f) {
 export function linkDialog(f, folderId = null) {
   const m = metaFields(f);
   const url = h('input', { name: 'url', type: 'url', required: true, value: f?.url || '', placeholder: 'https://…' });
-  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() }, field('Adresse du lien (Drive, Canva, site…)', url, 'Le lien s’ouvre dans un nouvel onglet. Aucune connexion à votre compte n’est nécessaire ni utilisée.'), m.node);
+  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() }, field('Adresse du lien (Drive, Canva, site…)', url, 'Le lien s’ouvre dans un nouvel onglet. Liens Google Drive, Docs, Slides, Sheets et Canva : aperçu dans l’application (bouton « Aperçu ») si le document est partagé par lien. Aucune connexion à votre compte n’est demandée.'), m.node);
   const errors = h('div', { class: 'form-errors', role: 'alert' });
   modal({ title: f ? 'Modifier le lien' : 'Ajouter un lien', wide: true, body: h('div', {}, form, errors), actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, onClick: async () => {
     const u = safeUrl(url.value.trim());

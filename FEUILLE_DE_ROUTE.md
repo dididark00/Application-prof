@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (139) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 158 entrées.
+Légende : ✅ Réalisé (140) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 159 entrées.
 
 ## Étape 1 — Socle
 
@@ -166,8 +166,8 @@ Légende : ✅ Réalisé (139) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | 🟡 | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Fait : messages à partir de modèles (impression pour le cahier de liaison, e-mail, ou copie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La réponse des familles passe par le cahier de liaison, l’e-mail ou l’application de l’école. |
 | ✅ | §13 Familles | Préparation privée jusqu’à publication ; aperçu « comme ce parent » | Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée. |
 | 🟡 | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation | Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent sur papier ou par e-mail. |
-| 🟡 | §13 Familles | Mail académique (selon fournisseur et accès autorisés) | Ouverture de votre messagerie avec le message prêt (aucun mot de passe dans l’application). |
-| 🟡 | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une | Agendas : export .ics. Drive, Canva : liens dans Fichiers. LSU : export tableau des appréciations (import direct non vérifié). |
+| 🟡 | §13 Familles | Mail académique (selon fournisseur et accès autorisés) | Réglages › Général : adresse et messagerie en ligne (Versailles proposée). « Copier et ouvrir ma messagerie académique », copie des adresses des familles. Envoi automatique impossible : la messagerie académique n’est pas ouverte aux applications externes. |
+| 🟡 | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une | Agendas : export .ics. Drive, Docs, Slides, Sheets, Canva : liens avec aperçu intégré (Fichiers, diaporamas, écran de projection) ; fichiers du Drive ajoutés par le sélecteur de l’appareil. Connexion directe au compte Google ou Canva non faite : elle exige l’inscription de l’application chez Google (identifiants) ou un serveur (Canva). LSU : export tableau des appréciations. |
 | ⚙️ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur | Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Pas de compte parent. |
 | ✅ | §15 Fiabilité | Synchronisation, file de modifications et conflits explicites | Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées. |
 | ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Familles : cahier de liaison, e-mail ou application de l’école, au choix. |
@@ -178,6 +178,7 @@ Légende : ✅ Réalisé (139) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | ✅ | §6 Planifier | Cahier journal : bandeau « semaine pas encore préparée » et pré-remplissage jusqu’aux vacances (une séance n’est jamais proposée deux fois) |  |
 | ✅ | §15 Familles | Familles sans ENT : canal choisi (cahier de liaison papier, e-mail, application de l’école) ; mot imprimable pour le cahier de liaison, e-mail à toutes les familles |  |
 | ✅ | §3 Données | Import CSV : emploi du temps par période et changement daté (piscine, intervenant…), progression par sous-domaine (séances placées dans les bons créneaux), déroulé des séances en phases et matériel | Préparer › Importer un tableau. Les anciens EDT sont conservés. |
+| ✅ | §3 Données | Programmation et progression importées séparément et reliées : lignes de progression reliées aux notions (colonne Notions ou même titre), état des notions déduit |  |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |

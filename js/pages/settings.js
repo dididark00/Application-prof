@@ -10,6 +10,7 @@ import * as E from '../eleve.js';
 import * as C from '../confidential.js';
 import * as V from '../vie.js';
 import { ROADMAP, STATUTS, RUBRIQUES } from '../roadmap.js';
+import { safeUrl } from '../ui.js';
 import { h, icon, toast, modal, confirmDialog, field, formData, download, pickFiles, formatSize, badge, emptyState } from '../ui.js';
 import { pageHeader, demoBadge } from '../components.js';
 import { synchroTab } from './synchro.js';
@@ -50,12 +51,20 @@ function general() {
     e.preventDefault();
     const d = formData(form);
     const subjects = [...new Set(d.subjects.split('\n').map(x => x.trim()).filter(Boolean))];
-    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, subjects: subjects.length ? subjects : null });
+    const web = d.webmailUrl.trim() ? safeUrl(/^https?:/i.test(d.webmailUrl.trim()) ? d.webmailUrl.trim() : `https://${d.webmailUrl.trim()}`) : '';
+    if (d.webmailUrl.trim() && !web) { toast('Adresse de la messagerie invalide', { kind: 'error' }); return; }
+    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, subjects: subjects.length ? subjects : null, academicMail: d.academicMail.trim(), webmailUrl: web || '' });
     toast('Réglages enregistrés');
   } },
     h('h2', {}, 'Identité'),
     field('Nom de l’application', h('input', { name: 'appName', value: s.appName, maxlength: 40 }), 'Nom provisoire, modifiable à tout moment.'),
     field('Votre prénom (auteur des modifications)', h('input', { name: 'userName', value: s.userName, maxlength: 60 }), 'Apparaît dans l’historique des modifications et dans la répartition avec la binôme.'),
+    h('h2', {}, 'Messagerie académique'),
+    h('p', { class: 'muted small' }, 'L’application ne se connecte pas à votre messagerie et ne demande aucun mot de passe : elle prépare le message, le copie et ouvre votre messagerie en ligne, où vous le collez et l’envoyez.'),
+    h('div', { class: 'grid-2' },
+      field('Mon adresse académique', h('input', { name: 'academicMail', type: 'email', value: s.academicMail || '', placeholder: 'prenom.nom@ac-….fr', 'data-testid': 'academic-mail' })),
+      field('Adresse de ma messagerie en ligne', h('input', { name: 'webmailUrl', value: s.webmailUrl || '', placeholder: 'https://messagerie.ac-….fr', 'data-testid': 'webmail-url' }),
+        h('span', {}, 'Académie de Versailles : ', h('button', { class: 'linklike', type: 'button', 'data-testid': 'webmail-versailles', onclick: (e) => { e.target.closest('form').webmailUrl.value = 'https://messagerie.ac-versailles.fr/'; } }, 'messagerie.ac-versailles.fr'), ' (adresse indiquée par l’académie).'))),
     h('h2', {}, 'Disciplines'),
     field('Une discipline par ligne', h('textarea', { name: 'subjects', rows: 8, 'data-testid': 'subjects' }, model.subjects().join('\n')), 'Utilisées dans l’emploi du temps, les programmations, les fiches et les fichiers. Renommer une discipline ne modifie pas les fiches existantes.'),
     h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Enregistrer')));
@@ -400,16 +409,16 @@ async function rappelsTab() {
 function connexions() {
   const rows = [
     ['Synchronisation entre appareils', 'Par Nuage (apps.education.fr)', 'ok', 'Fichier chiffré par appareil, fusion élément par élément (Réglages › Synchronisation).'],
-    ['Google Drive', 'Non développé', 'muted', 'Les liens Drive s’enregistrent et s’ouvrent depuis Fichiers, sans connexion.'],
-    ['Canva', 'Non développé', 'muted', 'Les liens Canva s’enregistrent et s’ouvrent depuis Fichiers.'],
+    ['Google Drive (Docs, Slides, Sheets)', 'Liens avec aperçu intégré', 'ok', 'Fichiers › Lien : aperçu dans l’application, dans les diaporamas et à l’écran de projection si le document est partagé par lien. Pour ajouter un fichier de votre Drive dans l’application : « Ajouter des fichiers » ouvre le sélecteur de l’appareil, qui donne accès à Google Drive (Android, iPhone avec l’app Drive, ordinateur avec Drive pour ordinateur). Pas de connexion directe à votre compte : elle exigerait une inscription de l’application chez Google.'],
+    ['Canva', 'Liens avec aperçu intégré', 'ok', 'Collez le lien de partage (« Partager › lien de vue ») : la création s’affiche dans Fichiers, les diaporamas et à l’écran de projection ; « Ouvrir dans Canva » pour la modifier. Pas d’import automatique : l’API de Canva exige un serveur.'],
     ['Agendas externes', 'Export .ics', 'ok', 'Réglages › Rappels et agenda, ou Agenda › « Vers mon agenda ».'],
     ['LSU', 'Export tableau', 'ok', 'Livrets et bilans › Exporter les appréciations. Import direct réservé aux éditeurs validés par le ministère.'],
     ['IA', 'Sur l’appareil seulement', 'muted', 'Si le navigateur (Chrome) propose son IA intégrée en français : boutons « Simplifier » / « Reformuler ». Aucune IA en ligne.'],
-    ['Mail académique', 'Non développé', 'muted', 'Dépend du fournisseur et des accès autorisés : à vérifier avant développement.'],
+    ['Mail académique', store.getSettings().webmailUrl ? 'Ouverture de votre messagerie' : 'À régler', store.getSettings().webmailUrl ? 'ok' : 'warn', 'Réglages › Général › Messagerie académique. Familles › Messages : « Copier et ouvrir ma messagerie académique » (le message est copié, vous le collez et l’envoyez), et copie des adresses des familles. Aucun mot de passe dans l’application : un accès direct (envoi automatique) n’est pas ouvert par l’académie aux applications externes.'],
     ['Communication avec les familles', 'Cahier de liaison, e-mail ou application de l’école', 'ok', 'Familles › Messages, Publications, Rendez-vous, Documents, Aperçu parent : préparé ici, puis imprimé, envoyé par e-mail ou copié (au choix dans Familles).'],
   ];
   return h('div', { class: 'stack' },
-    h('p', { class: 'muted' }, 'Aucune connexion externe n’est active. Aucun mot de passe n’est demandé ni stocké par l’application.'),
+    h('p', { class: 'muted' }, 'Aucun mot de passe n’est demandé ni stocké par l’application. Les aperçus Drive et Canva sont affichés directement par Google et Canva, dans le cadre de la page.'),
     h('div', { class: 'card' }, h('table', { class: 'table' },
       h('thead', {}, h('tr', {}, h('th', {}, 'Service'), h('th', {}, 'Statut'), h('th', {}, 'Alternative disponible maintenant'))),
       h('tbody', {}, rows.map(([n, st, k, alt]) => h('tr', {}, h('td', {}, n), h('td', {}, badge(st, k)), h('td', {}, alt)))))));

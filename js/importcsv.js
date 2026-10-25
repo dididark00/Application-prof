@@ -11,8 +11,8 @@ import { parseCsv, toCsv, parseDateFr } from './csv.js';
 export const KINDS = {
   programmation: { label: 'Programmation (notions par période)', cols: ['Discipline', 'Niveau', 'Période', 'Sous-domaine', 'Notion', 'Compétences', 'Ressources'],
     example: [['Mathématiques', 'CE2', 'P1', 'Nombres', 'Nombres jusqu’à 1 000', 'Comprendre et utiliser les nombres entiers', 'Manuel p. 10']] },
-  progression: { label: 'Progression (semaine par semaine)', cols: ['Discipline', 'Niveau', 'Période', 'Semaine', 'Séquence', 'Séance', 'Objectif', 'Support', 'Sous-domaine'],
-    example: [['Français', 'CE2', 'P2', '1', 'Le récit', 'Découvrir le texte', 'Identifier les personnages', 'Album', 'Lecture']] },
+  progression: { label: 'Progression (semaine par semaine)', cols: ['Discipline', 'Niveau', 'Période', 'Semaine', 'Séquence', 'Séance', 'Objectif', 'Support', 'Sous-domaine', 'Notions'],
+    example: [['Français', 'CE2', 'P2', '1', 'Le récit', 'Découvrir le texte', 'Identifier les personnages', 'Album', 'Lecture', '']] },
   sequences: { label: 'Séquences et séances', cols: ['Discipline', 'Niveau', 'Période', 'Séquence', 'N° séance', 'Séance', 'Objectif', 'Durée (min)', 'Compétences', 'Déroulé', 'Matériel'],
     example: [['Questionner le monde', 'CE2', 'P2', 'Les états de l’eau', '1', 'Solide, liquide', 'Observer les changements d’état', '45', '', '5 min Mise en route : rappel de la séance précédente | 20 min Recherche : observer des glaçons qui fondent | 10 min Mise en commun : trace écrite | 10 min Bilan : qu’avons-nous appris ?', 'glaçons, coupelles']] },
   edt: { label: 'Emploi du temps (créneaux de la semaine)', cols: ['Jour', 'Début', 'Fin', 'Discipline', 'Intitulé', 'Niveaux', 'Mode', 'Période', 'À partir du'],
@@ -98,7 +98,7 @@ export function analyse(kind, text, cls) {
     if (!per) msg.push('période illisible (P1 à P5)');
     if (kind === 'programmation') { if (!get(r, 4)) msg.push('notion manquante'); return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, subdomain: get(r, 3), title: get(r, 4), comp: get(r, 5), resources: get(r, 6) } }; }
     if (kind === 'progression') { const w = Number(get(r, 3)); if (!w) msg.push('semaine manquante (1, 2, 3…)'); if (!get(r, 4) && !get(r, 5)) msg.push('séquence ou séance manquante');
-      return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, week: w, seq: get(r, 4), ses: get(r, 5), objective: get(r, 6), support: get(r, 7), subdomain: get(r, 8) } }; }
+      return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, week: w, seq: get(r, 4), ses: get(r, 5), objective: get(r, 6), support: get(r, 7), subdomain: get(r, 8), notions: get(r, 9) } }; }
     if (!get(r, 3)) msg.push('séquence manquante');
     return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, seq: get(r, 3), num: Number(get(r, 4)) || null, ses: get(r, 5), objective: get(r, 6), duration: Number(get(r, 7)) || null, comp: get(r, 8), deroule: get(r, 9), materiel: get(r, 10) } };
   });
@@ -158,6 +158,16 @@ function sesFinder(cls, items) {
   };
 }
 
+/** Notions de la programmation (même discipline) citées par leur intitulé, séparées par « ; ». Les notions
+ * créées dans le même import sont trouvées aussi. Sans colonne Notions : la séquence porte le même titre qu'une notion. */
+function notionsFor(d, items) {
+  const progs = new Set(store.all('programmation').filter(p => norm(p.subject) === norm(d.subject)).map(p => p.id));
+  for (const it of items) if (it.create?.type === 'programmation' && norm(it.create.data.subject) === norm(d.subject)) progs.add(it.create.data.id);
+  const pool = [...store.all('notion').filter(n => progs.has(n.programmationId)), ...items.filter(it => it.create?.type === 'notion' && progs.has(it.create.data.programmationId)).map(it => it.create.data)];
+  const wanted = d.notions ? d.notions.split(/\s*[;|]\s*/).map(norm).filter(Boolean) : [norm(d.seq)].filter(Boolean);
+  return [...new Set(pool.filter(n => n.id && wanted.includes(norm(n.title))).map(n => n.id))];
+}
+
 export async function importRows(kind, rows, cls) {
   const ok = rows.filter(r => r.ok).map(r => r.data);
   const items = []; const report = { created: 0, linked: 0, skipped: 0 };
@@ -170,7 +180,7 @@ export async function importRows(kind, rows, cls) {
       progs.set(key, p);
       if (d.subdomain && !p.subdomains.includes(d.subdomain)) p.subdomains = [...(p.subdomains || []), d.subdomain];
       const cm = matchCompetencies(d.comp); report.linked += cm.ids.length;
-      items.push({ create: { type: 'notion', data: { programmationId: p.id, periodId: d.periodId, subdomain: d.subdomain, title: d.title, competences: cm.rest, competencyIds: cm.ids, resources: d.resources, order: (items.length + 1) * 10 } } }); report.created++;
+      items.push({ create: { type: 'notion', data: { id: store.uid(), programmationId: p.id, periodId: d.periodId, subdomain: d.subdomain, title: d.title, competences: cm.rest, competencyIds: cm.ids, resources: d.resources, order: (items.length + 1) * 10 } } }); report.created++;
     }
     for (const p of progs.values()) if (store.get(p.id)) items.push({ id: p.id, patch: { subdomains: p.subdomains } });
   } else if (kind === 'sequences' || kind === 'progression') {
@@ -184,14 +194,16 @@ export async function importRows(kind, rows, cls) {
         let pr = progs.get(key);
         if (!pr) {
           const ex = P.ofClass('progression', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level && x.periodId === d.periodId && norm(x.subdomain) === norm(d.subdomain));
-          pr = ex ? { id: ex.id, rows: structuredClone(ex.rows || []), existing: true } : { id: store.uid(), rows: [], data: { classId: cls.id, subject: d.subject, level: d.level, subdomain: d.subdomain || '', periodId: d.periodId, programmationId: P.ofClass('programmation', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level)?.id || null, owner: '', extraColumns: [] } };
+          const progId = () => P.ofClass('programmation', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level)?.id || null;
+          pr = ex ? { id: ex.id, rows: structuredClone(ex.rows || []), existing: true, programmationId: ex.programmationId || progId() } : { id: store.uid(), rows: [], data: { classId: cls.id, subject: d.subject, level: d.level, subdomain: d.subdomain || '', periodId: d.periodId, programmationId: P.ofClass('programmation', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level)?.id || null, owner: '', extraColumns: [] } };
           progs.set(key, pr);
         }
-        pr.rows.push({ id: store.uid(), week: d.week, sequenceId: seqId, sessionId: sesId, title: sesId || seqId ? '' : (d.ses || d.seq), objective: d.objective, support: d.support, status: 'À venir', adjustments: '', extra: {}, notionIds: [] });
+        pr.rows.push({ id: store.uid(), week: d.week, sequenceId: seqId, sessionId: sesId, title: sesId || seqId ? '' : (d.ses || d.seq), objective: d.objective, support: d.support, status: 'À venir', adjustments: '', extra: {}, notionIds: notionsFor(d, items) });
+        report.linked += pr.rows.at(-1).notionIds.length;
         report.created++;
       } else report.created++;
     }
-    for (const pr of progs.values()) items.push(pr.existing ? { id: pr.id, patch: { rows: pr.rows } } : { create: { type: 'progression', data: { id: pr.id, ...pr.data, rows: pr.rows } } });
+    for (const pr of progs.values()) items.push(pr.existing ? { id: pr.id, patch: { rows: pr.rows, programmationId: pr.programmationId } } : { create: { type: 'progression', data: { id: pr.id, ...pr.data, rows: pr.rows } } });
   } else if (kind === 'edt') {
     // Jamais d'écrasement des créneaux existants. Lignes groupées par (périodes, « à partir du ») :
     // - sans date : un nouvel EDT pour ces périodes (sans période indiquée : celles qui n'ont pas encore d'EDT) ;
