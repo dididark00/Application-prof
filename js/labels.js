@@ -80,6 +80,8 @@ export function layout(fmt) {
 /** Taille de police (mm) pour que le texte tienne dans la largeur donnée. */
 export function fitSize(text, font, maxW, maxSize) {
   try {
+    // Police pas encore chargée : on la charge pour les prochains dessins ; fitTexts() corrige ensuite à l'écran.
+    try { if (document.fonts && !document.fonts.check(`20px ${F.family(font)}`)) document.fonts.load(`20px ${F.family(font)}`); } catch { /* */ }
     const c = document.createElement('canvas').getContext('2d');
     c.font = `100px ${F.family(font)}`;
     const w = c.measureText(text || ' ').width / 100;
@@ -94,7 +96,8 @@ export function drawLabel(g, item, w, h, style, urls = {}) {
   const font = style.font || ch.font;
   const border = style.border || ch.border;
   const bw = Number(style.borderWidth ?? ch.borderWidth) || 1;
-  const pad = Math.min(w, h) * 0.08;
+  const bwIn = border === 'aucun' ? 0 : border === 'double' ? (Number(style.borderWidth ?? ch.borderWidth) || 1) * 3.2 + 0.5 : (Number(style.borderWidth ?? ch.borderWidth) || 1) + 0.5;
+  const pad = Math.max(Math.min(w, h) * 0.08, bwIn + 1);
   if (style.fill) g.append(S('rect', { x: 0, y: 0, width: w, height: h, fill: mixLight(color), rx: border === 'arrondi' ? 4 : 0 }));
   if (border !== 'aucun') {
     const r = border === 'arrondi' ? Math.min(6, Math.min(w, h) * 0.12) : 0;
@@ -114,9 +117,22 @@ export function drawLabel(g, item, w, h, style, urls = {}) {
     const maxSize = availH * ratios[i] * (i === 0 ? 0.78 : 0.7);
     const size = fitSize(String(t), i === 0 ? font : style.font2 || font, availW, maxSize);
     const lh = availH * ratios[i];
-    g.append(S('text', { x: cx, y: y + lh / 2 + size * 0.33, 'font-size': size, 'font-family': F.family(i === 0 ? font : style.font2 || font), 'text-anchor': 'middle', fill: i === 0 ? (style.ink || ch.ink) : '#444', 'data-line': i }, String(t)));
+    g.append(S('text', { x: cx, y: y + lh / 2 + size * 0.33, 'font-size': size, 'font-family': F.family(i === 0 ? font : style.font2 || font), 'text-anchor': 'middle', fill: i === 0 ? (style.ink || ch.ink) : '#444', 'data-line': i, 'data-maxw': availW }, String(t)));
     y += lh;
   });
+}
+/** Une fois les étiquettes affichées : réduit tout texte qui déborde encore (mesure réelle, police chargée). */
+export function fitTexts(root) {
+  for (const t of root.querySelectorAll('text[data-maxw]')) {
+    let w = 0; try { w = t.getComputedTextLength(); } catch { continue; }
+    const max = Number(t.getAttribute('data-maxw'));
+    if (w > max && w > 0) { const fs = Number(t.getAttribute('font-size')); const nfs = fs * (max / w) * 0.98; t.setAttribute('font-size', nfs); t.setAttribute('y', Number(t.getAttribute('y')) - (fs - nfs) * 0.33); }
+  }
+}
+/** Réajuste maintenant puis quand les polices ont fini de se charger. */
+export function fitWhenReady(root) {
+  requestAnimationFrame(() => fitTexts(root));
+  try { document.fonts?.ready.then(() => fitTexts(root)); } catch { /* */ }
 }
 function mixLight(hex) { const m = String(hex).replace('#', ''); const c = [0, 2, 4].map(i => parseInt(m.slice(i, i + 2), 16) || 0).map(v => Math.round(v + (255 - v) * 0.85)); return `#${c.map(v => v.toString(16).padStart(2, '0')).join('')}`; }
 

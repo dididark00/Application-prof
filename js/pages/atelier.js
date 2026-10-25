@@ -33,9 +33,9 @@ const state = {
   fractions: { liste: '1/2, 1/3, 3/4, 2/5, 5/8', forme: 'barre', colorier: true },
   horloges: { heures: '08:00, 09:30, 10:15, 11:45, 14:20, 16:05', aiguilles: true, numeros: true },
   quadrillage: { type: 'carreaux', pas: 5, couleur: '#7a9cc6' },
-  symetrie: { axe: 'vertical', exercices: 4, difficulte: 'moyen', pas: 5, graine: newSeed() },
-  reproduction: { exercices: 3, difficulte: 'moyen', pas: 5, graine: newSeed() },
-  figures: { mode: 'mesurer', liste: 'segment 7\nrectangle 6 x 3\ncarré 4\ntriangle rectangle 5 x 3\ncercle 2,5' },
+  symetrie: { axe: 'vertical', source: 'générées', mine: [], exercices: 4, difficulte: 'moyen', pas: 5, graine: newSeed() },
+  reproduction: { source: 'générées', mine: [], exercices: 3, difficulte: 'moyen', pas: 5, graine: newSeed() },
+  figures: { mode: 'mesurer', reperes: 'aucun', liste: 'segment 7\nrectangle 6 x 3\ncarré 4\ntriangle rectangle 5 x 3\ncercle 2,5' },
   angles: { mode: 'classer', nombre: 9, droits: true, graine: newSeed() },
   carte: { carte: 'Planisphère', legendee: false, numeros: true, couleurs: true, oceans: true, lignes: true, fleuves: false, relief: true, villes: false, continents_noms: true, unites: true },
 };
@@ -238,9 +238,9 @@ const DRAW = {
 
 const PARAMS = {
   quadrillage: [['type', 'Type', ['carreaux', 'points', 'isométrique', 'millimétré']], ['pas', 'Pas (mm)', 'number'], ['couleur', 'Couleur', 'color']],
-  symetrie: [['axe', 'Axe de symétrie', ['vertical', 'horizontal', 'oblique']], ['difficulte', 'Difficulté', ['facile', 'moyen', 'difficile']], ['exercices', 'Exercices par page (1 à 6)', 'number'], ['pas', 'Carreaux (mm)', 'number'], ['graine', 'Numéro de fiche', 'seed']],
-  reproduction: [['difficulte', 'Difficulté', ['facile', 'moyen', 'difficile']], ['exercices', 'Exercices par page (1 à 4)', 'number'], ['pas', 'Carreaux (mm)', 'number'], ['graine', 'Numéro de fiche', 'seed']],
-  figures: [['mode', 'Consigne', [['mesurer', 'Mesurer les figures'], ['tracer', 'Tracer les figures']]], ['liste', T.FIGURE_HELP, 'textarea']],
+  symetrie: [['axe', 'Axe de symétrie', ['vertical', 'horizontal', 'oblique']], ['source', 'Figures', [['générées', 'générées au hasard'], ['mes figures', 'dessinées par moi']]], ['mine', 'Dessiner mes figures', 'draw'], ['difficulte', 'Difficulté', ['facile', 'moyen', 'difficile']], ['exercices', 'Exercices par page (1 à 6)', 'number'], ['pas', 'Carreaux (mm)', 'number'], ['graine', 'Numéro de fiche', 'seed']],
+  reproduction: [['source', 'Figures', [['générées', 'générées au hasard'], ['mes figures', 'dessinées par moi']]], ['mine', 'Dessiner mes figures', 'draw'], ['difficulte', 'Difficulté', ['facile', 'moyen', 'difficile']], ['exercices', 'Exercices par page (1 à 4)', 'number'], ['pas', 'Carreaux (mm)', 'number'], ['graine', 'Numéro de fiche', 'seed']],
+  figures: [['mode', 'Consigne', [['mesurer', 'Mesurer les figures'], ['tracer', 'Tracer les figures']]], ['reperes', 'Repères (pour une fiche projetée)', [['aucun', 'aucun'], ['quadrillage', 'quadrillage en centimètres'], ['règle', 'règle graduée sur la fiche'], ['les deux', 'quadrillage et règle']]], ['liste', T.FIGURE_HELP, 'textarea']],
   angles: [['mode', 'Consigne', [['classer', 'Aigu, droit ou obtus'], ['mesurer', 'Mesurer au rapporteur']]], ['nombre', 'Nombre d’angles (1 à 12)', 'number'], ['droits', 'Inclure des angles droits', 'checkbox'], ['graine', 'Numéro de fiche', 'seed']],
   carte: [['carte', 'Carte', ['Planisphère', 'Continents', 'France : régions', 'France : départements']], ['legendee', 'Version légendée (noms écrits)', 'checkbox'], ['numeros', 'Version à compléter : numéros + légende', 'checkbox'], ['couleurs', 'Couleurs', 'checkbox'],
     ['continents_noms', 'Continents (planisphère)', 'checkbox'], ['oceans', 'Océans (planisphère)', 'checkbox'], ['lignes', 'Équateur, tropiques, méridien (planisphère)', 'checkbox'],
@@ -254,6 +254,50 @@ const PARAMS = {
   fractions: [['liste', 'Fractions (ex. 1/2, 3/4)', 'text'], ['forme', 'Forme', ['barre', 'disque']]],
   horloges: [['heures', 'Heures (ex. 08:15, 14:30)', 'text'], ['aiguilles', 'Aiguilles dessinées (sinon l’élève les dessine)', 'checkbox'], ['numeros', 'Chiffres sur le cadran', 'checkbox']],
 };
+
+/** Éditeur : touchez les nœuds du quadrillage pour placer les sommets de chaque figure. */
+function drawFigures(o, done) {
+  const tool = state.tool; const { cols, rows } = T.GRID[tool];
+  const max = tool === 'symetrie' ? 6 : 4;
+  const figs = Array.from({ length: max }, (_, i) => ({ pts: [...((o.mine || [])[i]?.pts || [])], closed: (o.mine || [])[i]?.closed !== false }));
+  let cur = 0; const CELL = 22, PAD = 14;
+  const NSv = 'http://www.w3.org/2000/svg'; const E = (t, a = {}) => { const e = document.createElementNS(NSv, t); for (const [k, v] of Object.entries(a)) if (v != null) e.setAttribute(k, v); return e; };
+  const host = h('div', { class: 'draw-host' }); const tabs = h('div', { class: 'seg wrap' }); const closedBox = h('input', { type: 'checkbox', 'data-testid': 'draw-closed' });
+  const ok = (c, l) => tool !== 'symetrie' || T.allowedNode(o.axe, c, l);
+  const draw = () => {
+    tabs.replaceChildren(...figs.map((f, i) => h('button', { type: 'button', class: i === cur ? 'on' : '', 'data-testid': 'draw-tab', onclick: () => { cur = i; draw(); } }, `Figure ${i + 1}${f.pts.length ? ' ✓' : ''}`)));
+    closedBox.checked = figs[cur].closed;
+    const svg = E('svg', { viewBox: `0 0 ${cols * CELL + 2 * PAD} ${rows * CELL + 2 * PAD}`, class: 'draw-svg', 'data-testid': 'draw-svg' });
+    for (let i = 0; i <= cols; i++) svg.append(E('line', { x1: PAD + i * CELL, x2: PAD + i * CELL, y1: PAD, y2: PAD + rows * CELL, stroke: '#c9d6e8' }));
+    for (let j = 0; j <= rows; j++) svg.append(E('line', { x1: PAD, x2: PAD + cols * CELL, y1: PAD + j * CELL, y2: PAD + j * CELL, stroke: '#c9d6e8' }));
+    if (tool === 'symetrie') {
+      const ax = o.axe === 'horizontal' ? [0, rows / 2, cols, rows / 2] : o.axe === 'oblique' ? [0, 0, rows, rows] : [cols / 2, 0, cols / 2, rows];
+      svg.append(E('line', { x1: PAD + ax[0] * CELL, y1: PAD + ax[1] * CELL, x2: PAD + ax[2] * CELL, y2: PAD + ax[3] * CELL, stroke: '#c0392b', 'stroke-width': 3 }));
+    }
+    const f = figs[cur];
+    if (f.pts.length) svg.append(E(f.closed && f.pts.length > 2 ? 'polygon' : 'polyline', { points: f.pts.map(([c, l]) => `${PAD + c * CELL},${PAD + l * CELL}`).join(' '), fill: f.closed ? 'rgba(29,61,110,.08)' : 'none', stroke: '#1d3d6e', 'stroke-width': 3, 'stroke-linejoin': 'round' }));
+    for (let j = 0; j <= rows; j++) for (let i = 0; i <= cols; i++) {
+      const allowed = ok(i, j); const on = f.pts.some(([c, l]) => c === i && l === j);
+      const n = E('circle', { cx: PAD + i * CELL, cy: PAD + j * CELL, r: on ? 6 : 4, fill: on ? '#1d3d6e' : allowed ? '#9ab3d5' : 'transparent', class: allowed ? 'draw-node' : null, 'data-node': `${i},${j}` });
+      if (allowed) n.addEventListener('click', () => { const last = f.pts.at(-1); if (!last || last[0] !== i || last[1] !== j) f.pts.push([i, j]); draw(); });
+      svg.append(n);
+    }
+    host.replaceChildren(svg);
+  };
+  closedBox.addEventListener('change', () => { figs[cur].closed = closedBox.checked; draw(); });
+  draw();
+  modal({ title: tool === 'symetrie' ? 'Dessiner les figures (côté de l’axe)' : 'Dessiner les figures à reproduire', wide: true, body: h('div', { class: 'stack' },
+    h('p', { class: 'muted small' }, tool === 'symetrie' ? 'Touchez les nœuds du quadrillage dans l’ordre des sommets. Seul le côté gauche (ou haut) de l’axe est disponible : les élèves tracent le symétrique.' : 'Touchez les nœuds du quadrillage dans l’ordre des sommets.'),
+    tabs, host,
+    h('div', { class: 'row' }, h('label', { class: 'inline' }, closedBox, 'Figure fermée (relier le dernier point au premier)'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'draw-undo', onclick: () => { figs[cur].pts.pop(); draw(); } }, 'Annuler le dernier point'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'draw-clear', onclick: () => { figs[cur].pts = []; draw(); } }, 'Effacer cette figure'))),
+  actions: [{ label: 'Annuler' }, { label: 'Utiliser ces figures', primary: true, testid: 'draw-ok', onClick: () => {
+    o.mine = figs.map(f => (f.pts.length >= 2 ? { pts: f.pts, closed: f.closed && f.pts.length > 2 } : null));
+    o.exercices = Math.max(Number(o.exercices) || 1, o.mine.reduce((n, m, i) => (m ? i + 1 : n), 0));
+    done();
+  } }] });
+}
 
 /** Ouvre l'Atelier sur un outil d'écriture avec un texte déjà rempli (ex. texte lu dans une photo). */
 export function openWithText(text, tool = 'ecriture') {
@@ -272,8 +316,9 @@ export function render({ rerender }) {
   const params = h('div', { class: 'form' },
     field('Titre (facultatif)', h('input', { value: state.title, oninput: (e) => { state.title = e.target.value; redraw(); } })),
     PARAMS[state.tool].map(([k, label, type]) => {
-      if (Array.isArray(type)) return field(label, h('select', { 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.value; redraw(); } }, type.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return h('option', { value: val, selected: String(o[k]) === val }, lab); })));
+      if (Array.isArray(type)) return field(label, h('select', { 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.value; if (k === 'source' || k === 'axe') rerender(); else redraw(); } }, type.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return h('option', { value: val, selected: String(o[k]) === val }, lab); })));
       if (type === 'font') return fontField(o, rerender);
+      if (type === 'draw') return o.source === 'mes figures' ? h('div', { class: 'stack' }, h('button', { class: 'btn', type: 'button', 'data-testid': 'draw-figures', onclick: () => drawFigures(o, () => rerender()) }, `${label} (${(o.mine || []).filter(m => m?.pts?.length).length} prête(s))`), h('p', { class: 'muted small' }, 'Les exercices sans figure dessinée sont complétés au hasard.')) : null;
       if (type === 'seed') return field(label, h('div', { class: 'row' }, h('input', { type: 'number', value: o[k], 'data-testid': 'p-graine', style: { width: '7em' }, oninput: (e) => { o[k] = Number(e.target.value) || 1; redraw(); } }),
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'new-sheet', onclick: () => { o[k] = newSeed(); rerender(); } }, 'Nouvelle fiche')), 'Gardez ce numéro pour réimprimer exactement la même fiche (et sa correction).');
       if (type === 'checkbox') return h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!o[k], 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.checked; redraw(); } }), label);

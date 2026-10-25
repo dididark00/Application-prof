@@ -1022,3 +1022,11 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .edt-slot.edt-changed { outline: 2px dashed var(--warn); outline-offset: -2px; }
 @media (max-width: 600px) { .edt-vtab { min-width: 0; flex: 1 1 100%; } }
 .edt-vtab .badge { justify-self: start; }
+
+/* Atelier : dessiner ses figures */
+.draw-host { overflow: auto; }
+.draw-svg { width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; touch-action: manipulation; }
+.draw-svg .draw-node { cursor: pointer; }
+.plan-room { margin-top: 6px; }
+.carnet-list li { line-height: 1.9; }
+.carnet-students { max-height: 40vh; overflow: auto; }

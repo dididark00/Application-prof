@@ -53,6 +53,7 @@ function generator(cls, rerender) {
     const l2 = L.layout(fmtOf());
     info.textContent = l2.perPage ? `${its.length} étiquette(s) · ${l2.perPage} par page (${l2.cols} × ${l2.rows}, A4 ${l2.landscape ? 'paysage' : 'portrait'}) · ${ps.length} page(s)` : 'Format trop grand pour une feuille A4.';
     preview.replaceChildren(...ps.slice(0, 1));
+    L.fitWhenReady(preview);
   };
   const set = (fn) => (e) => { fn(e); redraw(); };
   const fonts = F.available();
@@ -105,6 +106,7 @@ function printPages(svgs, fmt) {
   document.head.append(h('style', { id: 'page-style' }, `@page { size: A4 ${lay.landscape ? 'landscape' : 'portrait'}; margin: 0; }`));
   root.replaceChildren(h('div', { class: 'labels-print' }, svgs.map(s => { s.querySelectorAll('.cut').forEach(c => c.setAttribute('stroke', '#bbb')); return s; })));
   document.body.classList.add('printing');
+  L.fitTexts(root);
   const cleanup = () => { document.body.classList.remove('printing'); root.replaceChildren(); window.removeEventListener('afterprint', cleanup); };
   window.addEventListener('afterprint', cleanup);
   window.print();
@@ -134,7 +136,7 @@ function seriesPage(id, rerender) {
   const changed = academyChanges(set);
   const versions = store.all('labelset').filter(x => x.id !== set.id && (x.previousId === set.id || set.previousId === x.id));
   const preview = h('div', { class: 'labels-preview stack', 'data-testid': 'labels-preview' });
-  (async () => { preview.replaceChildren(...L.pages(set.items, set.format, set.style, await L.imageUrls(set.items))); })();
+  (async () => { preview.replaceChildren(...L.pages(set.items, set.format, set.style, await L.imageUrls(set.items))); L.fitWhenReady(preview); })();
   const saveItem = (i, patch) => store.update(set.id, { items: set.items.map((x, j) => (j === i ? { ...x, ...patch, edited: true } : x)) }, 'Étiquette retouchée', { quiet: true });
   const lay = L.layout(set.format);
   return h('div', { class: 'page' },

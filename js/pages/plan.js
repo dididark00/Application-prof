@@ -15,15 +15,29 @@ let tab = 'plan';
 let selLayout = null;
 let selItem = null;
 let selSet = null;
-const W = 1000, H = 700;
+const W = 1000, H = 700; // salle par défaut : 10 m × 7 m (1 unité = 1 cm)
+const roomOf = (lay) => ({ w: lay?.room?.w || W, h: lay?.room?.h || H });
 
 const ITEM = {
-  table: { label: 'Table', w: 120, h: 60, seats: 2, fill: '#f3e7cf' },
-  tableau: { label: 'Tableau', w: 300, h: 20, seats: 0, fill: '#2f5d50' },
-  bureau: { label: 'Bureau', w: 140, h: 70, seats: 0, fill: '#d9cbb0' },
-  porte: { label: 'Porte', w: 70, h: 14, seats: 0, fill: '#9a8a70' },
-  zone: { label: 'Zone', w: 220, h: 160, seats: 0, fill: 'rgba(47,111,143,.08)' },
+  table: { label: 'Table', w: 120, h: 60, seats: 2, fill: '#f3e7cf', group: 'Mobilier' },
+  bureau: { label: 'Bureau', w: 140, h: 70, seats: 0, fill: '#d9cbb0', group: 'Mobilier' },
+  tableau: { label: 'Tableau', w: 300, h: 20, seats: 0, fill: '#2f5d50', group: 'Mobilier' },
+  tni: { label: 'TNI / écran', w: 200, h: 16, seats: 0, fill: '#3b4a5a', group: 'Mobilier' },
+  porte: { label: 'Porte', w: 90, h: 14, seats: 0, fill: '#9a8a70', group: 'Mobilier' },
+  fenetre: { label: 'Fenêtre', w: 150, h: 12, seats: 0, fill: '#bcd9ea', group: 'Mobilier' },
+  etagere: { label: 'Étagère', w: 120, h: 40, seats: 0, fill: '#c9b48f', group: 'Rangements' },
+  armoire: { label: 'Armoire', w: 100, h: 60, seats: 0, fill: '#b39a74', group: 'Rangements' },
+  bacs: { label: 'Meuble à bacs', w: 80, h: 45, seats: 0, fill: '#e2c9a0', group: 'Rangements' },
+  casiers: { label: 'Casiers', w: 160, h: 40, seats: 0, fill: '#d8c3a5', group: 'Rangements' },
+  portemanteaux: { label: 'Porte-manteaux', w: 200, h: 15, seats: 0, fill: '#a58f6c', group: 'Rangements' },
+  biblio: { label: 'Bibliothèque', w: 160, h: 40, seats: 0, fill: '#c2a679', group: 'Rangements' },
+  evier: { label: 'Évier', w: 80, h: 50, seats: 0, fill: '#d6e4ea', group: 'Rangements' },
+  ordinateur: { label: 'Poste informatique', w: 80, h: 60, seats: 1, fill: '#e3e3e8', group: 'Rangements' },
+  zone: { label: 'Zone', w: 220, h: 160, seats: 0, fill: 'rgba(47,111,143,.08)', group: 'Espaces' },
+  regroupement: { label: 'Coin regroupement', w: 250, h: 200, seats: 0, fill: 'rgba(214,138,60,.10)', group: 'Espaces' },
+  coinlecture: { label: 'Coin lecture', w: 200, h: 160, seats: 0, fill: 'rgba(98,160,90,.10)', group: 'Espaces' },
 };
+const AREA = new Set(['zone', 'regroupement', 'coinlecture']);
 const mk = (kind, x, y, extra = {}) => ({ id: store.uid(), kind, x, y, w: ITEM[kind].w, h: ITEM[kind].h, rot: 0, seats: ITEM[kind].seats, label: '', ...extra });
 
 export const TEMPLATES = {
@@ -63,18 +77,33 @@ function planView(cls, rerender) {
   const host = h('div', { class: 'plan-host' });
   const sel = (lay.items || []).find(i => i.id === selItem);
   const saveItems = (items, label, quiet = true) => store.update(lay.id, { items }, label, { quiet });
+  const room = roomOf(lay);
+  const groups = [...new Set(Object.values(ITEM).map(d => d.group))];
+  const addSel = h('select', { 'aria-label': 'Ajouter un élément', 'data-testid': 'add-item', onchange: (e) => { const k = e.target.value; if (k) addItem(k); } },
+    h('option', { value: '' }, '+ Ajouter…'), groups.map(g => h('optgroup', { label: g }, Object.entries(ITEM).filter(([, d]) => d.group === g).map(([k, d]) => h('option', { value: k }, d.label)))));
+  // Nouvel élément : au centre, décalé s'il y en a déjà un au même endroit ; sélectionné tout de suite.
+  const addItem = async (k) => { const n = (lay.items || []).length % 8; const it = mk(k, Math.round(room.w / 2 / 10) * 10 - 60 + n * 30, Math.round(room.h / 2 / 10) * 10 - 30 + n * 20); selItem = it.id; await saveItems([...(lay.items || []), it], `${ITEM[k].label} ajouté(e)`, false); };
+  const num = (label, value, onSave, testid) => h('label', { class: 'inline small' }, label, h('input', { type: 'number', min: 10, step: 10, value, style: { width: '5.5em' }, 'data-testid': testid, onchange: (e) => { const v = Math.max(10, Math.round(Number(e.target.value) / 10) * 10 || 10); onSave(v); } }));
   const toolbar = h('div', { class: 'row plan-tools' },
-    h('span', { class: 'muted small' }, 'Ajouter :'), Object.entries(ITEM).map(([k, d]) => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': `add-${k}`, onclick: async () => { const it = mk(k, 440, 320); await saveItems([...(lay.items || []), it], `${d.label} ajouté(e)`, false); selItem = it.id; } }, d.label)),
-    sel ? h('span', { class: 'row sel-tools' }, h('strong', {}, ITEM[sel.kind].label),
+    addSel,
+    ['table', 'etagere', 'armoire', 'zone'].map(k => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': `add-${k}`, onclick: () => addItem(k) }, ITEM[k].label)),
+    sel ? h('span', { class: 'row sel-tools' }, h('strong', {}, ITEM[sel.kind]?.label || 'Élément'),
+      num('L (cm)', sel.w, (v) => saveItems(lay.items.map(i => i.id === sel.id ? { ...i, w: v } : i), 'Taille', false), 'item-w'),
+      num('P (cm)', sel.h, (v) => saveItems(lay.items.map(i => i.id === sel.id ? { ...i, h: v } : i), 'Taille', false), 'item-h'),
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rotate', onclick: () => saveItems(lay.items.map(i => i.id === sel.id ? { ...i, rot: ((i.rot || 0) + 90) % 360 } : i), 'Rotation', false) }, '↻ 90°'),
       sel.kind === 'table' ? [h('button', { class: 'btn btn-small', type: 'button', onclick: () => saveItems(lay.items.map(i => i.id === sel.id ? { ...i, seats: Math.max(1, i.seats - 1) } : i), 'Places', false) }, '− place'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => saveItems(lay.items.map(i => i.id === sel.id ? { ...i, seats: Math.min(8, i.seats + 1), w: Math.max(i.w, (i.seats + 1) * 60) } : i), 'Places', false) }, '+ place')] : null,
       h('input', { value: sel.label || '', placeholder: 'étiquette', 'aria-label': 'Étiquette', style: { width: '120px' }, onchange: (e) => saveItems(lay.items.map(i => i.id === sel.id ? { ...i, label: e.target.value } : i), 'Étiquette', false) }),
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => { const c = { ...sel, id: store.uid(), x: sel.x + 30, y: sel.y + 30 }; selItem = c.id; saveItems([...lay.items, c], 'Élément dupliqué', false); } }, 'Dupliquer'),
-      h('button', { class: 'btn btn-small btn-ghost-danger', type: 'button', onclick: async () => { const seats = { ...(lay.seats || {}) }; delete seats[sel.id]; selItem = null; await store.update(lay.id, { items: lay.items.filter(i => i.id !== sel.id), seats }, 'Élément supprimé (élèves remis à placer)'); } }, 'Supprimer')) : h('span', { class: 'muted small' }, 'Cliquez sur un meuble pour le modifier ; glissez pour le déplacer ; cliquez sur une place pour y mettre un élève.'));
+      h('button', { class: 'btn btn-small btn-ghost-danger', type: 'button', onclick: async () => { const seats = { ...(lay.seats || {}) }; delete seats[sel.id]; selItem = null; await store.update(lay.id, { items: lay.items.filter(i => i.id !== sel.id), seats }, 'Élément supprimé (élèves remis à placer)'); } }, 'Supprimer')) : h('span', { class: 'muted small' }, 'Cliquez sur un élément pour le modifier ; glissez pour le déplacer ; tirez le coin orange pour l’agrandir ; cliquez sur une place pour y mettre un élève.'));
+  const roomRow = h('div', { class: 'row small plan-room' }, h('strong', {}, 'Salle :'),
+    num('largeur (cm)', room.w, (v) => store.update(lay.id, { room: { ...roomOf(store.get(lay.id)), w: Math.min(3000, v) } }, 'Taille de la salle'), 'room-w'),
+    num('profondeur (cm)', room.h, (v) => store.update(lay.id, { room: { ...roomOf(store.get(lay.id)), h: Math.min(3000, v) } }, 'Taille de la salle'), 'room-h'),
+    h('span', { class: 'muted' }, `${(room.w / 100).toLocaleString('fr')} m × ${(room.h / 100).toLocaleString('fr')} m · 1 carreau = 1 m`));
 
   const draw = () => host.replaceChildren(svgPlan(store.get(lay.id), cls, { editable: true, selected: selItem, onSelect: (id) => { selItem = id; rerender(); },
     onMove: (id, x, y) => saveItems(store.get(lay.id).items.map(i => i.id === id ? { ...i, x, y } : i), 'Déplacement'),
+    onResize: (id, w, hh) => saveItems(store.get(lay.id).items.map(i => i.id === id ? { ...i, w, h: hh } : i), 'Taille', false),
     onSeat: (itemId, idx) => seatDialog(store.get(lay.id), itemId, idx, students) }));
   draw();
 
@@ -84,7 +113,7 @@ function planView(cls, rerender) {
         bound({ label: 'Nom de la disposition', type: 'text', value: lay.name, onSave: (v) => store.update(lay.id, { name: v || 'Disposition' }, 'Nom de la disposition') }),
         bound({ label: 'Période associée', type: 'select', value: lay.periodId || '', options: [['', '—'], ...periods.map((p, i) => [p.id, `P${i + 1}`])], onSave: (v) => store.update(lay.id, { periodId: v || null }, 'Période de la disposition') }),
         bound({ label: 'Séance associée (facultatif)', type: 'select', value: lay.sessionId || '', options: [['', '—'], ...P.ofClass('session', cls.id).map(s => [s.id, P.sessionTitle(s)])], onSave: (v) => store.update(lay.id, { sessionId: v || null }, 'Séance de la disposition') })),
-      toolbar, host,
+      toolbar, roomRow, host,
       h('div', { class: 'row' },
         h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'auto-place', onclick: () => autoPlace(lay, students, false) }, 'Placer les élèves non placés (ordre alphabétique)'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => autoPlace(lay, students, true) }, 'Placement aléatoire (tout)'),
@@ -96,16 +125,20 @@ function planView(cls, rerender) {
 }
 
 /** Dessin SVG d'une disposition. Les élèves sont identifiés par leur prénom uniquement. */
-export function svgPlan(lay, cls, { editable = false, selected = null, onSelect, onMove, onSeat } = {}) {
+export function svgPlan(lay, cls, { editable = false, selected = null, onSelect, onMove, onSeat, onResize } = {}) {
   const NS = 'http://www.w3.org/2000/svg';
   const el = (tag, attrs = {}, text) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; };
-  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: `plan-svg ${editable ? 'editable' : ''}`, role: 'img', 'aria-label': `Plan de classe ${lay.name}`, 'data-testid': 'plan-svg' });
-  svg.append(el('rect', { x: 0, y: 0, width: W, height: H, fill: '#fff', stroke: '#c9c2b4' }));
-  const ordered = [...(lay.items || [])].sort((a, b) => (a.kind === 'zone' ? -1 : 0) - (b.kind === 'zone' ? -1 : 0));
+  const { w: RW, h: RH } = roomOf(lay);
+  const svg = el('svg', { viewBox: `0 0 ${RW} ${RH}`, class: `plan-svg ${editable ? 'editable' : ''}`, role: 'img', 'aria-label': `Plan de classe ${lay.name}`, 'data-testid': 'plan-svg', style: `aspect-ratio: ${RW} / ${RH}` });
+  svg.append(el('rect', { x: 0, y: 0, width: RW, height: RH, fill: '#fff', stroke: '#c9c2b4' }));
+  if (editable) { const grid = el('g', { stroke: '#eee6da', 'stroke-width': 1 }); for (let x = 100; x < RW; x += 100) grid.append(el('line', { x1: x, x2: x, y1: 0, y2: RH })); for (let y = 100; y < RH; y += 100) grid.append(el('line', { x1: 0, x2: RW, y1: y, y2: y })); svg.append(grid); }
+  const ordered = [...(lay.items || [])].sort((a, b) => (AREA.has(a.kind) ? -1 : 0) - (AREA.has(b.kind) ? -1 : 0));
   for (const it of ordered) {
+    const def = ITEM[it.kind] || ITEM.zone;
     const g = el('g', { transform: `translate(${it.x} ${it.y}) rotate(${it.rot || 0} ${it.w / 2} ${it.h / 2})`, class: `plan-item ${selected === it.id ? 'sel' : ''}`, 'data-id': it.id, 'data-testid': `plan-item-${it.kind}` });
-    g.append(el('rect', { width: it.w, height: it.h, rx: 6, fill: ITEM[it.kind].fill, stroke: selected === it.id ? '#e0a020' : '#8a7a60', 'stroke-width': selected === it.id ? 4 : 1.5, 'stroke-dasharray': it.kind === 'zone' ? '8 6' : null }));
-    if (it.label || it.kind !== 'table') g.append(el('text', { x: it.w / 2, y: it.kind === 'zone' ? 22 : it.seats ? 17 : it.h / 2 + 5, 'text-anchor': 'middle', 'font-size': 15, fill: it.kind === 'tableau' ? '#fff' : '#555' }, it.label || ITEM[it.kind].label));
+    g.append(el('rect', { width: it.w, height: it.h, rx: 6, fill: def.fill, stroke: selected === it.id ? '#e0a020' : '#8a7a60', 'stroke-width': selected === it.id ? 4 : 1.5, 'stroke-dasharray': AREA.has(it.kind) ? '8 6' : null }));
+    const fs = Math.max(9, Math.min(15, it.h - 4, (it.w - 6) / Math.max(4, (it.label || def.label).length * 0.55)));
+    if (it.label || it.kind !== 'table') g.append(el('text', { x: it.w / 2, y: AREA.has(it.kind) ? 22 : it.seats ? 17 : it.h / 2 + fs / 3, 'text-anchor': 'middle', 'font-size': fs, fill: ['tableau', 'tni'].includes(it.kind) ? '#fff' : '#555' }, it.label || def.label));
     const seats = it.seats || 0;
     for (let k = 0; k < seats; k++) {
       const sw = it.w / seats;
@@ -116,6 +149,7 @@ export function svgPlan(lay, cls, { editable = false, selected = null, onSelect,
       seat.append(el('text', { x: k * sw + sw / 2, y: (it.label ? 24 + (it.h - 28) / 2 : it.h / 2) + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': s ? 700 : 400, fill: s ? '#1f2a27' : '#a99' }, s ? s.firstName : '+'));
       g.append(seat);
     }
+    if (editable && selected === it.id) g.append(el('rect', { class: 'plan-resize', x: it.w - 9, y: it.h - 9, width: 18, height: 18, rx: 3, fill: '#e0a020', stroke: '#fff', 'stroke-width': 2, 'data-testid': 'plan-resize' }));
     svg.append(g);
   }
   if (!editable) return svg;
@@ -124,19 +158,27 @@ export function svgPlan(lay, cls, { editable = false, selected = null, onSelect,
   svg.addEventListener('pointerdown', (e) => {
     const g = e.target.closest('.plan-item'); if (!g) { onSelect && onSelect(null); return; }
     const it = lay.items.find(i => i.id === g.dataset.id); const p = pt(e);
-    drag = { it, g, dx: p.x - it.x, dy: p.y - it.y, moved: false, seat: e.target.closest('.plan-seat')?.dataset.seat };
+    drag = { it, g, dx: p.x - it.x, dy: p.y - it.y, moved: false, seat: e.target.closest('.plan-seat')?.dataset.seat, resize: e.target.classList.contains('plan-resize') };
     svg.setPointerCapture(e.pointerId); e.preventDefault();
   });
   svg.addEventListener('pointermove', (e) => {
     if (!drag) return; const p = pt(e);
+    if (drag.resize) {
+      const sp = svg.createSVGPoint(); sp.x = e.clientX; sp.y = e.clientY; const loc = sp.matrixTransform(drag.g.getScreenCTM().inverse());
+      drag.nw = Math.max(20, Math.round(loc.x / 10) * 10); drag.nh = Math.max(10, Math.round(loc.y / 10) * 10); drag.moved = true;
+      const r = drag.g.querySelector('rect'); r.setAttribute('width', drag.nw); r.setAttribute('height', drag.nh);
+      const hd = drag.g.querySelector('.plan-resize'); hd.setAttribute('x', drag.nw - 9); hd.setAttribute('y', drag.nh - 9);
+      return;
+    }
     const x = Math.round((p.x - drag.dx) / 10) * 10, y = Math.round((p.y - drag.dy) / 10) * 10;
     if (Math.abs(x - drag.it.x) + Math.abs(y - drag.it.y) > 4) drag.moved = true;
     if (!drag.moved) return;
-    drag.nx = Math.min(Math.max(-20, x), W - 40); drag.ny = Math.min(Math.max(-20, y), H - 20);
+    drag.nx = Math.min(Math.max(-20, x), RW - 40); drag.ny = Math.min(Math.max(-20, y), RH - 20);
     drag.g.setAttribute('transform', `translate(${drag.nx} ${drag.ny}) rotate(${drag.it.rot || 0} ${drag.it.w / 2} ${drag.it.h / 2})`);
   });
   const end = () => {
     if (!drag) return; const d = drag; drag = null;
+    if (d.resize) { if (d.moved && onResize) onResize(d.it.id, d.nw, d.nh); return; }
     if (d.moved) { onMove && onMove(d.it.id, d.nx, d.ny); d.it.x = d.nx; d.it.y = d.ny; }
     else if (d.seat && onSeat) { const [iid, k] = d.seat.split(':'); onSeat(iid, Number(k)); }
     else onSelect && onSelect(d.it.id);

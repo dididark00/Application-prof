@@ -121,7 +121,7 @@ async function pubDoc(p) {
   return h('div', { class: 'print-doc' }, h('header', { class: 'print-head' }, h('h1', {}, p.title || ''), h('p', {}, model.frDate(p.date))), h('div', {}, (p.text || '').split('\n').map(l => h('p', {}, l || ' '))), h('div', { class: 'pub-print-photos' }, imgs));
 }
 
-// ═════════ Messages (journal des échanges + rédaction)
+// ═════════ Modèles de mots (rédaction, impression pour le carnet)
 export const MSG_MODELES = {
   info: ['Information', (s) => `Bonjour,\n\nJe vous informe que …\n\nBien cordialement,`],
   bravo: ['Félicitations', (s) => `Bonjour,\n\nJe tenais à vous dire que ${s ? s.firstName : 'votre enfant'} a fait de beaux progrès ces derniers temps : … Bravo à ${s && s.gender === 'f' ? 'elle' : s ? 'lui' : 'lui ou elle'} !\n\nBien cordialement,`],
@@ -129,21 +129,86 @@ export const MSG_MODELES = {
   materiel: ['Matériel oublié', (s) => `Bonjour,\n\n${s ? s.firstName : 'Votre enfant'} n’a pas son … depuis quelques jours. Pourriez-vous vérifier son cartable ?\n\nMerci,`],
   document: ['Document à rapporter', (s) => `Bonjour,\n\nIl manque encore : … Merci de le remettre dans le cartable${s ? ' de ' + s.firstName : ''}.\n\nBien cordialement,`],
 };
+// ═════════ Carnet de liaison et comportement : suivi, élève par élève, des mots écrits dans le carnet
+// (à faire signer) et des comportements ou oublis relevés. Rien n'est envoyé.
+export const CARNET_CATS = [['comportement', 'Comportement', 'warn'], ['travail', 'Travail non fait', 'warn'], ['oubli', 'Oubli de matériel', 'warn'], ['retard', 'Retard', 'warn'],
+  ['felicitations', 'Félicitations', 'ok'], ['information', 'Information', 'info'], ['autre', 'Autre', 'muted']];
+const catOf = (k) => CARNET_CATS.find(c => c[0] === k) || CARNET_CATS.at(-1);
+const carnetState = { cat: '', span: 'periode', unsigned: false };
+function spanRange(cls, span) {
+  const today = model.todayIso(); const year = store.get(cls.yearId);
+  if (span === 'semaine') { const m = model.mondayOf(today); return [m, model.addDays(m, 6)]; }
+  if (span === 'mois') return [`${today.slice(0, 7)}-01`, `${today.slice(0, 7)}-31`];
+  if (span === 'periode') { // période en cours, vacances qui suivent comprises
+    const ps = model.periodsOf(year); const i = ps.findLastIndex(x => x.start <= today); const p = ps[Math.max(0, i)];
+    return p ? [p.start, ps[i + 1] ? model.addDays(ps[i + 1].start, -1) : (year?.end || p.end)] : ['0000', '9999']; }
+  return [year?.start || '0000', year?.end || '9999'];
+}
 export function renderMessages({ query, rerender }) {
   const cls = model.currentClass(); const miss = needClass();
-  if (miss) return page('Messages', 'familles/messages', null, miss);
+  if (miss) return page('Carnet de liaison et comportement', 'familles/messages', null, miss);
   const st = students(cls); const ids = new Set(st.map(s => s.id));
   const filter = query.e || '';
-  const list = store.all('exchange').filter(x => ids.has(x.studentId) && (!filter || x.studentId === filter)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const todo = list.filter(x => x.followUp && !x.followDone);
-  return page('Messages', 'familles/messages', cls, h('div', { class: 'stack' },
-    h('p', { class: 'muted' }, 'Rédigez un mot ou un message à partir d’un modèle : imprimez-le pour le cahier de liaison, envoyez-le par e-mail ou copiez-le. Il est noté dans l’historique de l’élève. Les échanges notés dans les fiches apparaissent aussi ici.'), notice(),
-    (() => { const mails = [...new Set(st.flatMap(s => (s.contacts || []).filter(c => c.email && (c.legal !== false)).map(c => c.email)))];
-      return h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', 'data-testid': 'msg-all-mail', disabled: !mails.length, title: mails.length ? '' : 'Aucune adresse e-mail dans les fiches élèves', onclick: () => { location.href = `mailto:?bcc=${encodeURIComponent(mails.join(','))}&subject=${encodeURIComponent(`Classe de ${cls.name}`)}`; } }, 'E-mail à toutes les familles'), mails.length ? h('button', { class: 'btn', type: 'button', 'data-testid': 'msg-copy-mails', onclick: () => copy(mails.join(', ')) }, 'Copier les adresses') : null, h('span', { class: 'muted small' }, `${mails.length} adresse${mails.length > 1 ? 's' : ''}, en copie cachée`)); })(),
-    h('div', { class: 'row' }, h('select', { 'aria-label': 'Élève', onchange: (e) => { location.hash = `#/messages${e.target.value ? '?e=' + e.target.value : ''}`; } }, h('option', { value: '' }, 'Tous les élèves'), st.map(s => h('option', { value: s.id, selected: filter === s.id }, fullName(s))))),
-    todo.length ? h('section', { class: 'card' }, h('h2', {}, `Suites à donner (${todo.length})`), h('ul', { class: 'plain' }, todo.map(x => h('li', {}, h('label', { class: 'inline' }, h('input', { type: 'checkbox', 'data-testid': 'follow-done', onchange: async () => { await store.update(x.id, { followDone: model.todayIso() }, 'Suite faite'); } }), `${store.get(x.studentId)?.firstName} : ${x.followUp}`))))) : null,
-    h('section', { class: 'card' }, h('h2', {}, 'Historique'), list.length ? h('ul', { class: 'obs-list', 'data-testid': 'msg-list' }, list.map(x => h('li', {}, h('strong', {}, model.frShort(x.date)), ' ', h('a', { href: `#/eleve/${x.studentId}?t=echanges` }, store.get(x.studentId)?.firstName || ''), ' ', badge(x.kind, 'muted'), x.with ? ` avec ${x.with}` : '', h('p', { class: 'pre small' }, x.summary || '')))) : h('p', { class: 'muted' }, 'Aucun échange.'))),
-  [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'msg-new', onclick: () => composeDialog(cls, st, filter) }, icon('plus', 16), 'Nouveau message')]);
+  const [from, to] = spanRange(cls, carnetState.span);
+  const all = store.all('carnet').filter(x => ids.has(x.studentId));
+  const inSpan = all.filter(x => x.date >= from && x.date <= to);
+  const list = inSpan.filter(x => (!filter || x.studentId === filter) && (!carnetState.cat || x.category === carnetState.cat) && (!carnetState.unsigned || (x.written && !x.signed))).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const unsigned = all.filter(x => x.written && !x.signed).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const name = (id) => store.get(id)?.firstName || '';
+  const sign = (x) => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'carnet-sign', onclick: () => store.update(x.id, { signed: true, signedAt: model.todayIso() }, `Mot signé (${name(x.studentId)})`) }, 'Signé');
+  const counts = (sid) => Object.fromEntries(CARNET_CATS.map(([k]) => [k, inSpan.filter(x => x.studentId === sid && x.category === k).length]));
+  const shownCats = CARNET_CATS.filter(([k]) => inSpan.some(x => x.category === k));
+  const recapRows = st.map(s => ({ s, c: counts(s.id), u: unsigned.filter(x => x.studentId === s.id).length })).filter(r => Object.values(r.c).some(Boolean) || r.u);
+  const exch = store.all('exchange').filter(x => ids.has(x.studentId) && (!filter || x.studentId === filter)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const printStudent = (sid) => { const s = store.get(sid); const rows = all.filter(x => x.studentId === sid).sort((a, b) => a.date.localeCompare(b.date));
+    printDocument(printTable({ title: `Carnet de liaison — ${fullName(s)}`, subtitle: cls.name, columns: ['Date', 'Motif', 'Détail', 'Mot dans le carnet', 'Signé'].map(label => ({ label })), rows: rows.map(x => [model.frShort(x.date), catOf(x.category)[1], x.text || '', x.written ? 'oui' : '', x.signed ? (x.signedAt ? model.frShort(x.signedAt) : 'oui') : (x.written ? 'non' : '')]) })); };
+  const seg = (key, opts) => h('div', { class: 'seg wrap', role: 'group' }, opts.map(([v, l]) => h('button', { type: 'button', class: carnetState[key] === v ? 'on' : '', 'data-testid': `carnet-${key}-${v || 'tous'}`, onclick: () => { carnetState[key] = v; rerender(); } }, l)));
+  return page('Carnet de liaison et comportement', 'familles/messages', cls, h('div', { class: 'stack' },
+    h('p', { class: 'muted' }, 'Notez en quelques secondes un comportement, un oubli, un travail non fait ou des félicitations, et si un mot a été écrit dans le carnet : l’application suit les mots à faire signer et fait le bilan par élève.'),
+    unsigned.length ? h('section', { class: 'card', 'data-testid': 'carnet-unsigned' }, h('h2', {}, `Mots à faire signer (${unsigned.length})`),
+      h('ul', { class: 'plain carnet-list' }, unsigned.map(x => { const d = model.diffDays(x.date, model.todayIso());
+        return h('li', {}, h('strong', {}, name(x.studentId)), ` — ${catOf(x.category)[1].toLowerCase()}${x.text ? ' : ' + x.text : ''} `, h('span', { class: 'muted small' }, `(${model.frShort(x.date)}${d >= 3 ? `, il y a ${d} jours` : ''})`), ' ', d >= 3 ? badge('à relancer', 'warn') : null, ' ', sign(x)); }))) : null,
+    h('div', { class: 'row wrap' }, seg('span', [['semaine', 'Semaine'], ['mois', 'Mois'], ['periode', 'Période'], ['annee', 'Année']]),
+      h('select', { 'aria-label': 'Élève', 'data-testid': 'carnet-student', onchange: (e) => { location.hash = `#/messages${e.target.value ? '?e=' + e.target.value : ''}`; } }, h('option', { value: '' }, 'Tous les élèves'), st.map(s => h('option', { value: s.id, selected: filter === s.id }, fullName(s)))),
+      h('select', { 'aria-label': 'Motif', onchange: (e) => { carnetState.cat = e.target.value; rerender(); } }, h('option', { value: '' }, 'Tous les motifs'), CARNET_CATS.map(([k, l]) => h('option', { value: k, selected: carnetState.cat === k }, l))),
+      h('label', { class: 'inline small' }, h('input', { type: 'checkbox', checked: carnetState.unsigned, onchange: (e) => { carnetState.unsigned = e.target.checked; rerender(); } }), 'non signés seulement')),
+    !filter ? h('section', { class: 'card', 'data-testid': 'carnet-recap' }, h('h2', {}, `Bilan par élève — du ${model.frShort(from)} au ${model.frShort(to)}`),
+      recapRows.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
+        h('thead', {}, h('tr', {}, h('th', {}, 'Élève'), shownCats.map(([, l]) => h('th', {}, l)), h('th', {}, 'Non signés'))),
+        h('tbody', {}, recapRows.sort((a, b) => Object.values(b.c).reduce((x, y) => x + y, 0) - Object.values(a.c).reduce((x, y) => x + y, 0)).map(r => h('tr', {},
+          h('td', {}, h('a', { href: `#/messages?e=${r.s.id}` }, fullName(r.s))), shownCats.map(([k, , kind]) => h('td', {}, r.c[k] ? badge(String(r.c[k]), r.c[k] >= 3 && kind === 'warn' ? 'warn' : kind === 'ok' ? 'ok' : 'muted') : '')), h('td', {}, r.u ? badge(String(r.u), 'warn') : ''))))))
+        : h('p', { class: 'muted' }, 'Rien de noté sur cette durée.')) : null,
+    h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, filter ? `Carnet de ${name(filter)}` : 'Tout ce qui a été noté'), filter ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => printStudent(filter) }, icon('print', 14), 'Imprimer le suivi') : null),
+      list.length ? h('ul', { class: 'obs-list carnet-list', 'data-testid': 'carnet-list' }, list.map(x => h('li', {},
+        h('strong', {}, model.frShort(x.date)), ' ', filter ? null : h('a', { href: `#/messages?e=${x.studentId}` }, name(x.studentId)), ' ', badge(catOf(x.category)[1], catOf(x.category)[2]),
+        x.written ? (x.signed ? badge('mot signé', 'ok') : badge('mot à faire signer', 'warn')) : null, x.text ? h('span', {}, ` ${x.text}`) : null, ' ',
+        x.written && !x.signed ? sign(x) : null,
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Supprimer', onclick: async () => { await store.remove(x.id, 'Note supprimée'); toast('Note supprimée', { action: 'Annuler', onAction: () => store.undo() }); } }, icon('trash', 14)))))
+        : h('p', { class: 'muted' }, 'Rien de noté.')),
+    h('details', { class: 'card' }, h('summary', {}, `Autres échanges avec les familles (${exch.length})`),
+      h('p', { class: 'muted small' }, 'Rendez-vous, appels, mots rédigés avec les modèles : notés dans les fiches élèves.'),
+      exch.length ? h('ul', { class: 'obs-list', 'data-testid': 'msg-list' }, exch.map(x => h('li', {}, h('strong', {}, model.frShort(x.date)), ' ', h('a', { href: `#/eleve/${x.studentId}?t=echanges` }, store.get(x.studentId)?.firstName || ''), ' ', badge(x.kind, 'muted'), x.with ? ` avec ${x.with}` : '', h('p', { class: 'pre small' }, x.summary || '')))) : null)),
+  [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'carnet-new', onclick: () => carnetDialog(cls, st, filter) }, icon('plus', 16), 'Noter'),
+    h('button', { class: 'btn', type: 'button', 'data-testid': 'msg-new', onclick: () => composeDialog(cls, st, filter) }, 'Rédiger un mot (modèles)')]);
+}
+function carnetDialog(cls, st, preset = '') {
+  const chosen = new Set(preset ? [preset] : []);
+  let cat = 'comportement';
+  const chips = h('div', { class: 'chips carnet-students' }, st.map(s => h('label', { class: 'chip' }, h('input', { type: 'checkbox', checked: chosen.has(s.id), 'data-testid': 'carnet-pick', 'data-name': s.firstName, onchange: (e) => { e.target.checked ? chosen.add(s.id) : chosen.delete(s.id); } }), s.firstName)));
+  const cats = h('div', { class: 'seg wrap', role: 'group', 'aria-label': 'Motif' });
+  const drawCats = () => cats.replaceChildren(...CARNET_CATS.map(([k, l]) => h('button', { type: 'button', class: cat === k ? 'on' : '', 'data-testid': `carnet-cat-${k}`, onclick: () => { cat = k; drawCats(); } }, l)));
+  drawCats();
+  const date = h('input', { type: 'date', value: model.todayIso() });
+  const text = h('input', { placeholder: 'ex. bavardages répétés, cahier du jour oublié… (facultatif)', 'data-testid': 'carnet-text' });
+  const written = h('input', { type: 'checkbox', 'data-testid': 'carnet-written' });
+  modal({ title: 'Noter dans le suivi', wide: true, body: h('div', { class: 'form' }, field('Élève(s)', chips), field('Motif', cats), h('div', { class: 'grid-2' }, field('Date', date), field('Détail', text)),
+    h('label', { class: 'inline' }, written, 'Mot écrit dans le carnet de liaison (à faire signer)'),
+    h('p', { class: 'muted small' }, 'Restez factuel : pas d’information de santé ni de situation familiale.')),
+  actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, testid: 'carnet-save', onClick: async () => {
+    if (!chosen.size) { toast('Choisissez au moins un élève.', { kind: 'error' }); return false; }
+    await store.batch([...chosen].map(sid => ({ create: { type: 'carnet', data: { classId: cls.id, studentId: sid, date: date.value || model.todayIso(), category: cat, text: text.value.trim(), written: written.checked, signed: false } } })), `Noté : ${catOf(cat)[1].toLowerCase()} (${chosen.size} élève(s))`);
+    toast('Noté. Annulable.', { action: 'Annuler', onAction: () => store.undo() });
+  } }] });
 }
 function composeDialog(cls, st, preset = '') {
   const sel = h('select', { name: 'studentId', 'data-testid': 'msg-student' }, st.map(s => h('option', { value: s.id, selected: s.id === preset }, fullName(s))));

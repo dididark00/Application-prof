@@ -55,6 +55,16 @@ function randomPolygon(r, n, cMin, cMax, rMin, rMax) {
   const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
   return pts.sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
 }
+const pline = (pts, x, y, p, attrs) => S('polyline', { points: pts.map(([c, l]) => `${x + c * p},${y + l * p}`).join(' '), fill: 'none', 'stroke-linejoin': 'round', 'stroke-linecap': 'round', ...attrs });
+/** Taille des quadrillages (en carreaux) : sert aussi à l'éditeur « dessiner mes figures ». */
+export const GRID = { symetrie: { cols: 16, rows: 12 }, reproduction: { cols: 16, rows: 11 } };
+/** Zone autorisée pour dessiner la figure de départ (côté gauche / haut de l'axe, ou sous la diagonale). */
+export function allowedNode(axe, c, l) {
+  const { cols, rows } = GRID.symetrie;
+  if (axe === 'horizontal') return l <= rows / 2;
+  if (axe === 'oblique') return c <= rows && l <= rows && c >= l;
+  return c <= cols / 2;
+}
 const poly = (pts, x, y, p, attrs) => S('polygon', { points: pts.map(([c, l]) => `${x + c * p},${y + l * p}`).join(' '), fill: 'none', 'stroke-linejoin': 'round', ...attrs });
 
 // ───────── Symétrie axiale : compléter la figure ; la correction trace le symétrique en rouge.
@@ -70,6 +80,7 @@ export function symetrie(o, corr, title) {
     const g = S('g', { 'data-testid': 'exercise' });
     gridBox(g, x, y, cols, rows, p);
     let pts, mirror, axis;
+    const mine = o.source === 'mes figures' ? (o.mine || [])[k] : null;
     if (o.axe === 'horizontal') {
       pts = randomPolygon(r, nPts, 1, cols - 1, 1, rows / 2 - 1); mirror = ([c, l]) => [c, rows - l];
       axis = S('line', { x1: x - 2, x2: x + cols * p + 2, y1: y + rows / 2 * p, y2: y + rows / 2 * p, stroke: RED, 'stroke-width': 0.6 });
@@ -85,8 +96,11 @@ export function symetrie(o, corr, title) {
       pts = randomPolygon(r, nPts, 1, cols / 2 - 1, 1, rows - 1); mirror = ([c, l]) => [cols - c, l];
       axis = S('line', { x1: x + cols / 2 * p, x2: x + cols / 2 * p, y1: y - 2, y2: y + rows * p + 2, stroke: RED, 'stroke-width': 0.6 });
     }
-    g.append(axis, poly(pts, x, y, p, { stroke: '#1d3d6e', 'stroke-width': 0.6, 'data-role': 'figure' }));
-    if (corr) g.append(poly(pts.map(mirror), x, y, p, { stroke: RED, 'stroke-width': 0.6, 'stroke-dasharray': '1.5 0.8', 'data-role': 'correction', 'data-points': JSON.stringify(pts.map(mirror)) }));
+    const closed = mine ? mine.closed !== false : true;
+    if (mine?.pts?.length) pts = mine.pts;
+    const shape = closed ? poly : pline;
+    g.append(axis, shape(pts, x, y, p, { stroke: '#1d3d6e', 'stroke-width': 0.6, 'data-role': 'figure' }));
+    if (corr) g.append(shape(pts.map(mirror), x, y, p, { stroke: RED, 'stroke-width': 0.6, 'stroke-dasharray': '1.5 0.8', 'data-role': 'correction', 'data-points': JSON.stringify(pts.map(mirror)) }));
     g.setAttribute('data-figure', JSON.stringify(pts));
     svg.append(g);
   }
@@ -106,9 +120,11 @@ export function reproduction(o, corr, title) {
     const y = 26 + k * (rows * p + 8);
     const g = S('g', { 'data-testid': 'exercise' });
     gridBox(g, 15, y, cols, rows, p); gridBox(g, 15 + cols * p + 10, y, cols, rows, p);
-    const pts = randomPolygon(r, nPts, 1, cols - 1, 1, rows - 1);
-    g.append(poly(pts, 15, y, p, { stroke: '#1d3d6e', 'stroke-width': 0.6 }));
-    if (corr) g.append(poly(pts, 15 + cols * p + 10, y, p, { stroke: RED, 'stroke-width': 0.6, 'data-role': 'correction' }));
+    const mine = o.source === 'mes figures' ? (o.mine || [])[k] : null;
+    const pts = mine?.pts?.length ? mine.pts : randomPolygon(r, nPts, 1, cols - 1, 1, rows - 1);
+    const shape = mine && mine.closed === false ? pline : poly;
+    g.append(shape(pts, 15, y, p, { stroke: '#1d3d6e', 'stroke-width': 0.6, 'data-role': 'figure' }));
+    if (corr) g.append(shape(pts, 15 + cols * p + 10, y, p, { stroke: RED, 'stroke-width': 0.6, 'data-role': 'correction' }));
     svg.append(g);
   }
   return svg;
@@ -132,13 +148,20 @@ export function figures(o, corr, title) {
   const tracer = o.mode === 'tracer';
   const svg = page(title || (tracer ? 'Trace les figures demandées (en cm).' : 'Mesure les côtés de chaque figure.'));
   const figs = parseFigures(o.liste).slice(0, 8);
-  let y = 30; let letter = 0;
+  // Repères (utiles quand la fiche est projetée : la taille réelle est perdue) : quadrillage en cm et/ou règle
+  // graduée dessinés à la même échelle que les figures. Ils ne donnent pas les réponses.
+  const grid = ['quadrillage', 'les deux'].includes(o.reperes), ruler = ['règle', 'les deux'].includes(o.reperes);
+  if (grid) { const gg = S('g', { 'data-testid': 'reperes-grid', stroke: '#c9d6e8', 'stroke-width': 0.15 }); for (let gx = 15; gx <= 195.01; gx += 10) gg.append(S('line', { x1: gx, x2: gx, y1: 24, y2: ruler ? 254 : 284 })); for (let gy = 24; gy <= (ruler ? 254 : 284) + 0.01; gy += 10) gg.append(S('line', { x1: 15, x2: 195, y1: gy, y2: gy })); svg.append(gg); }
+  if (ruler) svg.append(rulerSvg(25, 262, 15));
+  const bottom = PAGE.h - (ruler ? 45 : 10);
+  let y = 30; let letter = 0; let placed = 0;
   const L = () => String.fromCharCode(65 + (letter++ % 26));
   for (const f of figs) {
     const g = S('g', { 'data-testid': 'figure', 'data-kind': f.kind });
     const a = f.a * 10, b = (f.b || 0) * 10; // mm
     const hgt = f.kind === 'segment' ? 10 : f.kind === 'cercle' ? 2 * a : f.kind === 'carré' ? a : b;
-    if (y + hgt + 14 > PAGE.h - 10) break;
+    if (grid) y = 24 + Math.ceil((y - 24) / 10) * 10;
+    if (y + hgt + 14 > bottom) break;
     const x = 25;
     const consigne = { segment: `Segment [${String.fromCharCode(65 + letter)}${String.fromCharCode(66 + letter)}] de ${fmtCm(f.a)}`, 'carré': `Carré de ${fmtCm(f.a)} de côté`, rectangle: `Rectangle de ${fmtCm(f.a)} sur ${fmtCm(f.b)}`, 'triangle rectangle': `Triangle rectangle : côtés de l’angle droit ${fmtCm(f.a)} et ${fmtCm(f.b)}`, cercle: `Cercle de rayon ${fmtCm(f.a)}` }[f.kind];
     if (tracer) g.append(S('text', { x: 15, y: y - 3, 'font-size': 4 }, `• ${consigne}`));
@@ -159,11 +182,22 @@ export function figures(o, corr, title) {
       const answers = f.kind === 'cercle' || f.kind === 'segment' || f.kind === 'carré' ? [fmtCm(f.a)] : [fmtCm(f.a), fmtCm(f.b)];
       lines.forEach((t, i) => g.append(S('text', { x: 140, y: y + 5 + i * 7, 'font-size': 4, fill: corr ? RED : '#222' }, corr ? t.replace('……', answers[i]) : t)));
     }
-    svg.append(g);
+    svg.append(g); placed++;
     y += hgt + (tracer ? 22 : 16);
   }
-  svg.append(S('text', { x: 15, y: PAGE.h - 8, 'font-size': 3, fill: '#888' }, 'Dimensions exactes à l’impression à 100 % (taille réelle).'));
+  const left = figs.length - placed;
+  svg.append(S('text', { x: 15, y: PAGE.h - 8, 'font-size': 3, fill: left ? RED : '#888', 'data-testid': left ? 'figures-left' : null }, `Dimensions exactes à l’impression à 100 % (taille réelle).${left ? ` ${left} figure(s) ne tiennent pas sur la page : retirez-les de la liste pour une 2e fiche.` : ''}`));
   return svg;
+}
+
+/** Règle graduée en mm (n cm), à l'échelle de la fiche. */
+export function rulerSvg(x, y, n = 15) {
+  const g = S('g', { 'data-testid': 'reperes-ruler' });
+  g.append(S('rect', { x: x - 3, y, width: n * 10 + 6, height: 14, rx: 1.5, fill: '#fff8dc', stroke: '#8a7a40', 'stroke-width': 0.3 }));
+  for (let i = 0; i <= n * 10; i++) g.append(S('line', { x1: x + i, x2: x + i, y1: y, y2: y + (i % 10 === 0 ? 5 : i % 5 === 0 ? 3.5 : 2), stroke: '#333', 'stroke-width': i % 10 === 0 ? 0.25 : 0.12 }));
+  for (let i = 0; i <= n; i++) g.append(S('text', { x: x + i * 10, y: y + 9.5, 'font-size': 3, 'text-anchor': 'middle' }, String(i)));
+  g.append(S('text', { x: x + n * 10 - 1, y: y + 13, 'font-size': 2.2, 'text-anchor': 'end', fill: '#666' }, 'cm'));
+  return g;
 }
 
 // ───────── Angles : classer ou mesurer
@@ -172,19 +206,27 @@ export function angles(o, corr, title) {
   const svg = page(title || (mesurer ? 'Mesure chaque angle avec ton rapporteur.' : 'Angle aigu, droit ou obtus ?'));
   const r = rng(o.graine);
   const n = Math.min(12, Math.max(1, Number(o.nombre) || 8));
+  // Grille de 3 colonnes × 4 lignes ; dans chaque case, la figure est recentrée d'après ses vraies
+  // extrémités (quel que soit l'angle et son orientation) et l'étiquette est posée en dessous : pas de chevauchement.
+  const CW = 60, CH = 62, len = 22;
   for (let k = 0; k < n; k++) {
     const v = (o.droits !== false && k % 4 === 1) ? 90 : ri(r, 3, 33) * 5; // 15° à 165°, multiples de 5
     const rot = ri(r, 0, 11) * 30;
-    const cx = 35 + (k % 3) * 62, cy = 70 + Math.floor(k / 3) * 58, len = 26;
+    const cellX = 15 + (k % 3) * CW, cellY = 26 + Math.floor(k / 3) * CH;
+    const dir = (deg, l = len) => [l * Math.cos(-deg * Math.PI / 180), l * Math.sin(-deg * Math.PI / 180)];
+    const pts = [[0, 0], dir(rot), dir(rot + v)];
+    const minX = Math.min(...pts.map(q => q[0])), maxX = Math.max(...pts.map(q => q[0])), minY = Math.min(...pts.map(q => q[1])), maxY = Math.max(...pts.map(q => q[1]));
+    const cx = cellX + CW / 2 - (minX + maxX) / 2, cy = cellY + 4 + (CH - 18) / 2 - (minY + maxY) / 2;
     const g = S('g', { 'data-testid': 'angle', 'data-deg': v });
-    const ray = (deg) => [cx + len * Math.cos(-deg * Math.PI / 180), cy + len * Math.sin(-deg * Math.PI / 180)];
-    const [ax, ay] = ray(rot), [bx, by] = ray(rot + v);
+    const P = (q) => [cx + q[0], cy + q[1]];
+    const [ax, ay] = P(dir(rot)), [bx, by] = P(dir(rot + v));
     g.append(S('path', { d: `M${ax},${ay} L${cx},${cy} L${bx},${by}`, fill: 'none', stroke: '#1d3d6e', 'stroke-width': 0.5 }));
-    if (v === 90) { const u = ray(rot).map((c, i) => (c - [cx, cy][i]) / len * 4), w = ray(rot + 90).map((c, i) => (c - [cx, cy][i]) / len * 4); g.append(S('path', { d: `M${cx + u[0]},${cy + u[1]} L${cx + u[0] + w[0]},${cy + u[1] + w[1]} L${cx + w[0]},${cy + w[1]}`, fill: 'none', stroke: '#1d3d6e', 'stroke-width': 0.3 })); }
-    else { const a0 = ray(rot).map((c, i) => [cx, cy][i] + (c - [cx, cy][i]) * 0.3), a1 = ray(rot + v).map((c, i) => [cx, cy][i] + (c - [cx, cy][i]) * 0.3); g.append(S('path', { d: `M${a0[0]},${a0[1]} A${len * 0.3},${len * 0.3} 0 ${v > 180 ? 1 : 0} 0 ${a1[0]},${a1[1]}`, fill: 'none', stroke: '#1d3d6e', 'stroke-width': 0.3 })); }
-    g.append(S('text', { x: cx - 25, y: cy + 16, 'font-size': 4 }, `${k + 1}.`));
+    if (v === 90) { const u = dir(rot, 4), w = dir(rot + 90, 4); g.append(S('path', { d: `M${cx + u[0]},${cy + u[1]} L${cx + u[0] + w[0]},${cy + u[1] + w[1]} L${cx + w[0]},${cy + w[1]}`, fill: 'none', stroke: '#1d3d6e', 'stroke-width': 0.3 })); }
+    else { const a0 = P(dir(rot, len * 0.3)), a1 = P(dir(rot + v, len * 0.3)); g.append(S('path', { d: `M${a0[0]},${a0[1]} A${len * 0.3},${len * 0.3} 0 0 0 ${a1[0]},${a1[1]}`, fill: 'none', stroke: '#1d3d6e', 'stroke-width': 0.3 })); }
     const type = v < 90 ? 'aigu' : v === 90 ? 'droit' : 'obtus';
-    g.append(S('text', { x: cx - 18, y: cy + 16, 'font-size': 4, fill: corr ? RED : '#222' }, corr ? (mesurer ? `${v}° (${type})` : type) : (mesurer ? '…… °' : 'aigu – droit – obtus')));
+    const ty = cellY + CH - 6;
+    g.append(S('text', { x: cellX + 3, y: ty, 'font-size': 4, 'font-weight': 700 }, `${k + 1}.`));
+    g.append(S('text', { x: cellX + 10, y: ty, 'font-size': 4, fill: corr ? RED : '#222', 'data-role': 'label' }, corr ? (mesurer ? `${v}° (${type})` : type) : (mesurer ? '…… °' : 'aigu – droit – obtus')));
     svg.append(g);
   }
   return svg;

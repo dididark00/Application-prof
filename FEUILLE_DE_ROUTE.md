@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (155) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 168 entrées.
+Légende : ✅ Réalisé (159) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 172 entrées.
 
 ## Étape 1 — Socle
 
@@ -143,6 +143,9 @@ Légende : ✅ Réalisé (155) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §19 Atelier | Fenêtre de projection séparée / image dans l’image si supporté | Écran de projection séparé (Aujourd’hui › Projection) ; timer en image dans l’image sur Chrome/Edge. |
 | ✅ | §20 Plans | Fiches de groupes imprimables/projetables (version enseignant séparée) | Plan de classe et groupes › Fiches de groupe / Version enseignante (notes) ; projection des groupes. |
 | ✅ | §20 Plans | Éditeur de schémas EPS lié aux préparations et au cahier journal | Déplacer, redimensionner, orienter, dupliquer, annuler ; modèles ; couleurs d’équipes des groupes ; image, impression, projection ; croquis non coté sauf dimensions saisies. |
+| ✅ | §21 Plan de classe | Taille de la salle et des éléments réglable (en cm, poignée d’agrandissement), rangements (étagère, armoire, bacs, casiers, porte-manteaux, bibliothèque, évier, poste informatique) et espaces |  |
+| ✅ | §19 Atelier | Symétrie et reproduction : figures dessinées par l’enseignante (nœuds du quadrillage) ; figures à mesurer : quadrillage en cm et règle graduée sur la fiche pour la projection |  |
+| ✅ | §19 Atelier | Dictée de mots : liste de mots choisie par l’enseignante |  |
 | ✅ | §26 Agenda | Tableau « Informations élèves » de l’agenda (fiche, coopérative, assurance, image, cantine, garderie, bus, PAI, PPRE/PAP/PPS, suivi extérieur, RASED, lunettes, gaucher, situation familiale, profession des parents) | Relié aux fiches sans double saisie ; colonnes ajoutables et masquables ; confidentiel séparé ; impression remplie ou vierge. |
 | ✅ | §26 Agenda | Outils de classe : lire pour moi, sonomètre, pot de récompense, abaque, tableau des nombres, numération et conversion, réglettes, pourcentages (dictée, appel) | Affichables en grand, hors ligne, sans compte. |
 | ✅ | §26 Agenda | Texte d’une photo (tapuscrit) : lire, corriger, agrandir, imprimer, envoyer vers Seyès / Lire pour moi |  |
@@ -188,6 +191,7 @@ Légende : ✅ Réalisé (155) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §3 Données | Import CSV : emploi du temps par période et changement daté (piscine, intervenant…), progression par sous-domaine (séances placées dans les bons créneaux), déroulé des séances en phases et matériel | Préparer › Importer un tableau. Les anciens EDT sont conservés. |
 | ✅ | §3 Données | Programmation et progression importées séparément et reliées : lignes de progression reliées aux notions (colonne Notions ou même titre), état des notions déduit |  |
 | ✅ | §6 Planifier | Emploi du temps : onglets par période et emplois du temps successifs d’une période (dates, nom, « en cours / à venir »), créneaux changés signalés, changement à partir d’une date |  |
+| ✅ | §13 Familles | Carnet de liaison et comportement : noter en un geste (comportement, travail, oubli, retard, félicitations, information), mots à faire signer et relances, bilan par élève, impression du suivi | Remplace la page « Messages » (pas d’envoi possible) ; la rédaction d’un mot à partir d’un modèle reste disponible. |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |

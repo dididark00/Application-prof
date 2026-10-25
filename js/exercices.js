@@ -75,7 +75,16 @@ export const SONS = {
   '[k] (c, qu, k)': ['canard', 'quatre', 'kiwi', 'coq', 'requin', 'lac', 'képi', 'question', 'école', 'masque', 'kangourou', 'sucre'],
   '[f] (f, ph)': ['farine', 'phoque', 'fusée', 'éléphant', 'girafe', 'photo', 'café', 'dauphin', 'fenêtre', 'phare', 'neuf', 'fourmi'],
 };
-export function dictee({ sons, count = 10, seed = 1 }) {
+/** Mots choisis par l'enseignante : séparés par des virgules, points-virgules ou retours à la ligne. */
+export function parseWords(text) {
+  return [...new Set(String(text || '').split(/[\n,;]+/).map(w => w.trim()).filter(Boolean))];
+}
+export function dictee({ sons, count = 10, seed = 1, mode = 'banque', mots = '', melanger = false }) {
+  if (mode === 'mes mots') {
+    const words = parseWords(mots).map(w => ({ w, s: '' }));
+    if (melanger) { const r = rng(seed); for (let i = words.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [words[i], words[j]] = [words[j], words[i]]; } }
+    return words;
+  }
   const r = rng(seed); const pool = (sons?.length ? sons : Object.keys(SONS)).flatMap(s => SONS[s].map(w => ({ w, s })));
   const out = []; const seen = new Set();
   for (let g = 0; out.length < Math.min(count, pool.length) && g < 2000; g++) { const x = pick(r, pool); if (!seen.has(x.w)) { seen.add(x.w); out.push(x); } }

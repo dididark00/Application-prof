@@ -1,5 +1,6 @@
 // Préparer › Générateurs d'exercices : calculs, problèmes, dictées de mots par son, fiches de fluence.
 // Sans IA, sans connexion ; graine pour réimprimer la même fiche ; corrigé sur demande.
+import * as store from '../store.js';
 import * as X from '../exercices.js';
 import * as model from '../model.js';
 import { h, icon, toast } from '../ui.js';
@@ -12,7 +13,7 @@ const newSeed = () => Math.floor(Math.random() * 9000) + 1000;
 const st = {
   calculs: { ops: ['+'], min: 10, max: 99, count: 20, sansRetenue: false, tables: [], pose: false, seed: newSeed() },
   problemes: { types: ['ajout', 'retrait', 'groupes'], count: 6, max: 50, seed: newSeed() },
-  dictee: { sons: ['[ou]', '[on]'], count: 10, seed: newSeed(), lignes: true },
+  dictee: { mode: 'banque', mots: '', melanger: false, titre: '', sons: ['[ou]', '[on]'], count: 10, seed: newSeed(), lignes: true },
   fluence: { text: 'Le petit chat noir dort sur le tapis du salon.\nQuand il se réveille, il a très faim.\nIl court vers la cuisine et miaule très fort.', size: 16 },
   titre: '', correction: false,
 };
@@ -53,7 +54,7 @@ function sheet(corr) {
   }
   if (tab === 'dictee') {
     const list = X.dictee(st.dictee);
-    if (corr || !st.dictee.lignes) return h('div', { class: 'print-doc ex-sheet' }, head(`Dictée de mots ${st.dictee.sons.join(', ')}`, corr), h('ol', { class: 'ex-dict' }, list.map(x => h('li', { 'data-testid': 'ex-item' }, x.w, h('span', { class: 'muted small' }, ` ${x.s}`)))));
+    if (corr || !st.dictee.lignes) return h('div', { class: 'print-doc ex-sheet' }, head(st.dictee.mode === 'mes mots' ? `Dictée de mots${st.dictee.titre ? ' — ' + st.dictee.titre : ''}` : `Dictée de mots ${st.dictee.sons.join(', ')}`, corr), h('ol', { class: 'ex-dict' }, list.map(x => h('li', { 'data-testid': 'ex-item' }, x.w, x.s ? h('span', { class: 'muted small' }, ` ${x.s}`) : null))));
     return h('div', { class: 'print-doc ex-sheet' }, head('Dictée de mots', false), h('ol', { class: 'ex-lines' }, list.map(() => h('li', { 'data-testid': 'ex-item' }, h('span', { class: 'ex-line' })))),
       h('p', { class: 'muted small' }, 'La liste des mots est sur le corrigé (à garder pour vous).'));
   }
@@ -81,9 +82,17 @@ function probParams(redraw) {
   return h('div', { class: 'stack' }, chips(Object.entries(X.PROBLEM_TYPES).map(([k, v]) => [k, v.label]), o.types, (v) => { o.types = v; redraw(); }, 'ex-type'),
     h('div', { class: 'row' }, num('Nombre de problèmes', o, 'count', redraw, 1, 20), num('Nombres jusqu’à', o, 'max', redraw, 10, 10000)));
 }
-function dicteeParams(redraw) {
+function dicteeParams(redraw, rerender) {
   const o = st.dictee;
-  return h('div', { class: 'stack' }, chips(Object.keys(X.SONS).map(k => [k, k]), o.sons, (v) => { o.sons = v; redraw(); }, 'ex-son'),
+  const modeSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Mots' }, [['banque', 'Banque par son'], ['mes mots', 'Mes mots']].map(([v, l]) => h('button', { type: 'button', class: o.mode === v ? 'on' : '', 'data-testid': `dict-mode-${v === 'banque' ? 'banque' : 'miens'}`, onclick: () => { o.mode = v; if (v === 'mes mots' && !o.mots) o.mots = store.getSettings().dictWords || ''; rerender(); } }, l)));
+  if (o.mode === 'mes mots') return h('div', { class: 'stack' }, modeSeg,
+    h('label', { class: 'field' }, h('span', {}, 'Titre (facultatif, ex. « mots de la semaine 3 »)'), h('input', { value: o.titre, oninput: (e) => { o.titre = e.target.value; redraw(); } })),
+    h('label', { class: 'field' }, h('span', {}, 'Vos mots (un par ligne, ou séparés par des virgules)'), h('textarea', { rows: 8, 'data-testid': 'dict-words', oninput: (e) => { o.mots = e.target.value; redraw(); }, onchange: (e) => store.setSettings({ dictWords: e.target.value }) }, o.mots)),
+    h('p', { class: 'small' }, `${X.parseWords(o.mots).length} mot(s).`),
+    h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: o.melanger, 'data-testid': 'dict-shuffle', onchange: (e) => { o.melanger = e.target.checked; redraw(); } }), 'mélanger l’ordre'),
+    h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: o.lignes, onchange: (e) => { o.lignes = e.target.checked; redraw(); } }), 'fiche élève avec lignes (les mots sont sur le corrigé)'),
+    h('p', { class: 'muted small' }, 'Votre liste est gardée pour la prochaine fois.'));
+  return h('div', { class: 'stack' }, modeSeg, chips(Object.keys(X.SONS).map(k => [k, k]), o.sons, (v) => { o.sons = v; redraw(); }, 'ex-son'),
     num('Nombre de mots', o, 'count', redraw, 1, 30),
     h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: o.lignes, onchange: (e) => { o.lignes = e.target.checked; redraw(); } }), 'fiche élève avec lignes (les mots sont sur le corrigé)'),
     h('p', { class: 'muted small' }, 'Banque de mots courants classés par son, écrite pour l’application (CP–CE2). Pour une dictée de phrases, utilisez vos propres textes.'));
