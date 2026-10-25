@@ -64,6 +64,7 @@ import * as pRecre from './pages/recreation.js';
 import * as pLiens from './pages/liens.js';
 import * as pArchives from './pages/archives.js';
 import * as pImporter from './pages/importer.js';
+import * as pAvancement from './pages/avancement.js';
 import * as pRegistre from './pages/registre.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
@@ -125,6 +126,7 @@ const ROUTES = {
   liens: pLiens,
   archive: pArchives,
   importer: pImporter,
+  avancement: pAvancement,
   registre: pRegistre,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
@@ -135,6 +137,11 @@ const ROUTES = {
 
 let rendering = false;
 let pending = false;
+// Pages les plus ouvertes sur cet appareil (raccourcis du menu « Plus ») : simple confort, jamais indispensable.
+function countVisit(name) {
+  try { const v = JSON.parse(localStorage.getItem('classeur.visits') || '{}'); v[name] = (v[name] || 0) + 1; localStorage.setItem('classeur.visits', JSON.stringify(v)); } catch { /* stockage indisponible */ }
+}
+
 export async function render() {
   // Une navigation pendant un affichage en cours (page asynchrone) n'est jamais perdue : on réaffiche ensuite.
   if (rendering) { pending = true; return; }
@@ -148,6 +155,7 @@ export async function render() {
     main.replaceChildren();
     const node = await page.render({ params: route.params, query: route.query, navigate, rerender: render });
     main.append(node);
+    if (!sameRoute) countVisit(route.name);
     main.dataset.route = location.hash;
     if (sameRoute) window.scrollTo(0, scroll); else { window.scrollTo(0, 0); main.focus({ preventScroll: true }); }
     refreshChrome();

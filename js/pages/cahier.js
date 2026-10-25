@@ -63,6 +63,7 @@ function dayView(cls, date, nav) {
         h('button', { class: 'btn', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…')] }),
     subTabs(), nav,
+    prepareBanner(cls, date),
     !plan.school.ok ? h('p', { class: 'banner' }, plan.school.reason) : null,
     plan.school.ok && !plan.myDay ? h('p', { class: 'banner info' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
     plan.warnings.length ? h('div', { class: 'card warn-card', 'data-testid': 'conflicts' }, h('h2', {}, icon('alert', 18), ` ${plan.warnings.length} conflit(s)`),
@@ -277,6 +278,7 @@ function weekView(cls, date, nav) {
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-week', onclick: () => printDocument(printWeek(cls, monday), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-dossier', onclick: () => printDocument(printWeekDossier(cls, monday)) }, icon('print', 16), 'Dossier de la semaine')] }),
     subTabs(), nav,
+    prepareBanner(cls, monday),
     h('div', { class: 'week', style: { gridTemplateColumns: `repeat(${days.length}, minmax(160px, 1fr))` }, 'data-testid': 'week' }, days.map(d => {
       const p = PL.dayPlan(cls, d);
       return h('div', { class: 'week-day' }, h('a', { class: 'week-title', href: `#/cahier?d=${d}` }, model.frDate(d, { weekday: 'long', day: 'numeric' })),
@@ -297,37 +299,54 @@ function weekView(cls, date, nav) {
 function prefillDialog(cls, date) {
   const monday = model.mondayOf(date);
   let mode = PL.isBlankWeek(cls, monday) ? 'vierge' : 'edt';
-  const props = CP.weekProposals(cls, monday);
-  const chosen = new Set(props.map((_, i) => i));
+  const lastMonday = CP.lastMondayOfPeriod(cls, monday);
+  let span = 'semaine', props = [], chosen = new Set();
   const asDefault = h('input', { type: 'checkbox', 'data-testid': 'week-mode-default' });
-  const list = props.length ? h('div', { class: 'stack' },
-    h('p', { class: 'muted small' }, 'Créneaux de l’emploi du temps encore vides : la fiche habituelle du créneau (★), sinon la séance suivante de votre progression pour cette semaine. Décochez ce que vous ne voulez pas. Ce qui est déjà rempli, fait, reporté ou annulé n’est pas touché.'),
-    h('table', { class: 'table', 'data-testid': 'prefill-list' }, h('tbody', {}, props.map((p, i) => h('tr', {},
+  const spanSel = h('select', { 'data-testid': 'prefill-span', 'aria-label': 'Jusqu’à', onchange: (e) => { span = e.target.value; compute(); draw(); } },
+    h('option', { value: 'semaine' }, 'Cette semaine seulement'),
+    lastMonday > monday ? h('option', { value: 'vacances' }, `Jusqu’aux vacances (${Math.round((Date.parse(lastMonday) - Date.parse(monday)) / 6048e5) + 1} semaines)`) : null);
+  const compute = () => { props = span === 'vacances' ? CP.rangeProposals(cls, monday, lastMonday) : CP.weekProposals(cls, monday); chosen = new Set(props.map((_, i) => i)); };
+  const listOf = () => props.length ? h('div', { class: 'stack' },
+    h('p', { class: 'muted small' }, 'Créneaux de l’emploi du temps encore vides : la fiche habituelle du créneau (★), sinon la séance suivante de votre progression. Décochez ce que vous ne voulez pas. Ce qui est déjà rempli, fait, reporté ou annulé n’est pas touché. Tout reste modifiable ensuite.'),
+    h('p', { class: 'small' }, badge(`${props.length} créneau(x) à pré-remplir`, 'info')),
+    h('div', { class: 'table-wrap' }, h('table', { class: 'table', 'data-testid': 'prefill-list' }, h('tbody', {}, props.map((p, i) => h('tr', {},
       h('td', {}, h('input', { type: 'checkbox', checked: true, 'aria-label': 'Garder', onchange: (ev) => { ev.target.checked ? chosen.add(i) : chosen.delete(i); } })),
-      h('td', { class: 'nowrap' }, model.frDate(p.entry.date, { weekday: 'short', day: 'numeric' }), ' ', p.entry.start),
+      h('td', { class: 'nowrap' }, model.frDate(p.entry.date, { weekday: 'short', day: 'numeric', month: span === 'vacances' ? 'short' : undefined }), ' ', p.entry.start),
       h('td', {}, p.entry.subject || ''),
       h('td', {}, P.sessionTitle(store.get(p.sessionId))),
-      h('td', {}, badge(p.source === 'habituelle' ? '★ habituelle' : 'progression', p.source === 'habituelle' ? 'info' : 'muted')))))))
-    : h('div', { class: 'small' }, h('p', {}, 'Aucune fiche à proposer : les créneaux de l’EDT seront posés vides, à remplir à la main.'), h('ul', {},
+      h('td', {}, badge(p.source === 'habituelle' ? '★ habituelle' : 'progression', p.source === 'habituelle' ? 'info' : 'muted'))))))))
+    : h('div', { class: 'small' }, h('p', {}, 'Aucune fiche à proposer : les créneaux de l’EDT sont posés vides (matière et horaire), à compléter à la main.'), h('ul', {},
       h('li', {}, 'Fiches habituelles : dans un créneau qui a une fiche, menu « Plus » › « ★ Fiche habituelle de ce créneau » (rituels, lecture quotidienne…).'),
       h('li', {}, 'Progressions : Préparer › Progressions, lignes de la semaine reliées à une séquence ou une séance.')));
   const vierge = h('p', { class: 'small' }, 'La semaine part de zéro : l’emploi du temps n’est pas posé. Ajoutez vos activités avec « + Activité » dans la vue Jour. Les séances déjà notées cette semaine restent.');
   const zone = h('div');
-  const draw = () => zone.replaceChildren(mode === 'edt' ? list : vierge);
+  const draw = () => zone.replaceChildren(mode === 'edt' ? h('div', { class: 'stack' }, h('label', { class: 'inline small' }, 'Pré-remplir : ', spanSel), listOf()) : vierge);
   const radio = (v, label) => h('label', { class: 'inline' }, h('input', { type: 'radio', name: 'weekmode', value: v, checked: mode === v, 'data-testid': `week-mode-${v}`, onchange: () => { mode = v; draw(); } }), label);
-  draw();
+  compute(); draw();
   modal({ title: `Préparer la semaine du ${model.frDate(monday)}`, wide: true, body: h('div', { class: 'stack' },
     h('div', { class: 'stack' }, radio('edt', 'Construire la semaine avec l’emploi du temps (et pré-remplir les fiches)'), radio('vierge', 'Partir d’une semaine vierge')),
     h('label', { class: 'inline small' }, asDefault, 'Faire de ce choix le réglage par défaut pour les semaines suivantes'),
     zone),
   actions: [{ label: 'Annuler' }, { label: 'Valider', primary: true, testid: 'prefill-apply', onClick: async () => {
-    await PL.setWeekMode(cls, monday, mode);
+    const weeks = mode === 'edt' && span === 'vacances' ? [...new Set(props.map(p => model.mondayOf(p.entry.date)).concat(monday))] : [monday];
+    for (const m of weeks) await PL.setWeekMode(cls, m, mode);
     if (asDefault.checked) await store.update(cls.id, { journalMode: mode }, 'Mode par défaut du cahier journal');
     if (mode === 'edt') {
       const n = await CP.applyProposals(cls, props.filter((_, i) => chosen.has(i)));
-      toast(n ? `${n} créneau(x) rempli(s). Annulable.` : 'Semaine construite depuis l’emploi du temps.', { action: n ? 'Annuler' : null, onAction: () => store.undo() });
+      toast(n ? `${n} créneau(x) rempli(s). Modifiables à tout moment ; annulable.` : 'Semaine construite depuis l’emploi du temps.', { action: n ? 'Annuler' : null, onAction: () => store.undo() });
     } else toast('Semaine vierge : ajoutez vos activités avec « + Activité ».');
   } }] });
+}
+
+/** Bandeau : semaine pas encore préparée alors que des fiches peuvent être proposées. */
+function prepareBanner(cls, date) {
+  const monday = model.mondayOf(date);
+  if (store.get(cls.id)?.weekMode?.[monday] || PL.isBlankWeek(cls, monday)) return null;
+  const n = CP.weekProposals(cls, monday).length;
+  if (!n) return null;
+  return h('div', { class: 'banner info row wrap', 'data-testid': 'prepare-banner' },
+    h('span', {}, `Semaine pas encore préparée : ${n} créneau(x) de l’emploi du temps peuvent être pré-remplis avec vos fiches habituelles et vos progressions. Vous n’aurez plus qu’à modifier.`),
+    h('button', { class: 'btn btn-small btn-primary', type: 'button', 'data-testid': 'prepare-banner-go', onclick: () => prefillDialog(cls, monday) }, 'Préparer maintenant'));
 }
 
 // ───────── Exporter : jour, semaine, mois, période, année ou dates choisies

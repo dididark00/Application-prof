@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (135) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 154 entrées.
+Légende : ✅ Réalisé (138) · 🟡 Partiel (17) · ⚙️ À configurer (2) · ⬜ À développer (0) — 157 entrées.
 
 ## Étape 1 — Socle
 
@@ -162,18 +162,21 @@ Légende : ✅ Réalisé (135) · 🟡 Partiel (17) · ⚙️ À configurer (2) 
 | 🟡 | §5 Préparation | Génération assistée par IA (facultative, sources visibles, aucune donnée élève envoyée) | Uniquement l’IA intégrée au navigateur, sur l’appareil (Chrome) : « Simplifier » un texte, « Reformuler » une appréciation. Boutons affichés seulement si l’appareil la propose en français. Aucune IA en ligne, aucun abonnement. |
 | ✅ | §6 Planifier | Notifications configurables | Réglages › Rappels et agenda : tâches, rendez-vous, événements, séances de demain sans fiche ; bandeau et notification quand l’application est ouverte ; export .ics pour que l’agenda du téléphone sonne même application fermée. |
 | 🟡 | §10 Suivi | Export compatible LSU (à vérifier séparément, sans remplacer le service officiel) | Export tableau des appréciations à recopier. L’import direct dans le LSU est réservé aux éditeurs validés par le ministère (Éduscol, « Interfaces entre les applications nationales ») : non accessible à cette application. |
-| ⚙️ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) | Choix du 23/10/2026 : pas de serveur de l’application. Les comptes parents sont ceux de l’ENT de l’école ; l’application prépare ce qui est diffusé, élève par élève. |
-| 🟡 | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Fait : messages à partir de modèles (copie pour l’ENT ou messagerie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La consultation et la réponse des familles passent par l’ENT. |
+| ⚙️ | §13 Familles | Comptes responsables liés aux bons enfants (contrôle côté serveur) | Choix du 23/10/2026 : pas de serveur de l’application. Pas de comptes parents (pas d’ENT à l’école) : l’application prépare ce qui est diffusé, élève par élève, par cahier de liaison, e-mail ou application de l’école. |
+| 🟡 | §13 Familles | Messages, documents, devoirs, autorisations ; consultation/réponse/retour | Fait : messages à partir de modèles (impression pour le cahier de liaison, e-mail, ou copie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La réponse des familles passe par le cahier de liaison, l’e-mail ou l’application de l’école. |
 | ✅ | §13 Familles | Préparation privée jusqu’à publication ; aperçu « comme ce parent » | Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée. |
-| 🟡 | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation | Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent par l’ENT ou sur papier. |
+| 🟡 | §13 Familles | Réservation de rendez-vous sur créneaux ouverts, sans double réservation | Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent sur papier ou par e-mail. |
 | 🟡 | §13 Familles | Mail académique (selon fournisseur et accès autorisés) | Ouverture de votre messagerie avec le message prêt (aucun mot de passe dans l’application). |
 | 🟡 | §13 Connexions | Connexions Drive, Canva, agendas, LSU vérifiées une par une | Agendas : export .ics. Drive, Canva : liens dans Fichiers. LSU : export tableau des appréciations (import direct non vérifié). |
-| ⚙️ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur | Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Rôles parents gérés par l’ENT. |
+| ⚙️ | §15 Fiabilité | Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur | Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Pas de compte parent. |
 | ✅ | §15 Fiabilité | Synchronisation, file de modifications et conflits explicites | Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées. |
-| ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Famille : ENT de l’école. |
+| ✅ | §15 Fiabilité | Vérifier le cadre d’hébergement avant données réelles d’enfants | Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Familles : cahier de liaison, e-mail ou application de l’école, au choix. |
 | ✅ | §21 PWA | Sauvegarde automatique en ligne et synchronisation entre appareils | Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone. |
 | ✅ | §3 Données | Importer un tableau CSV (programmation, progression, séquences et séances, cahier journal) relié à l’existant | Préparer › Importer un tableau : modèle téléchargeable, aperçu et erreurs ligne par ligne, séquences et séances retrouvées par titre, créneaux de l’EDT, compétences retrouvées dans les référentiels. |
 | ✅ | §6 Planifier | Préparer la semaine : depuis l’EDT (fiches habituelles ★ et progressions) ou semaine vierge ; export du cahier journal par jour, semaine, mois, période, année ou dates |  |
+| ✅ | §5 Préparation | Où j’en suis : avancement par discipline et par période (notions, séances faites, lignes de progression, temps fait), comparé au temps écoulé ; couverture des compétences ; suggestions pour la suite | Préparer › Où j’en suis. Tout est déduit de l’existant, rien n’est modifié automatiquement. |
+| ✅ | §6 Planifier | Cahier journal : bandeau « semaine pas encore préparée » et pré-remplissage jusqu’aux vacances (une séance n’est jamais proposée deux fois) |  |
+| ✅ | §15 Familles | Familles sans ENT : canal choisi (cahier de liaison papier, e-mail, application de l’école) ; mot imprimable pour le cahier de liaison, e-mail à toutes les familles |  |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |

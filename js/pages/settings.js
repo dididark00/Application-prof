@@ -406,7 +406,7 @@ function connexions() {
     ['LSU', 'Export tableau', 'ok', 'Livrets et bilans › Exporter les appréciations. Import direct réservé aux éditeurs validés par le ministère.'],
     ['IA', 'Sur l’appareil seulement', 'muted', 'Si le navigateur (Chrome) propose son IA intégrée en français : boutons « Simplifier » / « Reformuler ». Aucune IA en ligne.'],
     ['Mail académique', 'Non développé', 'muted', 'Dépend du fournisseur et des accès autorisés : à vérifier avant développement.'],
-    ['Communication avec les familles', 'Par l’ENT de l’école', 'ok', 'Familles › Publications, Messages, Rendez-vous, Documents, Aperçu parent : préparé ici, diffusé sur l’ENT (comptes parents et droits gérés par l’ENT).'],
+    ['Communication avec les familles', 'Cahier de liaison, e-mail ou application de l’école', 'ok', 'Familles › Messages, Publications, Rendez-vous, Documents, Aperçu parent : préparé ici, puis imprimé, envoyé par e-mail ou copié (au choix dans Familles).'],
   ];
   return h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Aucune connexion externe n’est active. Aucun mot de passe n’est demandé ni stocké par l’application.'),

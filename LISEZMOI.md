@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.7).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par **l'ENT de l'école**, sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
+**État : les cinq étapes sont réalisées et testées (version 0.5.8).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par le **cahier de liaison, l'e-mail ou l'application de l'école** (au choix, sans ENT), sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (plus aucune fonction « à développer » : quelques-unes sont « partielles », avec la raison indiquée).
 
 ---
 
@@ -99,9 +99,9 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 ## 2 sexies. Tester l'étape 5 (Nuage, familles, rappels, 15 minutes)
 
 1. **Réglages › Synchronisation (Nuage)** : nom de l'appareil, mot de passe de synchronisation (le même partout, à noter). Sur ordinateur (Chrome/Edge) : installez Nextcloud (guide officiel en lien), choisissez votre dossier Nuage, « Synchroniser maintenant ». Sur téléphone : « Envoyer vers Nuage » (choisir Nextcloud dans le partage) et « Récupérer depuis Nuage ».
-2. **Familles › Publications** : texte et photos, « Qui est sur la photo ? » ; un élève sans droit à l'image « Site ou ENT » bloque la publication. « Copier le texte », télécharger les photos, déposer sur l'ENT, puis « Marquer publié ».
+2. **Familles › Publications** : texte et photos, « Qui est sur la photo ? » ; un élève sans droit à l'image « Site ou ENT » bloque la publication. « Copier le texte », télécharger les photos, diffuser par le canal choisi (cahier de liaison, e-mail, application de l'école), puis « Marquer « diffusé » ».
 3. **Familles › Rendez-vous** : « Ouvrir des créneaux », « Mot avec les créneaux libres », réserver, puis « Fait » (compte rendu dans l'historique de l'élève).
-4. **Familles › Messages** (modèles, copie pour l'ENT), **Documents** (manquants, relances par famille), **Aperçu parent** (ce qu'une famille peut recevoir, rien de privé).
+4. **Familles › Messages** (modèles ; « Imprimer pour le cahier de liaison », « Copier et noter », « Ouvrir ma messagerie », e-mail à toutes les familles), **Documents** (manquants, relances par famille), **Aperçu parent** (ce qu'une famille peut recevoir, rien de privé).
 5. **Réglages › Rappels et agenda** et **Planifier › Agenda › « Vers mon agenda »** : fichier .ics à ouvrir dans l'agenda du téléphone, qui sonnera même application fermée.
 6. **Planifier › Ateliers et rotations** : tableau de rotation à partir de vos groupes.
 
@@ -122,9 +122,12 @@ Chargez la démonstration (Réglages › Démonstration), puis :
 
 1. **Planifier › Cahier journal** : « Préparer la semaine » → « avec l'emploi du temps » (les créneaux reçoivent leur **fiche habituelle ★** et les séances suivantes de vos **progressions**) ou « semaine vierge » (vous ajoutez vos activités). Fiche habituelle : dans un créneau, « Plus » › « ★ Fiche habituelle de ce créneau ».
 2. **« Exporter… »** : jour, semaine, mois, période, année ou dates choisies ; détaillé (une page par jour), compact (une page par semaine) ou tableau CSV.
-3. **Préparer › Importer un tableau** : téléchargez le modèle (programmation, progression, séquences et séances, cahier journal), remplissez-le dans votre tableur, importez : aperçu et erreurs ligne par ligne, puis tout est relié (séquences retrouvées par leur titre, créneaux de l'EDT, compétences des référentiels).
-4. **Préparer › Programmes et référentiels** : « À quoi ça sert ? » explique la chaîne programme → référentiel → séquences et fiches → cahier journal → évaluations ; la colonne « Travaillée » montre la couverture de chaque compétence.
-5. Polices pour les plus petits : **Andika** (script des débutants) et **Marelle Bâton** ; dans le tableau d'écriture, « Écriture : CAPITALES D'IMPRIMERIE ».
+3. **Préparer › Importer un tableau** : téléchargez le modèle (programmation, progression, séquences et séances, emploi du temps, cahier journal), remplissez-le dans votre tableur, importez : aperçu et erreurs ligne par ligne, puis tout est relié (séquences retrouvées par leur titre, créneaux de l'EDT, compétences des référentiels).
+4. **Préparer › Où j'en suis** : avancement par discipline et par période (notions, séances faites, progression, heures faites), comparé au temps écoulé (trait vertical sur les barres), couverture des compétences des programmes et suggestions pour la suite. Les trois suggestions principales apparaissent aussi sur « Aujourd'hui ».
+5. **Cahier journal** : sur une semaine pas encore préparée, un bandeau propose « Préparer maintenant » ; dans la fenêtre, « Pré-remplir : jusqu'aux vacances » prépare toutes les semaines de la période d'un coup (une séance n'est jamais proposée deux fois). Tout reste modifiable.
+6. **Plus** (téléphone) : champ « Trouver une page », rubriques repliables, pages les plus utilisées en haut. **Aujourd'hui** : carte « Premiers pas » (masquable).
+7. **Préparer › Programmes et référentiels** : « À quoi ça sert ? » explique la chaîne programme → référentiel → séquences et fiches → cahier journal → évaluations ; la colonne « Travaillée » montre la couverture de chaque compétence.
+8. Polices pour les plus petits : **Andika** (script des débutants) et **Marelle Bâton** ; dans le tableau d'écriture, « Écriture : CAPITALES D'IMPRIMERIE ».
 
 ## 2 decies. Registre d'appel, binôme, timer
 
@@ -245,7 +248,7 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 
 - **Hébergement des fichiers de l'application en https** (pour l'installer sur téléphone) : plusieurs hébergeurs statiques proposent une offre gratuite (par ex. GitHub Pages, Cloudflare Pages, Netlify). L'application ne contient aucune donnée : héberger le code ne transmet aucune donnée d'élève.
 - **Synchronisation entre appareils** : **Nuage** d'apps.education.fr (gratuit pour les agents, 100 Go, serveurs du ministère). Fichiers chiffrés (AES-256, mot de passe connu de vous seule). Comparatif fait le 23/10/2026 avec Supabase, Firebase, Appwrite et Cloudflare : écartés (entreprises privées, mises en pause, carte bancaire pour les fichiers, démarches RGPD).
-- **Familles** : l'ENT de l'école (comptes parents, droits, messagerie) ; l'application ne contacte aucun serveur.
+- **Familles** : le canal de l'école (cahier de liaison papier, e-mail ou application de l'école) ; l'application ne contacte aucun serveur.
 - **Lecture de texte (OCR)** : intégrée, gratuite, sur l'appareil — moteur tesseract-wasm (licence BSD) et modèle français tessdata fast (Apache 2.0), dossier `ocr/` (4,7 Mo), téléchargé seulement à la première utilisation. Sources dans `ocr/SOURCES.txt`.
 - IA, SMS, emails en masse, domaine personnalisé : facultatifs, non nécessaires.
 
@@ -258,7 +261,7 @@ Quota gratuit (vérifié le 22/10/2026 sur netlify.com/pricing) : 300 crédits p
 - Avant d'y mettre de vraies données d'élèves : exportez régulièrement la sauvegarde et rangez-la en lieu sûr.
 - Rappels : affichés quand l'application est ouverte ; pour être prévenue application fermée, exportez vers l'agenda du téléphone (.ics).
 - Synchronisation : sur téléphone, envoyer et récupérer se font à la main (deux gestes) ; synchronisation d'un clic seulement sur ordinateur avec Chrome ou Edge.
-- Familles : pas de portail propre ; les familles ne réservent pas elles-mêmes un rendez-vous en ligne (réponse par l'ENT ou sur papier).
+- Familles : pas de portail propre ; les familles ne réservent pas elles-mêmes un rendez-vous en ligne (réponse par le cahier de liaison ou par e-mail).
 - Compétences officielles : extraction automatique des PDF, à relire avant validation ; objectifs d'EVAR de maternelle non extraits.
 - Syllabes en couleur : découpage automatique, à relire (correction possible mot par mot).
 - Dictée vocale : la voix part en général au service du navigateur (Google, Apple) ; à n'utiliser qu'après accord, sans données d'élèves.

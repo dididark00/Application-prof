@@ -1,0 +1,137 @@
+// Où j'en suis (avancement dans les programmes) et cahier journal prérempli jusqu'aux vacances.
+import { chromium } from 'playwright';
+import { writeFileSync, mkdirSync } from 'node:fs';
+
+const BASE = process.env.BASE || 'http://localhost:8080/';
+const OUT = new URL('./out/', import.meta.url).pathname;
+mkdirSync(OUT, { recursive: true });
+let passed = 0, failed = 0; const results = [];
+let page;
+async function test(name, fn) {
+  try { await fn(); passed++; results.push(`✔ ${name}`); console.log(`✔ ${name}`); }
+  catch (e) { failed++; results.push(`✘ ${name}\n    ${e.message.split('\n')[0]}`); console.log(`✘ ${name}\n   `, e.message); try { await page.screenshot({ path: `${OUT}echec-avancement-${failed}.png`, fullPage: true }); } catch { /* */ } }
+}
+const assert = (c, m) => { if (!c) throw new Error(m); };
+const eq = (a, b, m) => { if (a !== b) throw new Error(`${m} — attendu ${JSON.stringify(b)}, obtenu ${JSON.stringify(a)}`); };
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 900 }, bypassCSP: true });
+page = await ctx.newPage();
+const errors = [];
+page.on('pageerror', e => errors.push(e.message));
+page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+const go = async (hash) => { await page.evaluate(h => { location.hash = h; }, hash); await page.waitForTimeout(350); };
+const S = (fn, arg) => page.evaluate(async ([src, a]) => {
+  const m = { store: await import('./js/store.js'), model: await import('./js/model.js'), P: await import('./js/pedago.js'), A: await import('./js/avancement.js'), CP: await import('./js/cahier-plus.js') };
+  return (new Function(...Object.keys(m), 'a', `return (async () => { ${src} })()`))(...Object.values(m), a);
+}, [fn, arg]);
+
+await page.goto(BASE); await page.waitForFunction(() => window.__classeurReady === true);
+await page.evaluate(async () => (await import('./js/demo.js')).loadDemo());
+await page.waitForTimeout(400);
+const ids = await S(`const cls = store.all('class').find(c => c.name === 'CE2 (démo)'); await store.setSettings({ currentClassId: cls.id });
+  const ps = model.periodsOf(store.get(cls.yearId));
+  const seq = P.ofClass('sequence', cls.id).find(s => s.periodId === ps[1].id);
+  return { cls: cls.id, p1: ps[0].id, p2: ps[1].id, seq: seq.id, sessions: P.sessionsOfSequence(seq.id).map(s => s.id) };`);
+
+await test('Page « Où j’en suis » : calendrier, disciplines, compétences, suggestions', async () => {
+  await go(`#/avancement?p=${ids.p2}`);
+  assert(await page.getByTestId('av-calendar').isVisible(), 'calendrier de la période');
+  const maths = page.getByTestId('av-subject').filter({ hasText: 'Mathématiques' });
+  assert(await maths.count() === 1, 'carte Mathématiques');
+  eq(await maths.getByTestId('av-score').innerText(), '0 %', 'rien de fait au départ');
+  assert(await page.getByTestId('av-suggestions').isVisible(), 'suggestions');
+  assert((await page.getByTestId('av-sugg').allInnerTexts()).some(t => t.includes('pas encore placée')), 'séances de la séquence pas encore placées');
+  assert(await page.locator('nav, .sidebar, #nav').first().innerText().then(t => t.includes('Où j’en suis')).catch(() => true), 'lien dans la navigation');
+});
+
+await test('Séances marquées « faite » au cahier journal : le pourcentage avance', async () => {
+  const n = ids.sessions.length;
+  await S(`for (const [i, sid] of a.sessions.slice(0, 1).entries()) await store.create('occurrence', { classId: a.cls, date: '2026-11-03', start: '09:00', end: '10:00', subject: 'Mathématiques', levels: [], mode: 'dirigé', status: 'faite', sessionId: sid }, 'x');`, ids);
+  await go(`#/avancement?p=${ids.p2}`);
+  const g = await S(`return A.bySubject(store.get(a.cls), model.periodsOf(store.get(store.get(a.cls).yearId))[1], '2026-11-20').find(x => x.subject === 'Mathématiques');`, ids);
+  eq(g.sessions.done, 1, '1 séance faite'); eq(g.basis, 'séances faites', 'base du calcul');
+  assert(Math.abs(g.score - 1 / n) < 0.01, `score = 1/${n}`);
+  eq(g.minutes, 60, '1 h faite dans la période');
+  assert(g.pace && g.pace.label, 'rythme indiqué');
+});
+
+await test('Notions des périodes passées non terminées signalées', async () => {
+  const s = await S(`return A.suggestions(store.get(a.cls), model.periodsOf(store.get(store.get(a.cls).yearId))[1], '2026-11-20').map(x => x.text);`, ids);
+  assert(s.some(t => t.includes('périodes précédentes non terminée')), s.join(' | '));
+});
+
+await test('Compétences : travaillée seulement quand une séance reliée est faite', async () => {
+  await S(`const r = await store.create('referential', { name: 'Référentiel test (exemple)', version: '1', levels: ['CE2'], status: 'validé', items: [{ id: 'cA', code: 'A1', label: 'Compétence A (exemple)' }, { id: 'cB', code: 'B1', label: 'Compétence B (exemple)' }] }, 'r');
+    await store.update(a.sessions[0], { competencyIds: ['cA'] }, 'x'); await store.update(a.sessions[1] || a.sessions[0], { competencyIds: ['cA', 'cB'] }, 'x');
+    await store.update(a.sessions[0], { competencyIds: ['cA'] }, 'x'); return r.id;`, ids);
+  const c = await S(`return A.competencies(store.get(a.cls)).find(x => x.ref.name.startsWith('Référentiel test'));`, ids);
+  eq(c.total, 2, '2 compétences'); eq(c.worked, 1, 'A travaillée (séance faite)'); eq(c.never.length, 1, 'B pas encore travaillée');
+  eq(c.never[0].linked, ids.sessions.length > 1, 'B reliée à une séance non faite');
+  await go(`#/avancement?p=${ids.p2}`);
+  assert((await page.getByTestId('av-comps').innerText()).includes('1 / 2'), 'affiché 1 / 2');
+});
+
+await test('Cahier journal : bandeau « semaine pas encore préparée » puis préparation jusqu’aux vacances sans doublon', async () => {
+  const before = await S(`return store.all('occurrence').filter(x => x.classId === a.cls && x.sessionId && !['annulée', 'reportée'].includes(x.status)).map(x => x.id + '|' + x.sessionId);`, ids);
+  await go('#/cahier?d=2026-11-02');
+  const banner = page.getByTestId('prepare-banner');
+  assert(await banner.count() === 1, 'bandeau présent');
+  await page.getByTestId('prepare-banner-go').click();
+  await page.getByTestId('prefill-span').selectOption('vacances'); await page.waitForTimeout(200);
+  assert(await page.getByTestId('prefill-list').locator('tr').count() >= 1, 'propositions');
+  await page.getByTestId('prefill-apply').click(); await page.waitForTimeout(400);
+  const r = await S(`const old = new Set(a.before.map(x => x.split('|')[0])), oldS = new Set(a.before.map(x => x.split('|')[1]));
+    const fresh = store.all('occurrence').filter(x => x.classId === a.cls && x.sessionId && !old.has(x.id));
+    const hab = new Set(Object.values(store.get(a.cls).habitual || {}));
+    const prog = fresh.filter(x => !hab.has(x.sessionId)).map(x => x.sessionId);
+    return { n: fresh.length, dup: prog.length - new Set(prog).size, reused: prog.filter(id => oldS.has(id)).length, weeks: Object.keys(store.get(a.cls).weekMode || {}).length };`, { ...ids, before });
+  assert(r.n >= 1, 'séances posées'); eq(r.dup, 0, 'aucune séance de progression proposée deux fois'); eq(r.reused, 0, 'aucune séance déjà placée reproposée');
+  assert(r.weeks >= 1, 'semaines marquées préparées');
+  await go('#/cahier?d=2026-11-02');
+  eq(await page.getByTestId('prepare-banner').count(), 0, 'plus de bandeau une fois préparée');
+});
+
+await test('Import d’un emploi du temps CSV : nouvel EDT, jours et heures lus, erreurs signalées, rien d’écrasé', async () => {
+  const before = await S(`return store.all('timetable').filter(t => t.classId === a.cls).map(t => t.id);`, ids);
+  await go('#/importer?k=edt');
+  await page.getByTestId('import-text').fill('Jour;Début;Fin;Discipline;Intitulé;Niveaux;Mode\nLundi;8h30;9h00;Français;Rituels;;rituel\nmardi;09:00;10:00;Maths;Calcul;CE2;dirigé\nDimanche;09:00;10:00;EPS;;;\nJeudi;10:00;09:00;EPS;;;');
+  await page.waitForTimeout(200);
+  assert((await page.getByTestId('import-errors').innerText()).includes('jour illisible'), 'jour illisible signalé');
+  await page.getByTestId('import-go').click(); await page.waitForTimeout(400);
+  const t = await S(`const tts = store.all('timetable').filter(t => t.classId === a.cls); const n = tts.find(t => !a.before.includes(t.id)); return { count: tts.length, old: a.before.every(id => store.get(id) && !store.get(id).deletedAt), slots: n.versions[0].slots, periods: n.periodIds.length };`, { ...ids, before });
+  eq(t.count, before.length + 1, 'un EDT de plus'); assert(t.old, 'EDT existant intact');
+  eq(t.slots.length, 2, '2 créneaux valides');
+  eq(JSON.stringify(t.slots.map(s => [s.day, s.start, s.end, s.subject, s.mode, s.levels.join()])), JSON.stringify([[1, '08:30', '09:00', 'Français', 'rituel', ''], [2, '09:00', '10:00', 'Mathématiques', 'dirigé', 'CE2']]), 'créneaux lus');
+  eq(t.periods, 0, 'toutes les périodes avaient déjà un EDT : à associer');
+});
+
+await test('Ergonomie : premiers pas, « Pour la suite », menu Plus filtrable et repliable', async () => {
+  await go('#/aujourdhui');
+  assert(await page.getByTestId('first-steps').count() === 1, 'premiers pas affichés');
+  assert((await page.getByTestId('first-steps').innerText()).includes('Année scolaire'), 'étapes');
+  await page.getByTestId('first-steps-hide').click(); await page.waitForTimeout(300);
+  eq(await page.getByTestId('first-steps').count(), 0, 'masqués');
+  await go('#/plus');
+  const all = await page.getByTestId('more-group').count();
+  await page.getByTestId('more-filter').fill('registre'); await page.waitForTimeout(150);
+  eq(await page.getByTestId('more-group').count(), 2, 'deux rubriques contiennent « registre »'); assert(await page.getByTestId('more-sections').locator('li').count() === 2, 'deux pages');
+  assert((await page.getByTestId('more-sections').innerText()).includes('Registre d’appel'), 'lien Registre');
+  await page.getByTestId('more-filter').fill(''); await page.waitForTimeout(150);
+  eq(await page.getByTestId('more-group').count(), all, 'toutes les rubriques reviennent');
+  assert(await page.getByTestId('more-top').count() === 1, 'pages les plus utilisées');
+});
+
+await test('Téléphone : rien ne dépasse', async () => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await go(`#/avancement?p=${ids.p2}`); await page.screenshot({ path: `${OUT}avancement-telephone.png`, fullPage: true });
+  eq(await page.evaluate(() => document.documentElement.scrollWidth <= 392), true, 'largeur');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await go(`#/avancement?p=${ids.p2}`); await page.screenshot({ path: `${OUT}avancement.png`, fullPage: true });
+});
+
+await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
+await browser.close();
+writeFileSync(`${OUT}resultats-avancement.txt`, results.join('\n'));
+console.log(`\n${passed} réussi(s), ${failed} échec(s)`);
+process.exit(failed ? 1 : 0);

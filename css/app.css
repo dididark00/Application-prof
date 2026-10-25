@@ -980,3 +980,31 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .reg-abs.alert { border-left: 5px solid var(--reg-ko); }
 .reg-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px 4px 4px; background: var(--surface-2); cursor: pointer; font: inherit; color: var(--ink); }
 .reg-print td, .reg-print th { font-size: 7pt; padding: 1px 2px; text-align: center; } .reg-print td:first-child { text-align: left; white-space: nowrap; }
+
+/* Où j'en suis */
+.av-bar { position: relative; overflow: visible; }
+.av-bar > i { border-radius: 99px; }
+.av-mark { position: absolute; top: -4px; width: 2px; height: 16px; background: var(--ink, #222); border-radius: 1px; transform: translateX(-1px); }
+.av-subj { border-left: 5px solid var(--line); }
+.av-facts { margin: 8px 0; padding-left: 18px; }
+.av-sugg { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.av-sugg li { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); border-left: 4px solid var(--line); }
+.av-sugg li.av-warn { border-left-color: var(--warn); }
+.av-sugg li.av-info { border-left-color: var(--info); }
+.av-sugg li .btn { flex: none; }
+@media (max-width: 600px) { .av-sugg li { flex-direction: column; align-items: stretch; } }
+
+/* Menu Plus : filtre et sections repliables */
+.more-filter { width: 100%; margin-bottom: 12px; }
+.more-group > summary { cursor: pointer; list-style: none; }
+.more-group > summary::-webkit-details-marker { display: none; }
+.more-group > summary h2 { display: inline-flex; align-items: center; gap: 4px; margin: 0; }
+.more-group > summary::after { content: '▾'; float: right; color: var(--ink-2); }
+.more-group:not([open]) > summary::after { content: '▸'; }
+.more-group[open] > summary { margin-bottom: 8px; }
+/* Premiers pas */
+.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.steps li { display: flex; gap: 8px; align-items: baseline; }
+.steps li.done { color: var(--ink-2); text-decoration: line-through; }
+.steps li .chk { flex: none; width: 1.2em; text-align: center; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

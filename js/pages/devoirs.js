@@ -26,7 +26,7 @@ export function render({ query, rerender }) {
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-homework', onclick: () => printDocument(printHomework(cls, list)) }, icon('print', 16), 'Imprimer')] }),
     subTabs(),
     h('div', { class: 'seg', role: 'group', 'aria-label': 'Filtre' }, [['avenir', 'À venir'], ['tous', 'Tous']].map(([v, l]) => h('button', { type: 'button', class: filt.when === v ? 'on' : '', onclick: () => { filt.when = v; rerender(); } }, l))),
-    h('p', { class: 'muted small' }, 'Les familles voient les devoirs par l’ENT de l’école : copiez-les ou imprimez-les. Familles › Aperçu parent montre ce que chaque famille peut recevoir.'),
+    h('p', { class: 'muted small' }, 'Les familles ont les devoirs par le cahier de texte des élèves, un mot imprimé, un e-mail ou l’application de l’école. Familles › Aperçu parent montre ce que chaque famille peut recevoir.'),
     list.length ? h('div', { class: 'stack', 'data-testid': 'homework-list' }, list.map(x => {
       const s = x.sessionId ? store.get(x.sessionId) : null; const l = x.lessonId ? store.get(x.lessonId) : null;
       return h('div', { class: 'card' }, h('div', { class: 'card-head' },

@@ -123,10 +123,10 @@ export const ROADMAP = [
   R(4, '§12 Organisation', 'Projets transdisciplinaires ; matériel (stocks, achats, prêts)', 'fait', 'Achat de matériel → une seule dépense au journal financier.'),
 
   // ── §13 Familles et connexions
-  R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)', 'configurer', 'Choix du 23/10/2026 : pas de serveur de l’application. Les comptes parents sont ceux de l’ENT de l’école ; l’application prépare ce qui est diffusé, élève par élève.'),
-  R(5, '§13 Familles', 'Messages, documents, devoirs, autorisations ; consultation/réponse/retour', 'partiel', 'Fait : messages à partir de modèles (copie pour l’ENT ou messagerie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La consultation et la réponse des familles passent par l’ENT.'),
+  R(5, '§13 Familles', 'Comptes responsables liés aux bons enfants (contrôle côté serveur)', 'configurer', 'Choix du 23/10/2026 : pas de serveur de l’application. Pas de comptes parents (pas d’ENT à l’école) : l’application prépare ce qui est diffusé, élève par élève, par cahier de liaison, e-mail ou application de l’école.'),
+  R(5, '§13 Familles', 'Messages, documents, devoirs, autorisations ; consultation/réponse/retour', 'partiel', 'Fait : messages à partir de modèles (impression pour le cahier de liaison, e-mail, ou copie), noté dans l’historique ; documents manquants et relances par famille ; autorisations avec coupon. La réponse des familles passe par le cahier de liaison, l’e-mail ou l’application de l’école.'),
   R(5, '§13 Familles', 'Préparation privée jusqu’à publication ; aperçu « comme ce parent »', 'fait', 'Publications en brouillon privé jusqu’à « publié » ; photos bloquées sans droit à l’image ; Aperçu parent sans aucune donnée privée.'),
-  R(5, '§13 Familles', 'Réservation de rendez-vous sur créneaux ouverts, sans double réservation', 'partiel', 'Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent par l’ENT ou sur papier.'),
+  R(5, '§13 Familles', 'Réservation de rendez-vous sur créneaux ouverts, sans double réservation', 'partiel', 'Créneaux, réservation sans double réservation, mot et planning imprimables, compte rendu dans l’historique. Les familles ne réservent pas elles-mêmes en ligne (pas de serveur) : elles répondent sur papier ou par e-mail.'),
   R(5, '§13 Familles', 'Mail académique (selon fournisseur et accès autorisés)', 'partiel', 'Ouverture de votre messagerie avec le message prêt (aucun mot de passe dans l’application).'),
   R(1, '§13 Connexions', 'Statut des connexions affiché honnêtement (Drive, Canva, agendas, LSU, mail)', 'fait'),
   R(5, '§13 Connexions', 'Connexions Drive, Canva, agendas, LSU vérifiées une par une', 'partiel', 'Agendas : export .ics. Drive, Canva : liens dans Fichiers. LSU : export tableau des appréciations (import direct non vérifié).'),
@@ -145,10 +145,10 @@ export const ROADMAP = [
   R(1, '§15 Fiabilité', 'Sauvegarde persistante sur l’appareil, état visible', 'fait'),
   R(1, '§15 Fiabilité', 'Annulation et corbeille (récupération après suppression)', 'fait'),
   R(1, '§15 Fiabilité', 'Hors connexion : application entière (données locales)', 'fait'),
-  R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur', 'configurer', 'Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Rôles parents gérés par l’ENT.'),
+  R(5, '§15 Fiabilité', 'Comptes personnels, rôles enseignant/binôme/parent, permissions côté serveur', 'configurer', 'Sans serveur : une utilisatrice par appareil, synchronisée par Nuage. Pas de compte parent.'),
   R(5, '§15 Fiabilité', 'Synchronisation, file de modifications et conflits explicites', 'fait', 'Par Nuage : fichier chiffré par appareil, fusion élément par élément, conflits tracés dans l’historique, suppressions propagées.'),
   R(3, '§15 Fiabilité', 'Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche', 'partiel', 'Masquage, exclusion de la recherche et de la projection : faits. Droits par compte : étape 5.'),
-  R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants', 'fait', 'Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Famille : ENT de l’école.'),
+  R(5, '§15 Fiabilité', 'Vérifier le cadre d’hébergement avant données réelles d’enfants', 'fait', 'Données sur l’appareil et, chiffrées, dans Nuage (serveurs du ministère). Aucun service privé. Familles : cahier de liaison, e-mail ou application de l’école, au choix.'),
 
   R(3, '§2 Interface', 'Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages', 'fait'),
   // ── §19 Atelier
@@ -175,6 +175,9 @@ export const ROADMAP = [
   R(5, '§21 PWA', 'Sauvegarde automatique en ligne et synchronisation entre appareils', 'fait', 'Nuage (apps.education.fr, gratuit, 100 Go) : synchronisation d’un clic sur ordinateur (automatique si le dossier est autorisé), Envoyer / Récupérer sur téléphone.'),
   R(5, '§3 Données', 'Importer un tableau CSV (programmation, progression, séquences et séances, cahier journal) relié à l’existant', 'fait', 'Préparer › Importer un tableau : modèle téléchargeable, aperçu et erreurs ligne par ligne, séquences et séances retrouvées par titre, créneaux de l’EDT, compétences retrouvées dans les référentiels.'),
   R(5, '§6 Planifier', 'Préparer la semaine : depuis l’EDT (fiches habituelles ★ et progressions) ou semaine vierge ; export du cahier journal par jour, semaine, mois, période, année ou dates', 'fait'),
+  R(5, '§5 Préparation', 'Où j’en suis : avancement par discipline et par période (notions, séances faites, lignes de progression, temps fait), comparé au temps écoulé ; couverture des compétences ; suggestions pour la suite', 'fait', 'Préparer › Où j’en suis. Tout est déduit de l’existant, rien n’est modifié automatiquement.'),
+  R(5, '§6 Planifier', 'Cahier journal : bandeau « semaine pas encore préparée » et pré-remplissage jusqu’aux vacances (une séance n’est jamais proposée deux fois)', 'fait'),
+  R(5, '§15 Familles', 'Familles sans ENT : canal choisi (cahier de liaison papier, e-mail, application de l’école) ; mot imprimable pour le cahier de liaison, e-mail à toutes les familles', 'fait'),
   R(5, '§5 Préparation', 'Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal', 'fait'),
   R(5, '§19 Atelier', 'Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie', 'fait', 'Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android).'),
   R(5, '§4 Années', 'Binôme activable / désactivable par classe (fin de l’année de PES, temps plein)', 'fait', 'Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions.'),
@@ -219,6 +222,7 @@ export const RUBRIQUES = [
     { id: 'outils', titre: 'Outils de classe', route: 'outils' },
   ]},
   { id: 'preparer', titre: 'Préparer', icone: 'book', sous: [
+    { id: 'avancement', titre: 'Où j’en suis (avancement)', route: 'avancement' },
     { id: 'programmes', titre: 'Programmes et référentiels', route: 'referentiels' },
     { id: 'programmations', titre: 'Programmations', route: 'programmations' },
     { id: 'progressions', titre: 'Progressions', route: 'progressions' },

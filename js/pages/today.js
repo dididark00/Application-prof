@@ -7,6 +7,7 @@ import * as PL from '../planning.js';
 import { taskDialog } from './agenda.js';
 import * as V from '../vie.js';
 import * as T from '../timer.js';
+import * as A from '../avancement.js';
 
 export function render() {
   const s = store.getSettings();
@@ -62,6 +63,30 @@ export function render() {
     const mats = PL.materials(cls, [today, tomorrow]).filter(r => r.kind !== 'copie' || r.status === 'à faire');
     if (mats.length) cards.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'À préparer (aujourd\u2019hui et demain)'), h('a', { class: 'btn btn-small', href: `#/cahier?d=${today}&v=semaine` }, 'Semaine')),
       h('ul', { class: 'plain' }, mats.slice(0, 8).map(r => h('li', {}, `${r.date === today ? '' : 'Demain · '}${r.label}${r.kind === 'copie' ? ` — ${r.count} ex.` : ''}`)))));
+  }
+  // Premiers pas : ce qui rend l'application utile, coché d'après les données réelles (masquable).
+  const real = (t, f = () => true) => store.all(t).some(x => !x.demo && f(x));
+  const steps = [
+    ['Année scolaire et périodes', !!y && model.periodsOf(y).length > 0, '#/reglages'],
+    ['Une classe (niveaux, jours de classe, binôme ou non)', !!cls && !cls.demo, '#/reglages'],
+    ['Les élèves', !!cls && !cls.demo && model.studentsOfClass(cls.id, { date: today, includeFuture: true }).length > 0, '#/eleves'],
+    ['L’emploi du temps (à la main ou importé en CSV)', !!cls && real('timetable', t => t.classId === cls.id), '#/edt'],
+    ['Programmations ou progressions (à la main ou importées)', !!cls && (real('programmation', x => x.classId === cls.id) || real('progression', x => x.classId === cls.id)), '#/importer'],
+    ['Préparer une semaine du cahier journal', !!cls && !cls.demo && Object.keys(cls.weekMode || {}).length > 0, `#/cahier?d=${today}&v=semaine`],
+    ['Exporter une première sauvegarde', !!s.lastBackupAt, '#/reglages/sauvegarde'],
+  ];
+  const doneN = steps.filter(x => x[1]).length;
+  if (!s.hideFirstSteps && doneN < steps.length) cards.push(h('section', { class: 'card', 'data-testid': 'first-steps' },
+    h('div', { class: 'card-head' }, h('h2', {}, `Premiers pas (${doneN}/${steps.length})`),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'first-steps-hide', onclick: () => store.setSettings({ hideFirstSteps: true }) }, 'Masquer')),
+    h('ol', { class: 'steps' }, steps.map(([t, ok, href]) => h('li', { class: ok ? 'done' : '' }, h('span', { class: 'chk', 'aria-hidden': 'true' }, ok ? '✓' : '○'), ok ? h('span', {}, t) : h('a', { href }, t), ok ? h('span', { class: 'sr-only' }, ' (fait)') : null))),
+    cls?.demo ? h('p', { class: 'muted small' }, 'Vous êtes sur la classe de démonstration : les étapes se cochent avec votre vraie classe. Réglages › Données de démonstration pour l’enlever.') : null));
+  if (cls) {
+    const per = A.currentPeriod(cls, today);
+    const sg = A.suggestions(cls, per, today).filter(x => x.kind !== 'muted').slice(0, 3);
+    if (sg.length) cards.push(h('section', { class: 'card', 'data-testid': 'today-next' },
+      h('div', { class: 'card-head' }, h('h2', {}, 'Pour la suite'), h('a', { class: 'btn btn-small', href: '#/avancement' }, 'Où j’en suis')),
+      h('ul', { class: 'av-sugg' }, sg.map(x => h('li', { class: `av-${x.kind}` }, h('span', { class: 'small' }, x.text), h('a', { class: 'btn btn-small', href: x.href }, x.action))))));
   }
   const openTasks = store.all('task').filter(t => !t.done && t.due && t.due <= today);
   const evs = PL.eventsOn(today);

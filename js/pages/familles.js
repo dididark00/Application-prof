@@ -1,5 +1,5 @@
 // Familles : tout ce qui est préparé ici est PRIVÉ. Rien n'est envoyé par l'application :
-// la diffusion passe par l'ENT de l'école (ou le cahier de liaison, ou votre messagerie),
+// la diffusion passe par le cahier de liaison, la messagerie ou l'application de l'école (réglable),
 // déjà validé par l'institution et où les parents ont leur compte.
 // L'application prépare, vérifie (droit à l'image, données privées exclues), garde la trace et imprime.
 import * as store from '../store.js';
@@ -12,15 +12,23 @@ import { printDocument, printTable } from '../print.js';
 const fullName = (s) => `${s.firstName} ${s.lastName || ''}`.trim();
 const students = (cls) => model.studentsOfClass(cls.id).map(x => x.student);
 const levelOf = (cls, sid) => model.studentsOfClass(cls.id, { includeFuture: true, includeLeft: true }).find(x => x.student.id === sid)?.enrollment?.level || '';
-const ENT_NOTE = 'Rien n’est envoyé par l’application : vous déposez sur l’ENT de l’école (ou donnez sur papier). L’application garde la trace et vérifie qu’aucune donnée privée ne part.';
-const notice = () => h('p', { class: 'card notice small' }, ENT_NOTE);
+// Moyen de communication avec les familles : réglable (pas d'ENT dans beaucoup d'écoles primaires).
+export const CHANNELS = {
+  papier: { label: 'le cahier de liaison (papier)', how: 'imprimez le mot et collez-le dans le cahier de liaison' },
+  mail: { label: 'e-mail', how: 'l’application ouvre votre messagerie avec le message prêt' },
+  appli: { label: 'un ENT ou une application de l’école (Klassroom, Beneylu, ONE…)', how: 'copiez le texte et collez-le dans l’application de l’école' },
+};
+export const channel = () => (CHANNELS[store.getSettings().familyChannel] ? store.getSettings().familyChannel : 'papier');
+const notice = () => h('div', { class: 'card notice small', 'data-testid': 'family-channel' },
+  h('label', { class: 'inline' }, 'Je communique avec les familles par', h('select', { 'data-testid': 'family-channel-select', onchange: (e) => store.setSettings({ familyChannel: e.target.value }) }, Object.entries(CHANNELS).map(([k, v]) => h('option', { value: k, selected: channel() === k }, v.label)))),
+  h('p', {}, `Rien n’est envoyé par l’application : ${CHANNELS[channel()].how}. Elle garde la trace et vérifie qu’aucune donnée privée ne part.`));
 function page(title, favKey, cls, body, actions = []) {
   return h('div', { class: 'page' }, pageHeader(title, { favKey, subtitle: cls?.name, actions }), subTabs(), body);
 }
-const copy = async (text) => { try { await navigator.clipboard.writeText(text); toast('Copié : collez-le dans l’ENT'); } catch { toast('Copie refusée par le navigateur : sélectionnez le texte et copiez-le.', { kind: 'error' }); } };
+const copy = async (text) => { try { await navigator.clipboard.writeText(text); toast('Copié : collez-le où vous voulez (application de l’école, SMS, e-mail…)'); } catch { toast('Copie refusée par le navigateur : sélectionnez le texte et copiez-le.', { kind: 'error' }); } };
 
 // ───────── Droit à l'image
-export function imageUsage() { return store.getSettings().publicationUsage || E.DEFAULT_IMAGE_USAGES.find(u => /ENT/.test(u)) || E.DEFAULT_IMAGE_USAGES[0]; }
+export function imageUsage() { return store.getSettings().publicationUsage || E.DEFAULT_IMAGE_USAGES.find(u => (channel() === 'appli' ? /ENT/ : /Cahier de vie/).test(u)) || E.DEFAULT_IMAGE_USAGES[0]; }
 /** Élèves d'une photo dont le droit à l'image n'est pas « autorisé » pour l'usage choisi. */
 export function imageBlockers(studentIds, yearId, usage = imageUsage()) {
   const t = { id: `image:${usage}`, label: usage, category: 'image' };
@@ -69,7 +77,7 @@ function pubDetail(id, cls, rerender) {
       await up({ photos: fresh.photos.map(ph => ({ ...ph, checked: true })) });
     }
     await up({ status: 'publié', publishedAt: model.todayIso() }, 'Publication marquée publiée', false);
-    toast('Marquée « publiée ». Collez le texte et déposez les photos sur l’ENT.');
+    toast(channel() === 'papier' ? 'Marquée « diffusée ». Imprimez-la pour le cahier de liaison ou l’affichage.' : 'Marquée « diffusée ».');
   };
   const textOut = () => { const f = store.get(p.id); return `${f.title || ''}\n\n${f.text || ''}`.trim(); };
   return page(p.title || 'Publication', null, cls, h('div', { class: 'stack' },
@@ -95,7 +103,7 @@ function pubDetail(id, cls, rerender) {
       h('div', { class: 'row' },
         h('button', { class: 'btn', type: 'button', onclick: () => copy(textOut()) }, icon('copy', 14), 'Copier le texte'),
         h('button', { class: 'btn', type: 'button', onclick: async () => printDocument(await pubDoc(store.get(p.id))) }, icon('print', 14), 'Imprimer / PDF'),
-        p.status !== 'publié' ? h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'pub-publish', onclick: publish }, 'Marquer « publié sur l’ENT »') : null),
+        p.status !== 'publié' ? h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'pub-publish', onclick: publish }, 'Marquer « diffusé »') : null),
       notice()),
     h('div', { class: 'row' }, h('button', { class: 'btn btn-danger', type: 'button', onclick: async () => { if (await confirmDialog('Supprimer la publication ?', 'Elle ira dans la corbeille.', { danger: true, confirmLabel: 'Supprimer' })) { await store.remove(p.id, 'Publication supprimée'); location.hash = '#/publications'; } } }, 'Supprimer'))));
 }
@@ -129,7 +137,9 @@ export function renderMessages({ query, rerender }) {
   const list = store.all('exchange').filter(x => ids.has(x.studentId) && (!filter || x.studentId === filter)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const todo = list.filter(x => x.followUp && !x.followDone);
   return page('Messages', 'familles/messages', cls, h('div', { class: 'stack' },
-    h('p', { class: 'muted' }, 'Rédigez un message (modèles), copiez-le dans la messagerie de l’ENT ou ouvrez votre messagerie : il est noté dans l’historique de l’élève. Les échanges notés dans les fiches apparaissent aussi ici.'), notice(),
+    h('p', { class: 'muted' }, 'Rédigez un mot ou un message à partir d’un modèle : imprimez-le pour le cahier de liaison, envoyez-le par e-mail ou copiez-le. Il est noté dans l’historique de l’élève. Les échanges notés dans les fiches apparaissent aussi ici.'), notice(),
+    (() => { const mails = [...new Set(st.flatMap(s => (s.contacts || []).filter(c => c.email && (c.legal !== false)).map(c => c.email)))];
+      return h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', 'data-testid': 'msg-all-mail', disabled: !mails.length, title: mails.length ? '' : 'Aucune adresse e-mail dans les fiches élèves', onclick: () => { location.href = `mailto:?bcc=${encodeURIComponent(mails.join(','))}&subject=${encodeURIComponent(`Classe de ${cls.name}`)}`; } }, 'E-mail à toutes les familles'), h('span', { class: 'muted small' }, `${mails.length} adresse${mails.length > 1 ? 's' : ''}, en copie cachée`)); })(),
     h('div', { class: 'row' }, h('select', { 'aria-label': 'Élève', onchange: (e) => { location.hash = `#/messages${e.target.value ? '?e=' + e.target.value : ''}`; } }, h('option', { value: '' }, 'Tous les élèves'), st.map(s => h('option', { value: s.id, selected: filter === s.id }, fullName(s))))),
     todo.length ? h('section', { class: 'card' }, h('h2', {}, `Suites à donner (${todo.length})`), h('ul', { class: 'plain' }, todo.map(x => h('li', {}, h('label', { class: 'inline' }, h('input', { type: 'checkbox', 'data-testid': 'follow-done', onchange: async () => { await store.update(x.id, { followDone: model.todayIso() }, 'Suite faite'); } }), `${store.get(x.studentId)?.firstName} : ${x.followUp}`))))) : null,
     h('section', { class: 'card' }, h('h2', {}, 'Historique'), list.length ? h('ul', { class: 'obs-list', 'data-testid': 'msg-list' }, list.map(x => h('li', {}, h('strong', {}, model.frShort(x.date)), ' ', h('a', { href: `#/eleve/${x.studentId}?t=echanges` }, store.get(x.studentId)?.firstName || ''), ' ', badge(x.kind, 'muted'), x.with ? ` avec ${x.with}` : '', h('p', { class: 'pre small' }, x.summary || '')))) : h('p', { class: 'muted' }, 'Aucun échange.'))),
@@ -140,14 +150,17 @@ function composeDialog(cls, st, preset = '') {
   const mod = h('select', { 'data-testid': 'msg-model' }, Object.entries(MSG_MODELES).map(([k, [l]]) => h('option', { value: k }, l)));
   const ta = h('textarea', { rows: 9, 'data-testid': 'msg-text' });
   const to = h('select', { 'aria-label': 'Destinataire' });
-  const fill = () => { const s = store.get(sel.value); ta.value = MSG_MODELES[mod.value][1](s); to.replaceChildren(h('option', { value: '' }, '— par l’ENT'), ...(s?.contacts || []).filter(c => c.email).map(c => h('option', { value: c.email }, `${c.name} (${c.email})`))); };
+  const fill = () => { const s = store.get(sel.value); ta.value = MSG_MODELES[mod.value][1](s); to.replaceChildren(h('option', { value: '' }, '— pas d’e-mail'), ...(s?.contacts || []).filter(c => c.email).map(c => h('option', { value: c.email }, `${c.name} (${c.email})`))); };
   sel.onchange = fill; mod.onchange = fill; fill();
   const log = async (kind) => { const s = store.get(sel.value); await store.create('exchange', { studentId: s.id, date: model.todayIso(), kind, with: to.selectedOptions[0]?.textContent?.replace(/ \(.*/, '') || '', summary: ta.value.trim(), followUp: '' }, `Message à la famille de ${s.firstName}`); };
-  modal({ title: 'Message à une famille', wide: true, body: h('div', { class: 'form' }, h('div', { class: 'grid-2' }, field('Élève', sel), field('Modèle', mod)), field('Message (modifiable)', ta), field('Envoyer par', to),
+  const slip = () => { const s = store.get(sel.value); return h('div', { class: 'print-doc' }, h('div', { class: 'mot-slip' }, h('p', { class: 'small' }, `${model.frDate(model.todayIso())} — famille de ${fullName(s)}`), ta.value.split('\n').map(l => h('p', {}, l || '\u00a0')), h('p', { class: 'mot-sig' }, store.getSettings().userName || ''), h('p', { class: 'cut' }, 'Vu, signature des parents :'))); };
+  const ch = channel();
+  modal({ title: 'Mot ou message à une famille', wide: true, body: h('div', { class: 'form' }, h('div', { class: 'grid-2' }, field('Élève', sel), field('Modèle', mod)), field('Message (modifiable)', ta), field('Adresse e-mail (fiche élève)', to),
     h('p', { class: 'muted small' }, 'Ne mettez pas d’information de santé ou de situation familiale dans un message : préférez une rencontre.')),
   actions: [{ label: 'Annuler' },
-    { label: 'Copier pour l’ENT et noter', testid: 'msg-copy', onClick: async () => { await copy(ta.value); await log('message ENT'); } },
-    { label: 'Ouvrir ma messagerie et noter', primary: true, onClick: async () => { if (!to.value) { toast('Choisissez une adresse, ou utilisez « Copier pour l’ENT ».', { kind: 'error' }); return false; } location.href = `mailto:${encodeURIComponent(to.value)}?subject=${encodeURIComponent(`Classe de ${cls.name}`)}&body=${encodeURIComponent(ta.value)}`; await log('mail'); } }] });
+    { label: 'Imprimer pour le cahier de liaison', primary: ch === 'papier', testid: 'msg-print', onClick: async () => { printDocument(slip()); await log('mot dans le cahier'); } },
+    { label: 'Copier et noter', primary: ch === 'appli', testid: 'msg-copy', onClick: async () => { await copy(ta.value); await log('message (copié)'); } },
+    { label: 'Ouvrir ma messagerie et noter', primary: ch === 'mail', onClick: async () => { if (!to.value) { toast('Aucune adresse e-mail choisie : ajoutez-la dans la fiche de l’élève, ou imprimez le mot.', { kind: 'error' }); return false; } location.href = `mailto:${encodeURIComponent(to.value)}?subject=${encodeURIComponent(`Classe de ${cls.name}`)}&body=${encodeURIComponent(ta.value)}`; await log('mail'); } }] });
 }
 
 // ═════════ Rendez-vous
@@ -182,9 +195,9 @@ export function renderRdv({ rerender }) {
   const planning = () => printDocument(printTable({ title: 'Planning des rendez-vous', subtitle: cls.name, columns: [{ label: 'Date' }, { label: 'Heure' }, { label: 'Lieu' }, { label: 'Famille' }], rows: upcoming.map(r => [model.frShort(r.date), `${r.start}–${r.end}`, r.place || '', r.studentId ? `${fullName(store.get(r.studentId))}${r.with ? ' (' + r.with + ')' : ''}` : 'libre']) }));
   const without = st.filter(s => !all.some(r => r.studentId === s.id && r.status !== 'annulé'));
   return page('Rendez-vous', 'familles/rdv', cls, h('div', { class: 'stack' },
-    h('p', { class: 'muted' }, 'Ouvrez des créneaux, proposez-les aux familles (papier ou ENT), notez les réservations : un créneau ne peut pas être pris deux fois. Une fois le rendez-vous fait, le compte rendu va dans l’historique de l’élève.'), notice(),
+    h('p', { class: 'muted' }, 'Ouvrez des créneaux, proposez-les aux familles (mot imprimé, e-mail ou application de l’école), notez les réservations : un créneau ne peut pas être pris deux fois. Une fois le rendez-vous fait, le compte rendu va dans l’historique de l’élève.'), notice(),
     h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', 'data-testid': 'rdv-print-free', onclick: printFree }, icon('print', 14), 'Mot avec les créneaux libres'), h('button', { class: 'btn', type: 'button', onclick: planning }, icon('print', 14), 'Planning'),
-      h('button', { class: 'btn', type: 'button', onclick: () => copy(`Créneaux proposés :\n${freeSlots(cls).map(r => `- ${model.frDate(r.date, { weekday: 'long', day: 'numeric', month: 'long' })}, ${r.start}–${r.end}`).join('\n')}`) }, icon('copy', 14), 'Copier les créneaux pour l’ENT')),
+      h('button', { class: 'btn', type: 'button', onclick: () => copy(`Créneaux proposés :\n${freeSlots(cls).map(r => `- ${model.frDate(r.date, { weekday: 'long', day: 'numeric', month: 'long' })}, ${r.start}–${r.end}`).join('\n')}`) }, icon('copy', 14), 'Copier les créneaux')),
     h('section', { class: 'card' }, h('h2', {}, `À venir (${upcoming.length})`), upcoming.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table' }, h('tbody', {}, upcoming.map(row)))) : h('p', { class: 'muted' }, 'Aucun créneau.')),
     h('section', { class: 'card' }, h('h2', {}, `Familles pas encore rencontrées (${without.length})`), h('p', { class: 'small' }, without.map(s => s.firstName).join(', ') || '—')),
     past.length ? h('details', { class: 'card' }, h('summary', {}, `Passés ou annulés (${past.length})`), h('table', { class: 'table' }, h('tbody', {}, past.map(row)))) : null),

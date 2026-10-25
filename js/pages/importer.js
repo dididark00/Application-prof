@@ -16,7 +16,7 @@ export function render({ query, rerender }) {
   const ta = h('textarea', { rows: 8, 'data-testid': 'import-text', placeholder: `${IC.KINDS[st.kind].cols.join(';')}\n…`, oninput: (e) => { st.text = e.target.value; draw(); } }, st.text);
   const go = h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'import-go', disabled: true, onclick: async () => {
     go.disabled = true;
-    try { const r = await IC.importRows(st.kind, res.rows, cls); toast(`Import terminé : ${r.created} ligne(s) ajoutée(s)${r.linked ? `, ${r.linked} lien(s) vers l’existant` : ''}${r.skipped ? `, ${r.skipped} créneau(x) déjà rempli(s) laissé(s) tel(s) quel(s)` : ''}. Annulable.`, { action: 'Annuler', onAction: () => import('../store.js').then(s => s.undo()), timeout: 12000 }); st.text = ''; rerender(); }
+    try { const r = await IC.importRows(st.kind, res.rows, cls); toast(`Import terminé : ${r.created} ligne(s) ajoutée(s)${r.linked ? `, ${r.linked} lien(s) vers l’existant` : ''}${r.skipped ? `, ${r.skipped} créneau(x) déjà rempli(s) laissé(s) tel(s) quel(s)` : ''}${r.unassigned ? '. Toutes les périodes ont déjà un EDT : associez le nouvel EDT aux périodes voulues dans Planifier › Emploi du temps' : r.periods ? `, EDT posé sur ${r.periods} période(s)` : ''}. Annulable.`, { action: 'Annuler', onAction: () => import('../store.js').then(s => s.undo()), timeout: 12000 }); st.text = ''; rerender(); }
     catch (e) { toast(e.message, { kind: 'error' }); go.disabled = false; }
   } }, 'Importer les lignes valides');
   function draw() {
@@ -39,6 +39,7 @@ export function render({ query, rerender }) {
       h('h2', {}, k.label),
       h('p', { class: 'small' }, 'Colonnes, dans cet ordre (la première ligne peut porter ces titres) : ', h('strong', {}, k.cols.join(' ; '))),
       st.kind === 'cahier' ? h('p', { class: 'muted small' }, 'Une séance tombant sur un créneau de l’EDT (même date, même heure de début) remplit ce créneau ; sinon elle s’ajoute comme activité. Un créneau déjà rempli n’est jamais écrasé. Statut : prévue, faite, partielle ou annulée.') : null,
+      st.kind === 'edt' ? h('p', { class: 'muted small' }, 'Une ligne par créneau de la semaine type. Jour : lundi, mardi… ; heures : 08:30 ou 8h30 ; Niveaux : vide pour toute la classe, sinon CE1, CE2… ; Mode (facultatif) : dirigé, autonomie, atelier dirigé, atelier autonome, rituel, intervention. Un nouvel emploi du temps est créé, sans toucher à celui qui existe : il est posé sur les périodes qui n’en ont pas encore, sinon vous l’associez aux périodes voulues dans Planifier › Emploi du temps.') : null,
       st.kind === 'progression' ? h('p', { class: 'muted small' }, 'Semaine = numéro de la semaine dans la période (1, 2, 3…). Les lignes s’ajoutent à la progression existante de la même discipline, niveau et période, ou en créent une.') : null,
       h('div', { class: 'row' },
         h('button', { class: 'btn', type: 'button', 'data-testid': 'import-model', onclick: () => download(`modele-${st.kind}.csv`, IC.modelCsv(st.kind), 'text/csv;charset=utf-8') }, icon('download', 16), 'Télécharger le modèle'),

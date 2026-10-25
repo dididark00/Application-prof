@@ -1,4 +1,4 @@
-// Étape 5b : familles par l'ENT (publications, messages, rendez-vous, documents, aperçu parent),
+// Étape 5b : familles (papier, mail, appli) (publications, messages, rendez-vous, documents, aperçu parent),
 // rappels et export .ics. Scénarios dans un vrai navigateur.
 import { chromium } from 'playwright';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -106,14 +106,14 @@ await test('Rendez-vous : créneaux, réservation, pas de double réservation, c
   assert((await page.evaluate(() => window.__printed)).match(/☐/g).length === 3, 'mot avec les 3 créneaux libres');
 });
 
-await test('Messages : modèle, copie pour l’ENT, noté dans l’historique de l’élève', async () => {
+await test('Messages : modèle, copie, noté dans l’historique de l’élève', async () => {
   await go('#/messages');
   await page.getByTestId('msg-new').click();
   await page.getByTestId('msg-student').selectOption(ids.nino);
   await page.getByTestId('msg-model').selectOption('bravo');
   assert((await page.getByTestId('msg-text').inputValue()).includes('Nino'), 'prénom dans le modèle');
   await page.getByTestId('msg-copy').click(); await page.waitForTimeout(300);
-  eq(await S(`return store.all('exchange').filter(x => x.studentId === a.nino && x.kind === 'message ENT').length;`, ids), 1, 'message noté');
+  eq(await S(`return store.all('exchange').filter(x => x.studentId === a.nino && x.kind === 'message (copié)').length;`, ids), 1, 'message noté');
   assert((await page.evaluate(() => navigator.clipboard.readText())).includes('Nino'), 'texte copié');
 });
 

@@ -15,6 +15,8 @@ export const KINDS = {
     example: [['Français', 'CE2', 'P2', '1', 'Le récit', 'Découvrir le texte', 'Identifier les personnages', 'Album']] },
   sequences: { label: 'Séquences et séances', cols: ['Discipline', 'Niveau', 'Période', 'Séquence', 'N° séance', 'Séance', 'Objectif', 'Durée (min)', 'Compétences'],
     example: [['Questionner le monde', 'CE2', 'P2', 'Les états de l’eau', '1', 'Solide, liquide', 'Observer les changements d’état', '45', '']] },
+  edt: { label: 'Emploi du temps (créneaux de la semaine)', cols: ['Jour', 'Début', 'Fin', 'Discipline', 'Intitulé', 'Niveaux', 'Mode'],
+    example: [['Lundi', '08:30', '09:00', 'Français', 'Rituels', '', 'rituel'], ['Lundi', '09:00', '10:00', 'Mathématiques', 'Calcul', 'CE2', 'dirigé']] },
   cahier: { label: 'Cahier journal (séances datées)', cols: ['Date', 'Début', 'Fin', 'Discipline', 'Séance', 'Statut', 'Bilan'],
     example: [['05/01/2027', '08:30', '09:15', 'Français', 'Découvrir le texte', 'prévue', '']] },
 };
@@ -27,8 +29,11 @@ export function periodFrom(year, v) {
   const ps = model.periodsOf(year); const m = String(v || '').match(/(\d+)/);
   return m ? ps[Number(m[1]) - 1] || null : null;
 }
-const subjectFrom = (v) => { const n = norm(v); return model.subjects().find(s => norm(s) === n) || model.subjects().find(s => norm(s).startsWith(n) && n.length > 2) || String(v || '').trim(); };
+const ALIASES = { maths: 'Mathématiques', math: 'Mathématiques', mathematique: 'Mathématiques', francais: 'Français', qlm: 'Questionner le monde', 'questionner le monde': 'Questionner le monde', lv: 'Langues vivantes', lve: 'Langues vivantes', anglais: 'Langues vivantes', 'arts visuels': 'Arts plastiques', arts: 'Arts plastiques', musique: 'Éducation musicale', chant: 'Éducation musicale', sport: 'EPS' };
+const subjectFrom = (v) => { const a = ALIASES[norm(v)]; if (a && model.subjects().includes(a)) return a; const n = norm(v); return model.subjects().find(s => norm(s) === n) || model.subjects().find(s => norm(s).startsWith(n) && n.length > 2) || String(v || '').trim(); };
 const levelFrom = (cls, v) => { const l = String(v || '').trim().toUpperCase(); return model.NIVEAUX.includes(l) ? l : (cls.levels?.length === 1 ? cls.levels[0] : ''); };
+const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const dayFrom = (v) => { const n = norm(v); const i = DAYS.findIndex(d => n && d.startsWith(n.slice(0, 3))); return i >= 0 ? i + 1 : (/^[1-6]$/.test(n) ? Number(n) : 0); };
 const timeFrom = (v) => { const m = String(v || '').match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})$/i); return m ? `${m[1].padStart(2, '0')}:${(m[2] || '00').padStart(2, '0')}` : ''; };
 
 /** Compétences retrouvées par code ou intitulé (référentiels validés d'abord). */
@@ -56,6 +61,15 @@ export function analyse(kind, text, cls) {
   const get = (r, i) => (idx[i] >= 0 ? (r[idx[i]] || '').trim() : '');
   const rows = body.map((r, n) => {
     const line = n + (body === raw ? 1 : 2); const msg = [];
+    if (kind === 'edt') {
+      const day = dayFrom(get(r, 0)); const start = timeFrom(get(r, 1)); const end = timeFrom(get(r, 2));
+      if (!day) msg.push('jour illisible (lundi… samedi)');
+      if (!start || !end) msg.push('heures illisibles (08:30 ou 8h30)');
+      else if (end <= start) msg.push('la fin est avant le début');
+      const levels = get(r, 5).split(/[\s,;/+]+/).map(x => x.toUpperCase()).filter(l => model.NIVEAUX.includes(l));
+      const mode = PL.MODES.find(m => norm(m[0]) === norm(get(r, 6)))?.[0] || 'dirigé';
+      return { line, ok: !msg.length, msg, data: { day, start, end, subject: subjectFrom(get(r, 3)), label: get(r, 4), levels, mode } };
+    }
     if (kind === 'cahier') {
       const date = parseDateFr(get(r, 0)); const start = timeFrom(get(r, 1)); const end = timeFrom(get(r, 2));
       if (!date) msg.push('date illisible (JJ/MM/AAAA)');
@@ -142,6 +156,14 @@ export async function importRows(kind, rows, cls) {
       } else report.created++;
     }
     for (const pr of progs.values()) items.push(pr.existing ? { id: pr.id, patch: { rows: pr.rows } } : { create: { type: 'progression', data: { id: pr.id, ...pr.data, rows: pr.rows } } });
+  } else if (kind === 'edt') {
+    // Jamais d'écrasement : un nouvel emploi du temps, posé sur les périodes qui n'en ont pas encore.
+    const year = store.get(cls.yearId);
+    const covered = new Set(PL.timetablesOf(cls.id).flatMap(t => t.periodIds || []));
+    const free = model.periodsOf(year).map(p => p.id).filter(id => !covered.has(id));
+    const slots = ok.map(d => ({ id: store.uid(), day: d.day, start: d.start, end: d.end, subject: d.subject, label: d.label, mode: d.mode, levels: d.levels }));
+    items.push({ create: { type: 'timetable', data: { classId: cls.id, name: `EDT importé le ${model.frShort(model.todayIso())}`, periodIds: free, versions: [{ from: '', slots }] } } });
+    report.created = slots.length; report.unassigned = !free.length; report.periods = free.length;
   } else if (kind === 'cahier') {
     const sessions = store.all('session').filter(s => s.classId === cls.id);
     const claimed = new Set();

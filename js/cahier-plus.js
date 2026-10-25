@@ -20,10 +20,11 @@ export async function setHabitual(cls, slotId, sessionId) {
 export function weekDays(cls, monday) { return model.classDays(cls).map(d => model.addDays(monday, d - 1)); }
 
 /** Propositions pour la semaine : [{ entry, sessionId, source }] */
-export function weekProposals(cls, monday) {
+export function weekProposals(cls, monday, shared = null) {
   const year = store.get(cls.yearId);
   const days = weekDays(cls, monday);
-  const used = new Set(store.all('occurrence').filter(o => o.classId === cls.id && o.sessionId && !['annulée', 'reportée'].includes(o.status)).map(o => o.sessionId));
+  // « shared » : séances déjà proposées les semaines précédentes (préparation sur plusieurs semaines).
+  const used = shared || new Set(store.all('occurrence').filter(o => o.classId === cls.id && o.sessionId && !['annulée', 'reportée'].includes(o.status)).map(o => o.sessionId));
   const queues = {};
   for (const d of days) {
     const per = model.periodOfDate(year, d); if (!per) continue;
@@ -53,10 +54,23 @@ export function weekProposals(cls, monday) {
       const hab = habitualOf(cls, e.slot.id);
       if (hab) { out.push({ entry: e, sessionId: hab.id, source: 'habituelle' }); continue; }
       const sid = take(e.subject, e.levels);
-      if (sid) out.push({ entry: e, sessionId: sid, source: 'progression' });
+      if (sid) { used.add(sid); out.push({ entry: e, sessionId: sid, source: 'progression' }); }
     }
   }
   return out;
+}
+
+/** Propositions de plusieurs semaines (jusqu'aux vacances) : une séance n'est jamais proposée deux fois. */
+export function rangeProposals(cls, monday, untilMonday) {
+  const used = new Set(store.all('occurrence').filter(o => o.classId === cls.id && o.sessionId && !['annulée', 'reportée'].includes(o.status)).map(o => o.sessionId));
+  const out = [];
+  for (let m = monday; m <= untilMonday; m = model.addDays(m, 7)) if (!PL.isBlankWeek(cls, m) || m === monday) out.push(...weekProposals(cls, m, used));
+  return out;
+}
+/** Lundi de la dernière semaine de la période en cours (avant les vacances). */
+export function lastMondayOfPeriod(cls, date) {
+  const p = model.periodOfDate(store.get(cls.yearId), date);
+  return p ? model.mondayOf(p.end) : model.mondayOf(date);
 }
 
 export async function applyProposals(cls, list) {
