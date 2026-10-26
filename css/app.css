@@ -1030,3 +1030,8 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .plan-room { margin-top: 6px; }
 .carnet-list li { line-height: 1.9; }
 .carnet-students { max-height: 40vh; overflow: auto; }
+.recre-table tr.recre-accueil th { color: var(--info); }
+.recre-slot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 6px; align-items: center; padding-bottom: 6px; border-bottom: 1px dashed var(--line); }
+.recre-slot input { min-width: 0; width: 100%; }
+.recre-slot .recre-name-in { grid-column: 1 / 4; font-weight: 600; }
+.recre-slot .icon-btn { grid-column: 4; grid-row: 1; }

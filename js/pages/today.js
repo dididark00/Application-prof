@@ -8,6 +8,7 @@ import { taskDialog } from './agenda.js';
 import * as V from '../vie.js';
 import * as T from '../timer.js';
 import * as A from '../avancement.js';
+import { dutiesOn, slotLabel } from './recreation.js';
 
 export function render() {
   const s = store.getSettings();
@@ -119,6 +120,7 @@ export function render() {
     cards.unshift(h('section', { class: 'card', 'data-testid': 'today-class' }, h('h2', {}, 'En classe'),
       h('div', { class: 'row' }, halves.map(x => h('a', { class: `btn ${x.a?.validated ? '' : 'btn-primary'}`, href: `#/appel?d=${today}&h=${encodeURIComponent(x.k)}` }, `Appel ${x.l.toLowerCase()}`, x.a?.validated ? badge(`validé · ${x.absents} absent(s) ou retard(s)`, 'ok') : x.a ? badge('en cours', 'warn') : null))),
       svc.length ? h('p', { class: 'small' }, svc.map(x => `${x.sv} : ${x.n}`).join(' · ')) : null,
+      (() => { const dd = dutiesOn(s.recreMe, today); return dd.length ? h('p', { class: 'small', 'data-testid': 'today-duties' }, h('strong', {}, 'Je surveille : '), dd.map(x => `${slotLabel(x.slot)}${x.zone ? ' — ' + x.zone : ''}`).join(' · ')) : null; })(),
       h('div', { class: 'row' }, h('a', { class: 'btn btn-small', href: V.planOf(cls.id) ? '#/services' : '#/services?t=semaine', 'data-testid': 'today-services' }, 'Cantine, étude, garderie'), h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'))));
   }
 

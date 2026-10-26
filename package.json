@@ -1,6 +1,6 @@
 {
   "name": "classeur",
-  "version": "0.5.14",
+  "version": "0.5.15",
   "private": true,
   "type": "module",
   "description": "Application de gestion de classe (PWA, sans dépendance à l'exécution)",

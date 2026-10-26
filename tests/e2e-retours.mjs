@@ -165,6 +165,28 @@ await test('Cahier journal : fiche d’activité complète (durée, organisation
   eq(await S(`return store.all('occurrence').find(x => x.title === 'Calcul mental (exemple)').lieu;`), 'Cour', 'modification enregistrée');
 });
 
+await test('Surveillances : accueils du matin et de 13 h 20, répartition en minutes, « je surveille » sur Aujourd’hui', async () => {
+  await go('#/recreation');
+  for (const [n, days] of [['Julia (exemple)', ['Lun', 'Mar']], ['Mme Durand (exemple)', []]]) {
+    await page.getByTestId('recre-name').fill(n);
+    for (const d of days) await page.locator('.page .chip', { hasText: d }).first().locator('input').check();
+    await page.getByTestId('recre-add').click(); await page.waitForTimeout(250);
+  }
+  await page.getByTestId('recre-add-slot-1').click(); await page.waitForTimeout(250);
+  await page.getByTestId('recre-add-slot-2').click(); await page.waitForTimeout(250);
+  const t = await page.getByTestId('recre-table').evaluate(e => e.textContent);
+  assert(t.includes('Accueil du matin (8 h 20 – 8 h 30)') && t.includes('Accueil de l’après-midi (13 h 20 – 13 h 30)'), 'accueils dans le planning : ' + t.slice(0, 300));
+  const rows = await page.getByTestId('recre-table').locator('tbody th').allTextContents();
+  assert(rows[0].startsWith('Accueil du matin'), `ordre de la journée : ${rows.join(' / ')}`);
+  await page.getByTestId('recre-distribute').click(); await page.waitForTimeout(300);
+  const r = await page.evaluate(async () => { const R = await import('./js/pages/recreation.js'); const p = R.planOf(); return { empty: Object.entries(p.grid).filter(([, v]) => !v.length).length, cells: Object.keys(p.grid).length }; });
+  eq(r.empty, 0, 'aucune case vide'); eq(r.cells, 16, '4 surveillances × 4 jours');
+  await page.locator('input[name=recre-me]').first().check(); await page.waitForTimeout(200);
+  const me = await S(`return store.getSettings().recreMe;`);
+  const d = await page.evaluate(async (me) => (await import('./js/pages/recreation.js')).dutiesOn(me, '2026-11-02').length, me);
+  assert(d >= 1, 'au moins une surveillance le lundi pour la personne choisie');
+});
+
 await test('Téléphone : plan, carnet, atelier sans débordement', async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const r of ['#/plan', '#/messages', '#/atelier']) { await go(r); eq(await page.evaluate(() => document.documentElement.scrollWidth <= 392), true, `${r} déborde`); }
