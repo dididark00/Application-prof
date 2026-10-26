@@ -9,6 +9,7 @@ import { h, icon, toast, modal, field, badge, emptyState, confirmDialog } from '
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { bound } from '../forms.js';
 import { printDocument } from '../print.js';
+import { consumeFlag } from '../router.js';
 
 const KINDS = [['sortie', 'Sortie'], ['cycle', 'Cycle (natation, judo…)'], ['classe', 'Classe découverte / nuitée']];
 const ROLES = ['enseignant(e)', 'binôme', 'ATSEM', 'AESH', 'parent accompagnateur', 'parent agréé (natation)', 'intervenant(e)', 'maître-nageur', 'autre'];
@@ -53,6 +54,7 @@ export function render({ params, rerender }) {
   const cls = model.currentClass(); const miss = needClass();
   if (miss) return h('div', { class: 'page' }, pageHeader('Sorties et natation'), subTabs(), miss);
   if (params[0]) return detail(cls, params[0], rerender);
+  if (consumeFlag('new')) setTimeout(() => newOuting(cls), 0);
   const list = outings(cls); const today = model.todayIso();
   const up = list.filter(o => !last(o) || last(o) >= today), past = list.filter(o => last(o) && last(o) < today);
   const card = (o) => { const n = (o.dates || []).length; const ok = studentsOf(cls).filter(s => authOf(o, s, cls) === 'autorisé').length;

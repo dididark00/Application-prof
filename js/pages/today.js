@@ -9,6 +9,8 @@ import * as V from '../vie.js';
 import * as T from '../timer.js';
 import * as A from '../avancement.js';
 import { dutiesOn, slotLabel } from './recreation.js';
+import { nowAndNext } from './enclasse.js';
+import { radar } from './radar.js';
 
 export function render() {
   const s = store.getSettings();
@@ -121,7 +123,34 @@ export function render() {
       h('div', { class: 'row' }, halves.map(x => h('a', { class: `btn ${x.a?.validated ? '' : 'btn-primary'}`, href: `#/appel?d=${today}&h=${encodeURIComponent(x.k)}` }, `Appel ${x.l.toLowerCase()}`, x.a?.validated ? badge(`validé · ${x.absents} absent(s) ou retard(s)`, 'ok') : x.a ? badge('en cours', 'warn') : null))),
       svc.length ? h('p', { class: 'small' }, svc.map(x => `${x.sv} : ${x.n}`).join(' · ')) : null,
       (() => { const dd = dutiesOn(s.recreMe, today); return dd.length ? h('p', { class: 'small', 'data-testid': 'today-duties' }, h('strong', {}, 'Je surveille : '), dd.map(x => `${slotLabel(x.slot)}${x.zone ? ' — ' + x.zone : ''}`).join(' · ')) : null; })(),
-      h('div', { class: 'row' }, h('a', { class: 'btn btn-small', href: V.planOf(cls.id) ? '#/services' : '#/services?t=semaine', 'data-testid': 'today-services' }, 'Cantine, étude, garderie'), h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'))));
+      h('div', { class: 'row' }, h('a', { class: 'btn btn-small', href: V.planOf(cls.id) ? '#/services' : '#/services?t=semaine', 'data-testid': 'today-services' }, 'Cantine, étude, garderie'), h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'), h('a', { class: 'btn btn-small', href: '#/enclasse', 'data-testid': 'today-enclasse' }, 'Mode en classe'))));
+  }
+
+  // Selon l'heure : « Maintenant » pendant la classe, « Pour demain » une fois la classe finie.
+  if (cls) {
+    const d = new Date(); const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const { plan, current, next } = nowAndNext(cls, today, hm);
+    const timed = plan.entries.filter(e => !e.allDay && e.kind !== 'event');
+    const first = timed[0]?.start, last = timed.at(-1)?.end;
+    if (plan.school.ok && plan.myDay && first && hm >= model.hhmm(model.minutes(first) - 45) && hm < last && (current || next)) {
+      const line = (e, l) => e ? h('li', {}, h('strong', {}, `${l} · ${e.start}–${e.end} `), e.session ? h('a', { href: `#/seance/${e.session.id}` }, e.title) : e.title) : null;
+      cards.unshift(h('section', { class: 'card now-card', 'data-testid': 'today-now' }, h('div', { class: 'card-head' }, h('h2', {}, 'Maintenant'), h('a', { class: 'btn btn-small btn-primary', href: '#/enclasse' }, 'Mode en classe')),
+        h('ul', { class: 'plain' }, line(current, 'En cours'), line(next, 'Ensuite'))));
+    } else if (last && hm >= last) {
+      const undone = timed.filter(e => e.status === 'prévue' && (e.session || e.kind === 'occ')).length;
+      let tm = model.addDays(today, 1); for (let k = 0; k < 10 && !(PL.isSchoolDay(cls, tm).ok && PL.isMyDay(cls, tm)); k++) tm = model.addDays(tm, 1);
+      const tp = PL.dayPlan(cls, tm);
+      const empty = tp.entries.filter(e => e.kind === 'slot' && !e.sessionId).length;
+      const mats = PL.materials(cls, [tm]).filter(r => r.kind !== 'copie' || r.status === 'à faire');
+      cards.unshift(h('section', { class: 'card', 'data-testid': 'today-tomorrow' }, h('div', { class: 'card-head' }, h('h2', {}, `Pour ${tm === model.addDays(today, 1) ? 'demain' : model.frDate(tm, { weekday: 'long', day: 'numeric' })}`), h('a', { class: 'btn btn-small', href: `#/cahier?d=${tm}` }, 'Cahier journal')),
+        h('ul', { class: 'plain small' },
+          undone ? h('li', {}, `${undone} séance(s) d’aujourd’hui sans bilan (faite, partielle, reportée) : `, h('a', { href: `#/cahier?d=${today}` }, 'compléter')) : h('li', {}, '✓ Journée d’aujourd’hui complétée.'),
+          h('li', {}, `${tp.entries.length} activité(s) prévue(s)${empty ? `, dont ${empty} créneau(x) sans fiche` : ''}.`),
+          mats.length ? h('li', {}, `À préparer : ${mats.slice(0, 5).map(r => r.label).join(', ')}${mats.length > 5 ? '…' : ''}`) : null)));
+    }
+    const rr = radar(cls).filter(r => r.flag);
+    if (rr.length) cards.push(h('section', { class: 'card', 'data-testid': 'today-radar' }, h('div', { class: 'card-head' }, h('h2', {}, 'Radar'), h('a', { class: 'btn btn-small', href: '#/radar' }, 'Voir')),
+      h('p', { class: 'small' }, `${rr.length} élève(s) cumulent plusieurs signaux ces 3 dernières semaines : ${rr.slice(0, 4).map(r => r.s.firstName).join(', ')}${rr.length > 4 ? '…' : ''}.`)));
   }
 
   return h('div', { class: 'page' },

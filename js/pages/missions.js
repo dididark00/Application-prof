@@ -10,6 +10,7 @@ import { pageHeader, subTabs } from '../components.js';
 import { bound } from '../forms.js';
 import { addFiles } from './files.js';
 import { toCsv } from '../csv.js';
+import { consumeFlag } from '../router.js';
 
 const missions = () => store.all('mission').sort((a, b) => (b.from || '').localeCompare(a.from || ''));
 /** Jours de classe de la mission (vacances et jours fériés exclus). */
@@ -31,6 +32,7 @@ export function parseNames(text) {
 }
 
 export function render({ rerender }) {
+  if (consumeFlag('new')) setTimeout(() => newMission(), 0);
   const list = missions(); const today = model.todayIso();
   const cur = list.filter(m => !m.ended), past = list.filter(m => m.ended);
   const totalDays = list.reduce((n, m) => n + missionDays(m), 0);

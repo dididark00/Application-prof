@@ -47,3 +47,12 @@ export function allPages() {
   out.push({ key: 'reglages', title: 'Réglages', rubrique: '', href: '#/reglages', ready: true });
   return out;
 }
+
+/** Paramètre ponctuel de l'adresse (ex. ?new=1 venu d'une action de recherche) : lu une fois puis retiré. */
+export function consumeFlag(name) {
+  const re = new RegExp(`([?&])${name}=1(&|$)`);
+  if (!re.test(location.hash)) return false;
+  const next = location.hash.replace(re, (m, a, b) => (b ? a : '')).replace(/[?&]$/, '');
+  try { history.replaceState(null, '', next || '#/'); } catch { /* */ }
+  return true;
+}

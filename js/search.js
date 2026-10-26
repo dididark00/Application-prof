@@ -7,11 +7,25 @@ import * as P from './pedago.js';
 
 export const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+/** Actions rapides proposées par la recherche (mots-clés sans accents). */
+export const ACTIONS = [
+  ['Noter un comportement, un oubli, des félicitations', 'noter carnet comportement oubli travail felicitations retard mot', '#/messages?new=1'],
+  ['Ajouter une activité au cahier journal', 'activite cahier journal seance ajouter nouvelle', '#/cahier?new=1'],
+  ['Faire l’appel', 'appel absent presence', '#/appel'],
+  ['Préparer la semaine (cahier journal)', 'preparer semaine prerempli cahier', '#/cahier?v=semaine&prep=1'],
+  ['Nouvelle sortie ou cycle (natation…)', 'sortie natation piscine cycle judo musee', '#/sorties?new=1'],
+  ['Nouveau remplacement (brigade)', 'remplacement brigade zil mission', '#/missions?new=1'],
+  ['Mode en classe', 'mode classe tablette maintenant', '#/enclasse'],
+  ['Où j’en suis dans les programmes', 'avancement programme ou j en suis retard', '#/avancement'],
+  ['Radar élèves', 'radar eleve decroche difficulte alerte', '#/radar'],
+  ['Importer un tableau (CSV)', 'importer csv tableau progression edt', '#/importer'],
+];
 export function search(q) {
   const terms = norm(q).split(/\s+/).filter(Boolean);
   if (!terms.length) return [];
   const match = (...fields) => { const t = norm(fields.join(' ')); return terms.every(x => t.includes(x)); };
   const out = [];
+  for (const [title, kw, href] of ACTIONS) if (terms.every(x => norm(`${title} ${kw}`).includes(x))) out.push({ group: 'Actions', title, detail: '', href });
   for (const p of allPages()) if (match(p.title, p.rubrique)) out.push({ group: 'Pages', title: p.title, detail: p.ready ? p.rubrique : `${p.rubrique} · prévu à l’étape ${p.etape}`, href: p.href });
   if (!isHidden('classe', 'eleves')) {
     for (const s of store.all('student')) if (match(s.firstName, s.lastName)) {

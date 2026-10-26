@@ -8,6 +8,7 @@ import * as E from '../eleve.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyState, pickFiles, download } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { printDocument, printTable } from '../print.js';
+import { consumeFlag } from '../router.js';
 
 const fullName = (s) => `${s.firstName} ${s.lastName || ''}`.trim();
 const students = (cls) => model.studentsOfClass(cls.id).map(x => x.student);
@@ -159,6 +160,7 @@ export function renderMessages({ query, rerender }) {
   const counts = (sid) => Object.fromEntries(CARNET_CATS.map(([k]) => [k, inSpan.filter(x => x.studentId === sid && x.category === k).length]));
   const shownCats = CARNET_CATS.filter(([k]) => inSpan.some(x => x.category === k));
   const recapRows = st.map(s => ({ s, c: counts(s.id), u: unsigned.filter(x => x.studentId === s.id).length })).filter(r => Object.values(r.c).some(Boolean) || r.u);
+  if (consumeFlag('new')) setTimeout(() => carnetDialog(cls, st, filter), 0);
   const exch = store.all('exchange').filter(x => ids.has(x.studentId) && (!filter || x.studentId === filter)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const printStudent = (sid) => { const s = store.get(sid); const rows = all.filter(x => x.studentId === sid).sort((a, b) => a.date.localeCompare(b.date));
     printDocument(printTable({ title: `Carnet de liaison — ${fullName(s)}`, subtitle: cls.name, columns: ['Date', 'Motif', 'Détail', 'Mot dans le carnet', 'Signé'].map(label => ({ label })), rows: rows.map(x => [model.frShort(x.date), catOf(x.category)[1], x.text || '', x.written ? 'oui' : '', x.signed ? (x.signedAt ? model.frShort(x.signedAt) : 'oui') : (x.written ? 'non' : '')]) })); };

@@ -200,6 +200,9 @@ export const ROADMAP = [
   R(4, '§12 Organisation', 'Sorties et cycles (natation, judo, classe découverte) : dates dans l’agenda et le cahier journal, adultes et taux d’encadrement saisi, groupes avec adulte responsable, autorisations (annuelle ou propre à la sortie), check-list, appel au départ et au retour, fiche de sortie et mot aux familles avec coupon', 'fait'),
   R(4, '§12 Organisation', 'Remplaçante / brigade : un remplacement = une classe temporaire (élèves tapés ou lus sur une photo), école, horaires, contacts, consignes, documents de la titulaire, jours de classe comptés, distance notée, historique CSV ; classe retirée du choix une fois terminée', 'fait'),
   R(4, '§5 Préparation', 'Disciplines et méthodes : manuel, fichier ou méthode par discipline et sous-domaine (sous-domaines repris des programmations), proposés dans les fiches de séquence et de séance, imprimables et repris dans le dossier de remplacement', 'fait'),
+  R(4, '§8 Élèves', 'Radar élèves : signaux croisés sur 2, 3 ou 6 semaines (absences non justifiées, retards, carnet, non acquis, observations), élèves « à regarder » avec le détail et les pistes ; rappel discret sur Aujourd’hui', 'fait'),
+  R(4, '§2 Navigation', 'Mode en classe : activité en cours et suivante, séance faite, appel, timer, projection, noter au carnet en 2 touches', 'fait'),
+  R(4, '§2 Navigation', 'Aujourd’hui selon l’heure (« Maintenant » pendant la classe, « Pour demain » après la classe) ; actions dans la recherche (noter, nouvelle activité, appel, sortie, remplacement…)', 'fait', 'Les 6 rubriques sont gardées : les regrouper en 4 aurait donné des sous-menus de 15 à 19 pages, moins lisibles.'),
   R(5, '§5 Préparation', 'Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal', 'fait'),
   R(5, '§19 Atelier', 'Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie', 'fait', 'Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android).'),
   R(5, '§4 Années', 'Binôme activable / désactivable par classe (fin de l’année de PES, temps plein)', 'fait', 'Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions.'),
@@ -236,6 +239,7 @@ export const ROADMAP = [
 export const RUBRIQUES = [
   { id: 'aujourdhui', titre: 'Aujourd’hui', icone: 'sun', sous: [
     { id: 'journee', titre: 'Ma journée', route: 'aujourdhui' },
+    { id: 'enclasse', titre: 'Mode en classe', route: 'enclasse' },
     { id: 'appel', titre: 'Appel', route: 'appel' },
     { id: 'registre', titre: 'Registre d’appel', route: 'registre' },
     { id: 'services', titre: 'Cantine et services', route: 'services' },
@@ -276,6 +280,7 @@ export const RUBRIQUES = [
     { id: 'infos', titre: 'Informations élèves', route: 'infos' },
     { id: 'trombi', titre: 'Trombinoscope', route: 'trombi' },
     { id: 'evaluations', titre: 'Évaluations', route: 'evaluations' },
+    { id: 'radar', titre: 'Radar élèves', route: 'radar' },
     { id: 'livrets', titre: 'Livrets et bilans', route: 'livrets' },
     { id: 'differenciation', titre: 'Différenciation', route: 'differenciation' },
     { id: 'rattrapage', titre: 'Rattrapage', route: 'rattrapage' },

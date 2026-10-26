@@ -16,6 +16,7 @@ import { addFiles } from './files.js';
 import { printDocument } from '../print.js';
 import { printDay, printWeek, printMaterials, printWeekDossier } from '../printdocs.js';
 import * as CP from '../cahier-plus.js';
+import { consumeFlag } from '../router.js';
 import { activityDialog, activityDetails, durLabel } from './cahier-activite.js';
 import { competencyIndex, competencyLabel } from './referentiels.js';
 import { download } from '../ui.js';
@@ -41,6 +42,8 @@ export function render({ query, rerender: rr }) {
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': view === 'jour' ? 'Jour de classe suivant' : 'Semaine suivante', 'data-testid': 'next', onclick: () => step(1) }, icon('chevright')),
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => go(model.todayIso()) }, 'Aujourd’hui'),
     h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, [['jour', 'Jour'], ['semaine', 'Semaine']].map(([v, l]) => h('button', { type: 'button', class: view === v ? 'on' : '', 'data-testid': `view-${v}`, onclick: () => go(date, v) }, l))));
+  if (consumeFlag('new')) setTimeout(() => activityDialog(cls, null, date), 0);
+  if (consumeFlag('prep')) setTimeout(() => prefillDialog(cls, date), 0);
   return view === 'semaine' ? weekView(cls, date, nav) : dayView(cls, date, nav);
 }
 

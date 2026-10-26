@@ -68,6 +68,8 @@ import * as pAvancement from './pages/avancement.js';
 import * as pSorties from './pages/sorties.js';
 import * as pMissions from './pages/missions.js';
 import * as pMethodes from './pages/methodes.js';
+import * as pRadar from './pages/radar.js';
+import * as pEnClasse from './pages/enclasse.js';
 import * as pRegistre from './pages/registre.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
@@ -133,6 +135,8 @@ const ROUTES = {
   sorties: pSorties, sortie: pSorties,
   missions: pMissions,
   methodes: pMethodes,
+  radar: pRadar,
+  enclasse: pEnClasse,
   registre: pRegistre,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },

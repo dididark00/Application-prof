@@ -1043,3 +1043,18 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .methods-table td { vertical-align: top; }
 .methods-table input { width: 100%; min-width: 8em; }
 .method-hint { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* Mode en classe */
+.enclasse .ec-head { justify-content: space-between; }
+.enclasse h1 { margin: 0; font-size: 1.4rem; }
+.ec-entry { display: grid; gap: 2px; border-left: 6px solid var(--line); padding: 6px 10px; margin-bottom: 8px; }
+.ec-entry strong { font-size: 1.25rem; }
+.ec-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 12px 0; }
+.ec-big { min-height: 64px; font-size: 1.1rem; justify-content: center; }
+.ec-students { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.ec-student { min-height: 52px; font-size: 1.05rem; justify-content: center; }
+.ec-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ec-cat { min-height: 56px; justify-content: center; }
+.ec-cat.ec-warn { border-color: var(--warn); } .ec-cat.ec-ok { border-color: var(--ok, #3f8f3f); }
+.now-card { border-left: 5px solid var(--accent); }
+.radar-item summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }

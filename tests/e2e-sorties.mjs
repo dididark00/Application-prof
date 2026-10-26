@@ -120,6 +120,61 @@ await test('Disciplines et méthodes : manuel par sous-domaine, proposé dans la
   eq(await S(`return store.get(a).manualRefs.length;`, seq), 1, 'référence ajoutée à la séquence');
 });
 
+await test('Radar : 3 signaux de 2 sources = à regarder ; détail et lien', async () => {
+  const sid = await S(`const cls = store.get(store.getSettings().currentClassId); const st = model.studentsOfClass(cls.id).map(x => x.student); const s = st.find(x => x.firstName === 'Sacha') || st[0];
+    const today = model.todayIso();
+    for (const c of ['comportement', 'oubli']) await store.create('carnet', { classId: cls.id, studentId: s.id, date: model.addDays(today, -2), category: c, text: '', written: false, signed: false }, 'x');
+    await store.create('attendance', { classId: cls.id, date: model.addDays(today, -3), half: 'matin', marks: { [s.id]: { status: 'absent' } }, validated: true }, 'x');
+    return s.id;`);
+  await go('#/radar');
+  const t = await page.getByTestId('radar-flagged').innerText();
+  const name = await S(`return store.get(a).firstName;`, sid);
+  assert(t.includes(name) && t.includes('1 absence') && t.includes('2 carnet'), t);
+  await go('#/aujourdhui');
+  assert((await page.getByTestId('today-radar').innerText()).includes(name), 'rappel sur Aujourd’hui');
+});
+
+await test('Mode en classe : noter au carnet en 2 touches, appel, timer', async () => {
+  await go('#/enclasse');
+  const n0 = await S(`return store.all('carnet').length;`);
+  await page.getByTestId('ec-student').first().click(); await page.waitForTimeout(150);
+  await page.getByTestId('ec-cat-felicitations').click(); await page.waitForTimeout(300);
+  eq(await S(`return store.all('carnet').length;`), n0 + 1, 'noté');
+  assert(await page.getByTestId('ec-appel').count() === 1 && await page.getByTestId('ec-timer').count() === 1, 'appel et timer');
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200);
+  eq(await page.evaluate(() => document.documentElement.scrollWidth <= 392), true, 'téléphone sans débordement');
+  await page.screenshot({ path: `${OUT}mode-en-classe.png`, fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+});
+
+await test('Recherche : actions rapides qui ouvrent directement le bon formulaire', async () => {
+  await go('#/recherche?q=noter');
+  const link = page.getByTestId('search-results').getByRole('link', { name: /Noter un comportement/ });
+  assert(await link.count() === 1, 'action proposée');
+  await link.click(); await page.waitForTimeout(500);
+  assert(await page.getByTestId('carnet-save').count() === 1, 'formulaire du carnet ouvert');
+  assert(!(await page.evaluate(() => location.hash)).includes('new=1'), 'paramètre retiré de l’adresse');
+  await page.keyboard.press('Escape');
+  await go('#/recherche?q=natation');
+  assert((await page.getByTestId('search-results').innerText()).includes('Nouvelle sortie'), 'action sortie');
+});
+
+await test('Aujourd’hui : « Maintenant » pendant la classe, « Pour demain » après', async () => {
+  const p2 = await ctx.newPage(); const errs2 = []; p2.on('pageerror', e => errs2.push(e.message));
+  await p2.clock.setFixedTime(new Date('2026-11-03T10:00:00'));
+  await p2.goto(BASE); await p2.waitForFunction(() => window.__classeurReady === true); await p2.waitForTimeout(300);
+  await p2.evaluate(() => { location.hash = '#/aujourdhui'; }); await p2.waitForTimeout(400);
+  assert(await p2.getByTestId('today-now').count() === 1, '« Maintenant » à 10 h');
+  await p2.close();
+  const p3 = await ctx.newPage();
+  await p3.clock.setFixedTime(new Date('2026-11-03T18:00:00'));
+  await p3.goto(BASE); await p3.waitForFunction(() => window.__classeurReady === true); await p3.waitForTimeout(300);
+  await p3.evaluate(() => { location.hash = '#/aujourdhui'; }); await p3.waitForTimeout(400);
+  assert(await p3.getByTestId('today-tomorrow').count() === 1, '« Pour demain » à 18 h');
+  await p3.close();
+  eq(errs2.length, 0, errs2.join(' | '));
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-sorties.txt`, results.join('\n'));
