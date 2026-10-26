@@ -65,6 +65,9 @@ import * as pLiens from './pages/liens.js';
 import * as pArchives from './pages/archives.js';
 import * as pImporter from './pages/importer.js';
 import * as pAvancement from './pages/avancement.js';
+import * as pSorties from './pages/sorties.js';
+import * as pMissions from './pages/missions.js';
+import * as pMethodes from './pages/methodes.js';
 import * as pRegistre from './pages/registre.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
@@ -127,6 +130,9 @@ const ROUTES = {
   archive: pArchives,
   importer: pImporter,
   avancement: pAvancement,
+  sorties: pSorties, sortie: pSorties,
+  missions: pMissions,
+  methodes: pMethodes,
   registre: pRegistre,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
@@ -216,7 +222,7 @@ function ensureSelection() {
   }
   const c = s.currentClassId && store.get(s.currentClassId);
   if (!c || c.deletedAt || !y || c.yearId !== y.id) {
-    const cs = y ? model.classesOfYear(y.id) : [];
+    const cs = y ? model.classesOfYear(y.id).filter(x => !x.missionEnded) : [];
     const id = cs[0] ? cs[0].id : null;
     if (id !== s.currentClassId) patch.currentClassId = id;
   }

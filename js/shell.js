@@ -62,7 +62,8 @@ function renderTopbar() {
   const s = store.getSettings();
   const years = model.years();
   const y = model.currentYear();
-  const classes = y ? model.classesOfYear(y.id) : [];
+  // Un remplacement terminé n'encombre plus le choix de classe (Organisation › Remplacements pour le rouvrir).
+  const classes = y ? model.classesOfYear(y.id).filter(c => !c.missionEnded || c.id === s.currentClassId) : [];
   const top = document.getElementById('topbar');
 
   const yearSel = h('select', { class: 'sel', 'aria-label': 'Année scolaire', 'data-testid': 'year-select',

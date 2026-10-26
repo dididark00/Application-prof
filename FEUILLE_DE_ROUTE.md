@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (161) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 174 entrées.
+Légende : ✅ Réalisé (164) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 177 entrées.
 
 ## Étape 1 — Socle
 
@@ -147,6 +147,9 @@ Légende : ✅ Réalisé (161) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §19 Atelier | Symétrie et reproduction : figures dessinées par l’enseignante (nœuds du quadrillage) ; figures à mesurer : quadrillage en cm et règle graduée sur la fiche pour la projection |  |
 | ✅ | §19 Atelier | Dictée de mots : liste de mots choisie par l’enseignante |  |
 | ✅ | §12 Organisation | Surveillances : accueils (ex. 8 h 20 – 8 h 30, 13 h 20 – 13 h 30) en plus des récréations, horaires et lieux par surveillance, répartition équilibrée en minutes, « je surveille » sur Aujourd’hui |  |
+| ✅ | §12 Organisation | Sorties et cycles (natation, judo, classe découverte) : dates dans l’agenda et le cahier journal, adultes et taux d’encadrement saisi, groupes avec adulte responsable, autorisations (annuelle ou propre à la sortie), check-list, appel au départ et au retour, fiche de sortie et mot aux familles avec coupon |  |
+| ✅ | §12 Organisation | Remplaçante / brigade : un remplacement = une classe temporaire (élèves tapés ou lus sur une photo), école, horaires, contacts, consignes, documents de la titulaire, jours de classe comptés, distance notée, historique CSV ; classe retirée du choix une fois terminée |  |
+| ✅ | §5 Préparation | Disciplines et méthodes : manuel, fichier ou méthode par discipline et sous-domaine (sous-domaines repris des programmations), proposés dans les fiches de séquence et de séance, imprimables et repris dans le dossier de remplacement |  |
 | ✅ | §26 Agenda | Tableau « Informations élèves » de l’agenda (fiche, coopérative, assurance, image, cantine, garderie, bus, PAI, PPRE/PAP/PPS, suivi extérieur, RASED, lunettes, gaucher, situation familiale, profession des parents) | Relié aux fiches sans double saisie ; colonnes ajoutables et masquables ; confidentiel séparé ; impression remplie ou vierge. |
 | ✅ | §26 Agenda | Outils de classe : lire pour moi, sonomètre, pot de récompense, abaque, tableau des nombres, numération et conversion, réglettes, pourcentages (dictée, appel) | Affichables en grand, hors ligne, sans compte. |
 | ✅ | §26 Agenda | Texte d’une photo (tapuscrit) : lire, corriger, agrandir, imprimer, envoyer vers Seyès / Lire pour moi |  |

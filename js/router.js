@@ -23,7 +23,7 @@ export function subHref(rub, sub) {
 export function currentLocation(route = parseHash()) {
   if (route.name === 'avenir') return { rub: route.params[0], sub: route.params[1] };
   const ALIASES = { eleve: ['classe', 'eleves'], referentiels: ['preparer', 'programmes'], programmation: ['preparer', 'programmations'], progression: ['preparer', 'progressions'],
-    sequence: ['preparer', 'sequences'], seance: ['preparer', 'preparations'] };
+    sequence: ['preparer', 'sequences'], seance: ['preparer', 'preparations'], sortie: ['planifier', 'sorties'] };
   if (ALIASES[route.name] && !RUBRIQUES.some(r => r.sous.some(s => s.route === route.name))) return { rub: ALIASES[route.name][0], sub: ALIASES[route.name][1] };
   for (const r of RUBRIQUES) for (const s of r.sous) if (s.route === route.name) return { rub: r.id, sub: s.id };
   return { rub: null, sub: null };

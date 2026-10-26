@@ -5,6 +5,7 @@ import { h, icon, toast, badge, safeUrl, pickFiles } from './ui.js';
 import { bound, pickMany } from './forms.js';
 import { competencyIndex, competencyLabel, competencySource, pickCompetencies } from './pages/referentiels.js';
 import { addFiles } from './pages/files.js';
+import { methodHint } from './pages/methodes.js';
 
 /** Rubriques d'une fiche, enregistrées automatiquement. */
 export function sectionFields(recId, fields, { hideEmpty = false, prefix = '' } = {}) {
@@ -70,6 +71,7 @@ export function manualRefsBlock(recId) {
         const sel = await pickMany({ title: 'Choisir un manuel', single: true, items: manuals.map(m => ({ id: m.id, label: m.title, detail: [m.publisher, m.edition, m.kind].filter(Boolean).join(' · ') })) });
         if (sel?.length) await store.update(recId, { manualRefs: [...refs, { id: store.uid(), manualId: sel[0], pages: '', exercises: '' }] }, 'Référence manuel ajoutée');
       } }, 'Ajouter')),
+    methodHint(rec),
     refs.length ? h('div', { class: 'stack-sm' }, refs.map(r => {
       const m = store.get(r.manualId);
       return h('div', { class: 'manual-ref' }, h('strong', {}, m ? m.title : '(manuel supprimé)'),

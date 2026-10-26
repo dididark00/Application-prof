@@ -7,7 +7,7 @@ import { pageHeader, subTabs } from '../components.js';
 import { bound, iconBtn } from '../forms.js';
 import { filesBlock } from '../pedago-ui.js';
 
-const KINDS = ['manuel', 'guide du maître', 'cahier / fichier élève', 'autre'];
+const KINDS = ['manuel', 'guide du maître', 'cahier / fichier élève', 'méthode', 'site / ressource en ligne', 'autre'];
 // Suggestions : seuls l'éditeur ou la collection sont proposés ; tout le reste est à compléter.
 const SUGGEST = [{ title: 'Méthode Picot', publisher: '' }, { title: 'Accès', publisher: 'Accès Éditions' }, { title: '', publisher: 'Retz' }];
 

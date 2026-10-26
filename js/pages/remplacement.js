@@ -8,6 +8,7 @@ import * as model from '../model.js';
 import * as P from '../pedago.js';
 import * as O from '../orga.js';
 import * as V from '../vie.js';
+import { methodsOf, manualTitle } from './methodes.js';
 import { h, icon, field, badge } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { bound } from '../forms.js';
@@ -29,6 +30,7 @@ const SECTIONS = {
     ['plan', 'Plan de classe', 'auto', true],
     ['responsabilites', 'Responsabilités des élèves', 'auto', true],
     ['devoirs', 'Devoirs à venir', 'auto', true],
+    ['methodes', 'Disciplines et méthodes (manuels utilisés)', 'auto', true],
     ['materiel', 'Où trouver le matériel', 'texte', true],
     ['securite', 'Sécurité (PPMS, exercices, infirmerie, PAI : emplacement des trousses)', 'texte', true],
     ['contacts', 'Contacts utiles de l’école', 'auto', true],
@@ -120,6 +122,9 @@ export function build(cls, rec) {
       const rec2 = store.all('jobs').find(j => j.classId === cls.id);
       const cur = currentAssignment(rec2, from);
       parts.push(H2(label), rec2 && cur ? h('ul', {}, rec2.jobs.map(j => h('li', {}, `${j.label} : ${(cur.map?.[j.id] || []).map(id2 => store.get(id2)?.firstName).filter(Boolean).join(', ') || '—'}`))) : h('p', { class: 'muted' }, '—'));
+    } else if (id === 'methodes') {
+      const ms = methodsOf(cls);
+      parts.push(H2(label), ms.length ? h('table', { class: 'print-table' }, h('tbody', {}, ms.map(m => h('tr', {}, h('td', {}, `${m.subject}${m.subdomain ? ' — ' + m.subdomain : ''}`), h('td', {}, (m.manualIds || []).map(manualTitle).join(', ')), h('td', {}, m.note || ''))))) : h('p', { class: 'muted' }, 'À renseigner dans Préparer › Disciplines et méthodes.'));
     } else if (id === 'devoirs') {
       const hw = P.ofClass('homework', cls.id).filter(x => x.dueDate >= from).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 15);
       parts.push(H2(label), hw.length ? h('ul', {}, hw.map(x => h('li', {}, `Pour le ${model.frShort(x.dueDate)} : ${x.title}${x.subject ? ' (' + x.subject + ')' : ''}`))) : h('p', { class: 'muted' }, 'Aucun devoir prévu.'));
