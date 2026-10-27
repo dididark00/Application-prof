@@ -90,13 +90,20 @@ export function printTimetable(tt, version, cls) {
         h('div', { class: 'edt-cell', style: { borderLeftColor: model.subjectColor(s.subject) } }, h('strong', {}, s.subject || ''), s.label ? ` — ${s.label}` : '', h('div', { class: 'small' }, `${s.start}–${s.end}${s.levels?.length ? ' · ' + s.levels.join(', ') : ''}${s.mode && s.mode !== 'dirigé' ? ' · ' + s.mode : ''}`))))))))));
 }
 
+function compText(e, s) {
+  const seq = store.get(e.occ?.sequenceId) || store.get(s?.sequenceId);
+  const ids = [...new Set([...(s?.competencyIds || []), ...(seq?.competencyIds || []), ...(e.occ?.competencyIds || [])])];
+  const idx = new Map(); for (const r of store.all('referential')) for (const i of r.items || []) idx.set(i.id, i);
+  const comps = ids.map(id => idx.get(id)).filter(Boolean).map(i => `${i.code ? i.code + ' ' : ''}${i.label}`);
+  return [seq && `Séquence : ${P.sequenceTitle(seq)}`, comps.length && `Compétences : ${comps.join(' ; ')}`].filter(Boolean).join('\n');
+}
 function entryRow(e, cls, multi) {
   const s = e.status === 'faite' || e.status === 'partielle' ? (e.occ?.snapshot || e.session) : e.session;
   const o = e.occ || {};
   const details = [o.domain, [o.org === 'groupes' ? 'groupes' : '', o.decloisonnement ? 'décloisonnement' : '', o.horsHoraires ? 'hors horaires' : '', o.lieu && o.lieu !== 'Classe' ? o.lieu : ''].filter(Boolean).join(' · '),
     (o.objective || s?.objective) && `Objectif : ${o.objective || s.objective}`,
     o.deroule ? o.deroule : s ? (s.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ` : ${ph.consigne}` : ''}`).join(' · ') : '',
-    o.materiel && `Matériel : ${o.materiel}`, o.notes && `Notes : ${o.notes}`].filter(Boolean).join('\n');
+    o.materiel && `Matériel : ${o.materiel}`, o.notes && `Notes : ${o.notes}`, compText(e, s)].filter(Boolean).join('\n');
   return h('tr', {}, h('td', { class: 'nowrap' }, `${e.start}–${e.end}`), h('td', {}, e.subject || ''), multi ? h('td', {}, (e.levels?.length ? e.levels : cls.levels).join(', ')) : null,
     h('td', {}, h('strong', {}, e.title), e.mode && e.mode !== 'dirigé' ? ` (${e.mode})` : '', details ? h('div', { class: 'small pre' }, details) : null),
     h('td', {}, e.status !== 'prévue' ? e.status : '', e.occ?.note ? h('div', { class: 'small' }, e.occ.note) : null));

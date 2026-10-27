@@ -129,7 +129,7 @@ await test('Couverture des compétences : la compétence travaillée apparaît (
   const t = await page.getByTestId('ref-coverage').first().innerText();
   assert(t.includes('1 fiche') && t.includes('1 jour fait'), `couverture : ${t}`);
   await go('#/cahier?d=2026-11-23');
-  assert((await page.getByTestId('entry-comps').first().innerText()).includes('M1'), 'compétence visible au cahier journal');
+  assert((await page.locator('[data-testid=entry-comps], [data-testid=jd-comps]').first().innerText()).includes('M1'), 'compétence visible au cahier journal');
   await go('#/referentiels');
   assert(await page.getByTestId('ref-how').count() === 1, 'explication « à quoi ça sert »');
 });

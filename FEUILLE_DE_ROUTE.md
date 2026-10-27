@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (167) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 180 entrées.
+Légende : ✅ Réalisé (168) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 181 entrées.
 
 ## Étape 1 — Socle
 
@@ -200,6 +200,7 @@ Légende : ✅ Réalisé (167) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §6 Planifier | Emploi du temps : onglets par période et emplois du temps successifs d’une période (dates, nom, « en cours / à venir »), créneaux changés signalés, changement à partir d’une date |  |
 | ✅ | §13 Familles | Carnet de liaison et comportement : noter en un geste (comportement, travail, oubli, retard, félicitations, information), mots à faire signer et relances, bilan par élève, impression du suivi | Remplace la page « Messages » (pas d’envoi possible) ; la rédaction d’un mot à partir d’un modèle reste disponible. |
 | ✅ | §6 Planifier | Cahier journal : fiche d’activité complète — durée, classe entière ou groupes, domaine, discipline, décloisonnement, hors horaires, intitulé, objectif, séquence, déroulement, matériel, lieu, pièces jointes, notes, compétences (comptées dans la couverture des programmes) | « + Activité » ou « Plus › Modifier l’activité » sur un créneau ; ne change que cette date. |
+| ✅ | §6 Planifier | Cahier journal détaillé (programme : discipline, domaine, séquence, notions ; objectif, critères, compétences en toutes lettres, déroulé avec durées et consignes, matériel, manuels, trace) ou compact ; « Vider… » un jour, une semaine, un mois, une période ou des dates (séances faites gardées par défaut, annulable) |  |
 | ✅ | §5 Préparation | Couverture des compétences : où et quand chaque compétence officielle est travaillée ; compétences affichées au cahier journal |  |
 | ✅ | §19 Atelier | Polices pour les débutants et la dyslexie (Andika, Marelle Bâton, OpenDyslexic, Verdana) et écriture en capitales d’imprimerie | Andika et OpenDyslexic (licence OFL) fournies ; Verdana est celle de l’appareil (remplacée par une police proche si absente, ex. Android). |
 | ✅ | §4 Années | Binôme activable / désactivable par classe (fin de l’année de PES, temps plein) | Réglages › Classes : sans binôme, plus de « jour de la binôme », de choix « binôme » ni de transmissions. |

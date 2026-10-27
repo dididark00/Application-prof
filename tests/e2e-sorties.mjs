@@ -175,6 +175,37 @@ await test('Aujourd’hui : « Maintenant » pendant la classe, « Pour demain �
   eq(errs2.length, 0, errs2.join(' | '));
 });
 
+await test('Cahier journal détaillé : programme, séquence, compétences en toutes lettres, déroulé avec consignes', async () => {
+  const sid = await S(`const cls = store.all('class').find(c => c.name === 'CE2 (démo)'); await store.setSettings({ currentYearId: cls.yearId, currentClassId: cls.id });
+    const seq = store.all('sequence').find(s => s.classId === cls.id && s.title.includes('10 000'));
+    const ses = store.all('session').find(s => s.sequenceId === seq.id);
+    const r = await store.create('referential', { name: 'Réf. détail (exemple)', version: '1', levels: ['CE2'], status: 'validé', items: [{ id: 'kd1', code: 'N3', label: 'Lire et écrire les nombres (exemple)' }] }, 'r');
+    await store.update(ses.id, { competencyIds: ['kd1'], objective: 'Décomposer (exemple)', phases: [{ id: 'p1', kind: 'rappel', title: 'Rappel', duration: 5, consigne: 'Ardoise : écrire 1 254 (exemple)' }, { id: 'p2', kind: 'recherche', title: 'Recherche', duration: 20, consigne: 'Par deux, décomposer (exemple)' }] }, 'x');
+    await store.create('occurrence', { classId: cls.id, date: '2026-11-05', start: '09:00', end: '09:45', subject: 'Mathématiques', sessionId: ses.id, status: 'prévue', mode: 'dirigé', levels: [] }, 'x');
+    return ses.id;`);
+  await go('#/cahier?d=2026-11-05'); await page.getByTestId('journal-detail').click(); await page.waitForTimeout(200);
+  const card = page.getByTestId('entry').filter({ hasText: 'Décomposer (exemple)' });
+  const t = await card.innerText();
+  for (const x of ['Programme', 'Mathématiques', 'Séquence', 'N3 — Lire et écrire les nombres (exemple)', 'Ardoise : écrire 1 254', '20 min', 'Par deux, décomposer']) assert(t.includes(x), `détail : ${x}`);
+  await page.getByTestId('journal-compact').click(); await page.waitForTimeout(200);
+  assert(!(await page.getByTestId('entry').filter({ hasText: 'Décomposer (exemple)' }).innerText()).includes('Par deux, décomposer'), 'vue compacte');
+  await page.getByTestId('journal-detail').click();
+});
+
+await test('Vider une semaine du cahier journal (faites gardées), annulable', async () => {
+  const cnt = () => S(`return store.all('occurrence').filter(o => !o.deletedAt && o.classId === store.getSettings().currentClassId && o.date >= '2026-11-02' && o.date <= '2026-11-08');`);
+  await S(`const cls = store.get(store.getSettings().currentClassId); await store.create('occurrence', { classId: cls.id, date: '2026-11-03', start: '14:00', end: '14:30', subject: 'EPS', title: 'Faite (exemple)', status: 'faite', mode: 'dirigé', levels: [] }, 'x');`);
+  const before = await cnt(); assert(before.length >= 2, 'des séances cette semaine');
+  await go('#/cahier?d=2026-11-03&v=semaine');
+  await page.getByTestId('clear-journal').click();
+  assert((await page.getByTestId('clear-info').innerText()).includes('élément(s)'), 'aperçu du nombre');
+  await page.getByTestId('clear-go').click(); await page.waitForTimeout(400);
+  const after = await cnt();
+  eq(after.length, before.filter(o => ['faite', 'partielle'].includes(o.status)).length, 'seules les séances faites restent');
+  await S(`await store.undo();`); await page.waitForTimeout(200);
+  eq((await cnt()).length, before.length, 'annulation');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-sorties.txt`, results.join('\n'));

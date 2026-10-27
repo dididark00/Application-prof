@@ -20,6 +20,7 @@ import { consumeFlag } from '../router.js';
 import { activityDialog, activityDetails, durLabel } from './cahier-activite.js';
 import { competencyIndex, competencyLabel } from './referentiels.js';
 import { download } from '../ui.js';
+import * as JD from '../journal-detail.js';
 
 let rerender = () => {};
 
@@ -65,8 +66,9 @@ function dayView(cls, date, nav) {
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => activityDialog(cls, null, date) }, icon('plus', 16), 'Activité'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDocument(printDay(cls, date)) }, icon('print', 16), 'Imprimer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…')] }),
-    subTabs(), nav,
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'clear-journal', onclick: () => clearDialog(cls, date) }, 'Vider…')] }),
+    subTabs(), nav, detailToggle(),
     prepareBanner(cls, date),
     !plan.school.ok ? h('p', { class: 'banner' }, plan.school.reason) : null,
     plan.school.ok && !plan.myDay ? h('p', { class: 'banner info' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
@@ -126,16 +128,18 @@ function entryCard(cls, e, inConflict) {
 
   const body = [];
   // Compétences officielles de la fiche (et de sa séquence) : le lien programme → cahier journal reste visible.
+  const detailed = JD.isDetailed();
   const comps = [...new Set([...(shown?.competencyIds || []), ...(store.get(shown?.sequenceId)?.competencyIds || []), ...(e.occ?.competencyIds || []), ...(store.get(e.occ?.sequenceId)?.competencyIds || [])])];
-  if (comps.length) { const idx = competencyIndex(); body.push(h('p', { class: 'small entry-comps', 'data-testid': 'entry-comps', title: comps.map(c => competencyLabel(c, idx)).join('\n') }, '🎯 ', comps.slice(0, 3).map(c => { const x = idx.get(c); return x ? (x.code || x.label.slice(0, 60)) : ''; }).filter(Boolean).join(' · '), comps.length > 3 ? ` (+${comps.length - 3})` : '')); }
+  if (detailed && e.status !== 'reportée' && (shown || e.occ)) body.push(...JD.detailBlock(e, shown));
+  else if (comps.length) { const idx = competencyIndex(); body.push(h('p', { class: 'small entry-comps', 'data-testid': 'entry-comps', title: comps.map(c => competencyLabel(c, idx)).join('\n') }, '🎯 ', comps.slice(0, 3).map(c => { const x = idx.get(c); return x ? (x.code || x.label.slice(0, 60)) : ''; }).filter(Boolean).join(' · '), comps.length > 3 ? ` (+${comps.length - 3})` : '')); }
   body.push(...activityDetails(e, shown));
   if (e.status === 'reportée') {
     const to = e.occ?.postponedTo && store.get(e.occ.postponedTo);
     body.push(h('p', { class: 'small' }, 'Reportée', to ? [' au ', h('a', { href: `#/cahier?d=${to.date}` }, `${model.frDate(to.date)} ${to.start}`)] : '', '. Les supports restent attachés à la fiche.'));
   } else if (shown) {
     if (changedSince) body.push(h('p', { class: 'small muted' }, 'Version réalisée affichée. La fiche a été modifiée depuis : ', h('a', { href: `#/seance/${s.id}` }, 'voir la version actuelle'), '.'));
-    if (shown.objective) body.push(h('p', { class: 'small' }, h('strong', {}, 'Objectif : '), shown.objective));
-    if ((shown.phases || []).length) body.push(h('ol', { class: 'phase-mini' }, shown.phases.map(ph => h('li', {}, `${ph.title || P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` · ${ph.duration} min` : ''}`))));
+    if (shown.objective && !detailed) body.push(h('p', { class: 'small' }, h('strong', {}, 'Objectif : '), shown.objective));
+    if ((shown.phases || []).length && !detailed) body.push(h('ol', { class: 'phase-mini' }, shown.phases.map(ph => h('li', {}, `${ph.title || P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` · ${ph.duration} min` : ''}`))));
     const files = (shown.fileIds || []).map(id => store.get(id)).filter(f => f && !f.deletedAt);
     if (files.length) body.push(h('p', { class: 'small' }, icon('file', 14), ' ', files.map(f => f.kind === 'link' && safeUrl(f.url) ? h('a', { href: safeUrl(f.url), target: '_blank', rel: 'noopener noreferrer' }, f.name) : h('a', { href: `#/fichiers?open=${f.id}` }, f.name)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])));
   } else if (e.kind === 'intervention' || e.intervention) {
@@ -246,7 +250,8 @@ function weekView(cls, date, nav) {
       actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, monday) }, 'Préparer la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, monday) }, icon('download', 16), 'Exporter…'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-week', onclick: () => printDocument(printWeek(cls, monday), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer la semaine'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-dossier', onclick: () => printDocument(printWeekDossier(cls, monday)) }, icon('print', 16), 'Dossier de la semaine')] }),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-dossier', onclick: () => printDocument(printWeekDossier(cls, monday)) }, icon('print', 16), 'Dossier de la semaine'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'clear-journal', onclick: () => clearDialog(cls, monday, 'semaine') }, 'Vider…')] }),
     subTabs(), nav,
     prepareBanner(cls, monday),
     h('div', { class: 'week', style: { gridTemplateColumns: `repeat(${days.length}, minmax(160px, 1fr))` }, 'data-testid': 'week' }, days.map(d => {
@@ -317,6 +322,44 @@ function prepareBanner(cls, date) {
   return h('div', { class: 'banner info row wrap', 'data-testid': 'prepare-banner' },
     h('span', {}, `Semaine pas encore préparée : ${n} créneau(x) de l’emploi du temps peuvent être pré-remplis avec vos fiches habituelles et vos progressions. Vous n’aurez plus qu’à modifier.`),
     h('button', { class: 'btn btn-small btn-primary', type: 'button', 'data-testid': 'prepare-banner-go', onclick: () => prefillDialog(cls, monday) }, 'Préparer maintenant'));
+}
+
+function detailToggle() {
+  const on = JD.isDetailed();
+  return h('div', { class: 'seg seg-inline', role: 'group', 'aria-label': 'Affichage' }, [[true, 'Détaillé'], [false, 'Compact']].map(([v, l]) =>
+    h('button', { type: 'button', class: on === v ? 'on' : '', 'data-testid': `journal-${v ? 'detail' : 'compact'}`, onclick: () => { JD.setDetailed(v); rerender(); } }, l)));
+}
+
+// ───────── Vider : un jour, une semaine, un mois, une période ou des dates choisies (annulable)
+export function journalToClear(cls, a, b, { planned = true, adhoc = true, done = false } = {}) {
+  return store.all('occurrence').filter(o => o.classId === cls.id && o.date >= a && o.date <= b && (
+    (['faite', 'partielle'].includes(o.status) ? done : (o.slotId || o.interventionId ? planned : adhoc))));
+}
+function clearDialog(cls, date, initial = 'jour') {
+  const kind = h('select', { 'data-testid': 'clear-kind' }, [['jour', 'Le jour affiché'], ['semaine', 'La semaine'], ['mois', 'Le mois'], ['periode', 'La période'], ['dates', 'Des dates choisies']].map(([v, l]) => h('option', { value: v, selected: v === initial }, l)));
+  const from = h('input', { type: 'date', value: date, 'aria-label': 'Du', 'data-testid': 'clear-from' }), to = h('input', { type: 'date', value: model.addDays(date, 6), 'aria-label': 'Au', 'data-testid': 'clear-to' });
+  const datesRow = h('div', { class: 'row', hidden: true }, 'Du', from, 'au', to);
+  const box = (label, checked, testid) => { const i = h('input', { type: 'checkbox', checked, 'data-testid': testid }); return [i, h('label', { class: 'inline' }, i, label)]; };
+  const [planned, plannedL] = box('Les fiches placées dans les créneaux de l’emploi du temps (les créneaux redeviennent vides)', true, 'clear-planned');
+  const [adhoc, adhocL] = box('Les activités ajoutées à la main', true, 'clear-adhoc');
+  const [done, doneL] = box('Aussi les séances déjà marquées faites ou partielles (leur trace sera perdue)', false, 'clear-done');
+  const [blank, blankL] = box('Ne plus poser l’emploi du temps sur ces semaines (semaines vierges)', false, 'clear-blank');
+  const info = h('p', { class: 'small', 'data-testid': 'clear-info' });
+  const range = () => CP.rangeOf(kind.value, date, cls, from.value, to.value);
+  const upd = () => { datesRow.hidden = kind.value !== 'dates'; const [a, b] = range(); const n = journalToClear(cls, a, b, { planned: planned.checked, adhoc: adhoc.checked, done: done.checked }).length;
+    info.textContent = `Du ${model.frShort(a)} au ${model.frShort(b)} : ${n} élément(s) retiré(s) du cahier journal. Les fiches de séance elles-mêmes ne sont pas supprimées. Annulable.`; };
+  [kind, from, to, planned, adhoc, done].forEach(x => x.addEventListener('change', upd)); upd();
+  modal({ title: 'Vider le cahier journal', body: h('div', { class: 'form' }, field('Période', kind), datesRow, plannedL, adhocL, doneL, blankL, info),
+    actions: [{ label: 'Annuler' }, { label: 'Vider', danger: true, testid: 'clear-go', onClick: async () => {
+      const [a, b] = range();
+      const list = journalToClear(cls, a, b, { planned: planned.checked, adhoc: adhoc.checked, done: done.checked });
+      const at = new Date().toISOString();
+      const items = list.map(o => ({ id: o.id, patch: { deletedAt: at } }));
+      if (blank.checked) { const wm = { ...(store.get(cls.id).weekMode || {}) }; for (let m = model.mondayOf(a); m <= b; m = model.addDays(m, 7)) wm[m] = 'vierge'; items.push({ id: cls.id, patch: { weekMode: wm } }); }
+      if (!items.length) { toast('Rien à vider sur cette période.'); return; }
+      await store.batch(items, `Cahier journal vidé du ${model.frShort(a)} au ${model.frShort(b)}`);
+      toast(`${list.length} élément(s) retiré(s).`, { action: 'Annuler', onAction: () => store.undo(), timeout: 12000 });
+    } }] });
 }
 
 // ───────── Exporter : jour, semaine, mois, période, année ou dates choisies

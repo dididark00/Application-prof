@@ -1058,3 +1058,10 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .ec-cat.ec-warn { border-color: var(--warn); } .ec-cat.ec-ok { border-color: var(--ok, #3f8f3f); }
 .now-card { border-left: 5px solid var(--accent); }
 .radar-item summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.jd-prog { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.jd-list { margin: 2px 0 6px; padding-left: 18px; }
+.jd-phases { width: 100%; border-collapse: collapse; margin: 4px 0; }
+.jd-phases td { border-top: 1px solid var(--line); padding: 4px 6px; vertical-align: top; }
+.jd-phases td:first-child { width: 4.5em; color: var(--ink-2); }
+@media (max-width: 600px) { .jd-phases td:nth-child(2) { width: 30%; } }
+.seg.seg-inline { display: inline-flex; width: auto; align-self: flex-start; }
