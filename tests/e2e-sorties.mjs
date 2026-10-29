@@ -206,6 +206,59 @@ await test('Vider une semaine du cahier journal (faites gardées), annulable', a
   eq((await cnt()).length, before.length, 'annulation');
 });
 
+await test('Mon espace : à faire aujourd’hui, important, matériel, notes, semaine, plan du jour', async () => {
+  await go('#/aujourdhui');
+  for (const t of ['espace-banner', 'espace-todo', 'espace-materiel', 'espace-notes-card', 'espace-week', 'today-plan']) assert(await page.getByTestId(t).count() === 1, `bloc ${t}`);
+  await page.getByTestId('espace-add').fill('Préparer la séance d’art (exemple)'); await page.getByTestId('espace-add').press('Enter'); await page.waitForTimeout(300);
+  assert((await page.getByTestId('espace-todo').innerText()).includes('Préparer la séance d’art (exemple)'), 'tâche ajoutée pour aujourd’hui');
+  await page.getByTestId('espace-todo').getByTestId('task-card').filter({ hasText: 'séance d’art' }).locator('input[type=checkbox]').click(); await page.waitForTimeout(300);
+  eq(await S(`return store.all('task').find(t => t.title.includes('séance d’art')).done;`), true, 'cochée = faite');
+  await page.getByTestId('espace-notes').fill('Projet sortie de fin d’année (exemple)'); await page.getByTestId('espace-notes').blur(); await page.waitForTimeout(300);
+  eq(await S(`return store.getSettings().dashNotes;`), 'Projet sortie de fin d’année (exemple)', 'notes enregistrées');
+});
+
+await test('Mes tâches : durée, priorité, important, liste « À imprimer », calendrier et archives', async () => {
+  await go('#/taches');
+  await page.getByTestId('task-new').click();
+  await page.getByTestId('task-title').fill('Photocopier le fichier (exemple)'); await page.getByTestId('task-due').fill(await S(`return model.todayIso();`));
+  await page.getByTestId('task-list-sel').selectOption('imprimer'); await page.getByTestId('task-effort').selectOption('5 à 30 min'); await page.getByTestId('task-priority').selectOption('1'); await page.getByTestId('task-important').check();
+  await page.getByTestId('task-save').click(); await page.waitForTimeout(300);
+  const t = await S(`return store.all('task').find(x => x.title === 'Photocopier le fichier (exemple)');`);
+  eq(JSON.stringify([t.list, t.effort, t.priority, t.important]), JSON.stringify(['imprimer', '5 à 30 min', 1, true]), 'champs');
+  assert((await page.getByTestId('week-cal-imprimer').innerText()).includes('Photocopier le fichier'), 'dans le calendrier À imprimer');
+  await page.getByTestId('tasks-view-archives').click(); await page.waitForTimeout(200);
+  assert((await page.getByTestId('tasks-faire').innerText()).includes('séance d’art'), 'tâche faite dans les archives');
+  await go('#/aujourdhui');
+  assert((await page.getByTestId('espace-materiel').innerText()).includes('Photocopier le fichier'), 'À imprimer dans le matériel à préparer');
+  assert((await page.getByTestId('espace-important').innerText()).includes('Photocopier le fichier'), 'importante');
+});
+
+await test('Tutoriel : astuce par page désactivable, visite guidée', async () => {
+  await S(`await store.setSettings({ tips: true, tipsDismissed: [] });`);
+  await go('#/cahier');
+  assert((await page.getByTestId('tip-card').innerText()).includes('Préparer la semaine'), 'astuce du cahier journal');
+  await page.getByTestId('tip-ok').click(); await page.waitForTimeout(250);
+  eq(await page.getByTestId('tip-card').count(), 0, 'masquée pour cette page');
+  await go('#/sorties'); assert(await page.getByTestId('tip-card').count() === 1, 'astuce sur une autre page');
+  await page.getByTestId('tip-off').click(); await page.waitForTimeout(250);
+  await go('#/edt'); eq(await page.getByTestId('tip-card').count(), 0, 'astuces désactivées');
+  await go('#/reglages/general'); await page.getByTestId('tour-start').click(); await page.waitForTimeout(400);
+  assert((await page.getByTestId('tour-panel').innerText()).includes('1 / '), 'visite lancée');
+  await page.getByTestId('tour-next').click(); await page.waitForTimeout(400);
+  assert((await page.evaluate(() => location.hash)).includes('reglages/classes'), 'étape suivante');
+  await page.getByTestId('tour-stop').click(); await page.waitForTimeout(200);
+  eq(await page.getByTestId('tour-panel').count(), 0, 'visite quittée');
+});
+
+await test('Manuels : plusieurs niveaux', async () => {
+  await go('#/manuels'); await page.getByTestId('new-manual').click();
+  await page.locator('.modal input[name=title]').fill('Manuel multi (exemple)');
+  await page.getByTestId('manual-level-CE1').check(); await page.getByTestId('manual-level-CE2').check();
+  await page.locator('.modal').getByRole('button', { name: 'Enregistrer', exact: true }).click(); await page.waitForTimeout(300);
+  eq(JSON.stringify(await S(`return store.all('manual').find(m => m.title === 'Manuel multi (exemple)').levels;`)), JSON.stringify(['CE1', 'CE2']), 'deux niveaux');
+  assert((await page.getByTestId('manual-card').filter({ hasText: 'Manuel multi' }).innerText()).includes('CE1, CE2'), 'affichés');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-sorties.txt`, results.join('\n'));

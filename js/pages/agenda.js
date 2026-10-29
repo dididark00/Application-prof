@@ -93,52 +93,90 @@ export function eventDialog(e = {}) {
   modal({ title: editing ? 'Événement' : 'Nouvel événement', body: h('div', {}, form, errors), actions });
 }
 
+export const EFFORTS = ['moins de 5 min', '5 à 30 min', 'plus de 30 min'];
+export const TASK_LISTS = [['faire', 'À faire'], ['imprimer', 'À imprimer']];
+const toggleDone = (t) => store.update(t.id, { done: !t.done, doneAt: t.done ? null : new Date().toISOString() }, t.done ? 'Tâche rouverte' : 'Tâche faite');
+/** Petite carte de tâche (case à cocher, durée estimée, priorité, importante). */
+export function taskCard(t, { compact = false } = {}) {
+  return h('div', { class: `task-card ${t.done ? 'done' : ''} ${t.important ? 'important' : ''}`, 'data-testid': 'task-card' },
+    h('div', { class: 'task-card-head' }, h('input', { type: 'checkbox', checked: !!t.done, 'aria-label': `Tâche faite : ${t.title}`, onchange: () => toggleDone(t) }),
+      h('button', { class: 'linklike task-title', type: 'button', onclick: () => taskDialog(t) }, t.title)),
+    compact ? null : h('div', { class: 'row task-tags' }, t.effort ? h('span', { class: 'tag' }, t.effort) : null, t.priority ? h('span', { class: `tag prio prio-${t.priority}`, title: 'Priorité' }, String(t.priority)) : null,
+      t.important ? badge('important', 'warn') : null, t.list === 'imprimer' ? badge('à imprimer', 'info') : null));
+}
 export function taskDialog(t = {}) {
   const editing = !!t.id;
   const form = h('form', { class: 'form', onsubmit: (ev) => ev.preventDefault() },
-    field('Tâche', h('input', { name: 'title', required: true, value: t.title || '' })),
-    h('div', { class: 'grid-2' }, field('Échéance', h('input', { name: 'due', type: 'date', value: t.due || '' })), field('Catégorie', h('select', { name: 'category' }, CATS.map(c => h('option', { value: c, selected: t.category === c }, c))))),
+    field('Tâche', h('input', { name: 'title', required: true, value: t.title || '', 'data-testid': 'task-title' })),
+    h('div', { class: 'grid-2' }, field('Échéance', h('input', { name: 'due', type: 'date', value: t.due || '', 'data-testid': 'task-due' })), field('Catégorie', h('select', { name: 'category' }, CATS.map(c => h('option', { value: c, selected: t.category === c }, c))))),
+    h('div', { class: 'grid-3' },
+      field('Liste', h('select', { name: 'list', 'data-testid': 'task-list-sel' }, TASK_LISTS.map(([v, l]) => h('option', { value: v, selected: (t.list || 'faire') === v }, l)))),
+      field('Durée estimée', h('select', { name: 'effort', 'data-testid': 'task-effort' }, h('option', { value: '' }, '—'), EFFORTS.map(x => h('option', { value: x, selected: t.effort === x }, x)))),
+      field('Priorité', h('select', { name: 'priority', 'data-testid': 'task-priority' }, [['', '—'], ['1', '1 (haute)'], ['2', '2'], ['3', '3 (basse)']].map(([v, l]) => h('option', { value: v, selected: String(t.priority || '') === v }, l))))),
+    h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: 'important', checked: !!t.important, 'data-testid': 'task-important' }), 'Important (affiché en haut d’Aujourd’hui)'),
     field('Notes', h('textarea', { name: 'notes', rows: 2 }, t.notes || '')));
   const actions = [{ label: 'Annuler' }];
   if (editing) {
     actions.unshift({ label: 'Supprimer', danger: true, onClick: async () => { await store.remove(t.id, 'Tâche mise à la corbeille'); toast('Tâche mise à la corbeille', { action: 'Annuler', onAction: () => store.undo() }); } });
-    actions.splice(1, 0, { label: t.done ? 'Rouvrir' : 'Marquer faite', onClick: () => store.update(t.id, { done: !t.done, doneAt: t.done ? null : new Date().toISOString() }, t.done ? 'Tâche rouverte' : 'Tâche faite') });
+    actions.splice(1, 0, { label: t.done ? 'Rouvrir' : 'Marquer faite', onClick: () => toggleDone(t) });
   }
-  actions.push({ label: 'Enregistrer', primary: true, onClick: async () => {
+  actions.push({ label: 'Enregistrer', primary: true, testid: 'task-save', onClick: async () => {
     const d = formData(form); if (!d.title) return false;
-    if (editing) await store.update(t.id, d, 'Tâche modifiée'); else await store.create('task', { ...d, done: false }, `Tâche « ${d.title} »`);
+    const data = { ...d, important: !!form.querySelector('[name=important]').checked, priority: d.priority ? Number(d.priority) : null };
+    if (editing) await store.update(t.id, data, 'Tâche modifiée'); else await store.create('task', { ...data, done: false }, `Tâche « ${d.title} »`);
   } });
   modal({ title: editing ? 'Tâche' : 'Nouvelle tâche', body: form, actions });
 }
 
-// ───────── Tâches et rendez-vous (Aujourd'hui)
+// ───────── Mes tâches : calendrier de la semaine, liste, archives ; « À faire » et « À imprimer »
+let taskView = 'calendrier';
+let taskWeek = 0;
+export function weekTasksCalendar({ offset, onNav, withTasks = true, withEvents = true, days = [1, 2, 3, 4, 5, 6, 7], list = null, testid = 'week-cal', compact = false }) {
+  const today = model.todayIso();
+  const monday = model.addDays(model.mondayOf(today), offset * 7);
+  const tasks = store.all('task').filter(t => !t.done && (!list || (t.list || 'faire') === list));
+  const col = (d) => {
+    const iso = model.addDays(monday, d - 1);
+    const evs = withEvents ? PL.eventsOn(iso).filter(e => !e.personal || true) : [];
+    const ts = withTasks ? tasks.filter(t => t.due === iso).sort((a, b) => (a.priority || 9) - (b.priority || 9)) : [];
+    return h('div', { class: `wk-day ${iso === today ? 'today' : ''}` },
+      h('div', { class: 'wk-head' }, h('span', { class: 'muted small' }, model.JOURS[d].slice(0, 3)), h('strong', {}, String(Number(iso.slice(8)))),
+        h('button', { class: 'icon-btn wk-add', type: 'button', 'aria-label': `Ajouter une tâche le ${model.frShort(iso)}`, onclick: () => taskDialog({ due: iso, list: list || 'faire' }) }, icon('plus', 14))),
+      evs.map(e => h('button', { class: 'wk-event', type: 'button', onclick: () => eventDialog(e) }, e.start ? h('span', { class: 'muted small' }, e.start + ' ') : null, e.title)),
+      ts.map(t => taskCard(t, { compact })));
+  };
+  return h('div', { class: `wk-cal ${compact ? 'wk-compact' : ''}`, 'data-testid': testid },
+    h('div', { class: 'row wk-nav' }, h('strong', {}, `Semaine du ${model.frDate(monday, { day: 'numeric', month: 'long' })}`),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Semaine précédente', onclick: () => onNav(offset - 1) }, icon('chevleft', 16)),
+      h('button', { class: 'btn btn-small', type: 'button', onclick: () => onNav(0) }, 'Cette semaine'),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Semaine suivante', onclick: () => onNav(offset + 1) }, icon('chevright', 16))),
+    h('div', { class: 'wk-grid', style: { '--wk-cols': days.length } }, days.map(col)));
+}
 export function renderTasks({ rerender }) {
   const today = model.todayIso();
   const tasks = store.all('task');
   const open = tasks.filter(t => !t.done);
-  const groups = [
-    ['En retard', open.filter(t => t.due && t.due < today), 'warn'],
-    ['Aujourd’hui', open.filter(t => t.due === today), 'info'],
-    ['À venir', open.filter(t => t.due && t.due > today).sort((a, b) => a.due.localeCompare(b.due)), ''],
-    ['Sans échéance', open.filter(t => !t.due), 'muted'],
-  ];
-  const done = tasks.filter(t => t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')).slice(0, 20);
-  const quick = h('input', { placeholder: 'Nouvelle tâche… (Entrée pour ajouter)', 'aria-label': 'Nouvelle tâche', 'data-testid': 'quick-task' });
-  quick.addEventListener('keydown', async (e) => { if (e.key === 'Enter' && quick.value.trim()) { await store.create('task', { title: quick.value.trim(), due: '', category: 'autre', done: false }, 'Tâche ajoutée'); } });
+  const quick = h('input', { placeholder: 'Nouvelle tâche… (Entrée pour ajouter, pour aujourd’hui)', 'aria-label': 'Nouvelle tâche', 'data-testid': 'quick-task' });
+  quick.addEventListener('keydown', async (e) => { if (e.key === 'Enter' && quick.value.trim()) { await store.create('task', { title: quick.value.trim(), due: today, category: 'autre', list: 'faire', done: false }, 'Tâche ajoutée'); } });
+  const section = (key, label) => {
+    const mine = open.filter(t => (t.list || 'faire') === key);
+    const monday = model.addDays(model.mondayOf(today), taskWeek * 7), sunday = model.addDays(monday, 6);
+    const elsewhere = mine.filter(t => !t.due || t.due < monday || t.due > sunday).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+    const groups = [['En retard', mine.filter(t => t.due && t.due < today), 'warn'], ['Aujourd’hui', mine.filter(t => t.due === today), 'info'],
+      ['À venir', mine.filter(t => t.due && t.due > today).sort((a, b) => a.due.localeCompare(b.due)), ''], ['Sans échéance', mine.filter(t => !t.due), 'muted']];
+    return h('section', { class: 'card stack', 'data-testid': `tasks-${key}` }, h('h2', { class: 'section-band' }, label.toUpperCase()),
+      taskView === 'calendrier' ? [weekTasksCalendar({ offset: taskWeek, onNav: (o) => { taskWeek = o; rerender(); }, list: key, withEvents: key === 'faire', testid: `week-cal-${key}` }),
+        elsewhere.length ? h('details', { open: true }, h('summary', {}, `Autres dates et sans date (${elsewhere.length})`), h('div', { class: 'task-grid' }, elsewhere.map(t => h('div', {}, h('span', { class: 'muted small' }, t.due ? model.frShort(t.due) : 'sans date'), taskCard(t))))) : null]
+      : taskView === 'liste' ? [groups.map(([t, list, k]) => list.length ? h('div', {}, h('h3', {}, t, ' ', badge(String(list.length), k)), h('div', { class: 'task-grid', 'data-testid': 'task-list' }, list.map(x => taskCard(x)))) : null), mine.length ? null : h('p', { class: 'muted' }, 'Rien en cours.')]
+      : (() => { const done = tasks.filter(t => t.done && (t.list || 'faire') === key).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')).slice(0, 60); return done.length ? h('div', { class: 'task-grid' }, done.map(x => taskCard(x))) : h('p', { class: 'muted' }, 'Aucune tâche faite.'); })());
+  };
   const upcoming = []; for (let k = 0; k < 14; k++) { const d = model.addDays(today, k); for (const e of PL.eventsOn(d)) if (e.date === d || k === 0) upcoming.push({ d, e }); }
-  const row = (t) => h('li', { class: 'task' },
-    h('input', { type: 'checkbox', checked: !!t.done, 'aria-label': `Tâche faite : ${t.title}`, onchange: () => store.update(t.id, { done: !t.done, doneAt: t.done ? null : new Date().toISOString() }, t.done ? 'Tâche rouverte' : 'Tâche faite') }),
-    h('button', { class: 'linklike', type: 'button', onclick: () => taskDialog(t) }, t.title), t.due ? h('span', { class: 'muted small' }, ` · ${model.frShort(t.due)}`) : null, t.category ? badge(t.category, 'muted') : null);
   return h('div', { class: 'page' },
-    pageHeader('Tâches et rendez-vous', { favKey: 'aujourdhui/taches', actions: [h('button', { class: 'btn btn-primary', type: 'button', onclick: () => taskDialog({}) }, icon('plus', 16), 'Tâche'), h('button', { class: 'btn', type: 'button', onclick: () => eventDialog({}) }, 'Rendez-vous')] }),
+    pageHeader('Mes tâches et rendez-vous', { favKey: 'aujourdhui/taches', actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'task-new', onclick: () => taskDialog({}) }, icon('plus', 16), 'Tâche'), h('button', { class: 'btn', type: 'button', onclick: () => eventDialog({}) }, 'Rendez-vous')] }),
     subTabs(),
-    h('div', { class: 'card' }, quick),
-    h('div', { class: 'dash' },
-      h('section', { class: 'card' }, h('h2', {}, 'Tâches'), groups.map(([t, list, k]) => list.length ? h('div', {}, h('h3', {}, t, ' ', badge(String(list.length), k)), h('ul', { class: 'task-list', 'data-testid': 'task-list' }, list.map(row))) : null),
-        open.length ? null : h('p', { class: 'muted' }, 'Aucune tâche en cours.'),
-        done.length ? h('details', {}, h('summary', {}, `Faites récemment (${done.length})`), h('ul', { class: 'task-list' }, done.map(row))) : null),
-      h('section', { class: 'card' }, h('h2', {}, 'Rendez-vous et événements (14 jours)'),
-        upcoming.length ? h('ul', { class: 'plain' }, upcoming.map(({ d, e }) => h('li', {}, h('strong', {}, model.frDate(d, { weekday: 'short', day: 'numeric', month: 'short' })), ` ${e.start || ''} `, h('button', { class: 'linklike', type: 'button', onclick: () => eventDialog(e) }, e.title), e.personal ? badge('perso', 'muted') : null)))
-          : emptyState('Rien de prévu'))));
-  void rerender;
+    h('div', { class: 'row wrap' }, h('div', { class: 'seg', role: 'group', 'aria-label': 'Vue' }, [['calendrier', 'Calendrier'], ['liste', 'Liste'], ['archives', 'Archives']].map(([v, l]) => h('button', { type: 'button', class: taskView === v ? 'on' : '', 'data-testid': `tasks-view-${v}`, onclick: () => { taskView = v; rerender(); } }, l))), quick),
+    section('faire', 'À faire'), section('imprimer', 'À imprimer'),
+    h('section', { class: 'card' }, h('h2', {}, 'Rendez-vous et événements (14 jours)'),
+      upcoming.length ? h('ul', { class: 'plain' }, upcoming.map(({ d, e }) => h('li', {}, h('strong', {}, model.frDate(d, { weekday: 'short', day: 'numeric', month: 'short' })), ` ${e.start || ''} `, h('button', { class: 'linklike', type: 'button', onclick: () => eventDialog(e) }, e.title), e.personal ? badge('perso', 'muted') : null)))
+        : emptyState('Rien de prévu')));
 }

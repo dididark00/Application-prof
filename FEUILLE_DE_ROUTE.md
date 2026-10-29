@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (168) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 181 entrées.
+Légende : ✅ Réalisé (172) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 185 entrées.
 
 ## Étape 1 — Socle
 
@@ -153,6 +153,10 @@ Légende : ✅ Réalisé (168) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §8 Élèves | Radar élèves : signaux croisés sur 2, 3 ou 6 semaines (absences non justifiées, retards, carnet, non acquis, observations), élèves « à regarder » avec le détail et les pistes ; rappel discret sur Aujourd’hui |  |
 | ✅ | §2 Navigation | Mode en classe : activité en cours et suivante, séance faite, appel, timer, projection, noter au carnet en 2 touches |  |
 | ✅ | §2 Navigation | Aujourd’hui selon l’heure (« Maintenant » pendant la classe, « Pour demain » après la classe) ; actions dans la recherche (noter, nouvelle activité, appel, sortie, remplacement…) | Les 6 rubriques sont gardées : les regrouper en 4 aurait donné des sous-menus de 15 à 19 pages, moins lisibles. |
+| ✅ | §2 Navigation | Aujourd’hui « Mon espace » : à faire aujourd’hui (ajout en une ligne), important (tâches et rendez-vous des 7 jours), matériel à préparer (fiches programmées et « À imprimer »), notes, semaine en calendrier, plan du jour ; titre réglable |  |
+| ✅ | §12 Organisation | Mes tâches : calendrier de la semaine, liste, archives ; listes « À faire » et « À imprimer » ; durée estimée, priorité, important |  |
+| ✅ | §2 Navigation | Tutoriel : astuce en haut de chaque page (désactivable, « Compris » par page) et visite guidée en 13 étapes (Réglages › Général ou Premiers pas) |  |
+| ✅ | §5 Préparation | Manuels : plusieurs niveaux par manuel |  |
 | ✅ | §26 Agenda | Tableau « Informations élèves » de l’agenda (fiche, coopérative, assurance, image, cantine, garderie, bus, PAI, PPRE/PAP/PPS, suivi extérieur, RASED, lunettes, gaucher, situation familiale, profession des parents) | Relié aux fiches sans double saisie ; colonnes ajoutables et masquables ; confidentiel séparé ; impression remplie ou vierge. |
 | ✅ | §26 Agenda | Outils de classe : lire pour moi, sonomètre, pot de récompense, abaque, tableau des nombres, numération et conversion, réglettes, pourcentages (dictée, appel) | Affichables en grand, hors ligne, sans compte. |
 | ✅ | §26 Agenda | Texte d’une photo (tapuscrit) : lire, corriger, agrandir, imprimer, envoyer vers Seyès / Lire pour moi |  |

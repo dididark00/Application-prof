@@ -69,6 +69,7 @@ import * as pSorties from './pages/sorties.js';
 import * as pMissions from './pages/missions.js';
 import * as pMethodes from './pages/methodes.js';
 import * as pRadar from './pages/radar.js';
+import * as Tuto from './tuto.js';
 import * as pEnClasse from './pages/enclasse.js';
 import * as pRegistre from './pages/registre.js';
 
@@ -165,6 +166,10 @@ export async function render() {
     main.replaceChildren();
     const node = await page.render({ params: route.params, query: route.query, navigate, rerender: render });
     main.append(node);
+    // Astuce de la page (désactivable) et visite guidée en cours.
+    const tip = Tuto.tipFor(route.name === 'reglages' ? 'reglages' : route.name);
+    if (tip) { const anchor = node.querySelector?.('.subtabs') || node.querySelector?.('.page-head'); if (anchor) anchor.after(tip); else node.prepend?.(tip); }
+    Tuto.mountTour();
     if (!sameRoute) countVisit(route.name);
     main.dataset.route = location.hash;
     if (sameRoute) window.scrollTo(0, scroll); else { window.scrollTo(0, 0); main.focus({ preventScroll: true }); }

@@ -53,12 +53,17 @@ function general() {
     const subjects = [...new Set(d.subjects.split('\n').map(x => x.trim()).filter(Boolean))];
     const web = d.webmailUrl.trim() ? safeUrl(/^https?:/i.test(d.webmailUrl.trim()) ? d.webmailUrl.trim() : `https://${d.webmailUrl.trim()}`) : '';
     if (d.webmailUrl.trim() && !web) { toast('Adresse de la messagerie invalide', { kind: 'error' }); return; }
-    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, subjects: subjects.length ? subjects : null, academicMail: d.academicMail.trim(), webmailUrl: web || '' });
+    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, dashTitle: (d.dashTitle || '').trim(), subjects: subjects.length ? subjects : null, academicMail: d.academicMail.trim(), webmailUrl: web || '' });
     toast('Réglages enregistrés');
   } },
     h('h2', {}, 'Identité'),
     field('Nom de l’application', h('input', { name: 'appName', value: s.appName, maxlength: 40 }), 'Nom provisoire, modifiable à tout moment.'),
     field('Votre prénom (auteur des modifications)', h('input', { name: 'userName', value: s.userName, maxlength: 60 }), 'Apparaît dans l’historique des modifications et dans la répartition avec la binôme.'),
+    field('Titre de la page d’accueil', h('input', { name: 'dashTitle', value: s.dashTitle || '', placeholder: 'Mon espace enseignante', maxlength: 60 })),
+    h('h2', {}, 'Aide et tutoriel'),
+    h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: s.tips !== false, 'data-testid': 'tips-toggle', onchange: (e) => store.setSettings({ tips: e.target.checked, ...(e.target.checked ? { tipsDismissed: [] } : {}) }) }), 'Afficher une astuce en haut de chaque page (pour apprendre à utiliser l’application)'),
+    h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', 'data-testid': 'tour-start', onclick: () => import('../tuto.js').then(T => T.startTour()) }, 'Lancer la visite guidée'),
+      h('span', { class: 'muted small' }, 'Une page après l’autre, les grandes fonctions en 13 étapes.')),
     h('h2', {}, 'Messagerie académique'),
     h('p', { class: 'muted small' }, 'L’application ne se connecte pas à votre messagerie et ne demande aucun mot de passe : elle prépare le message, le copie et ouvre votre messagerie en ligne, où vous le collez et l’envoyez.'),
     h('div', { class: 'grid-2' },

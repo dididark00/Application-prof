@@ -7,6 +7,8 @@ import { pageHeader, subTabs } from '../components.js';
 import { bound, iconBtn } from '../forms.js';
 import { filesBlock } from '../pedago-ui.js';
 
+/** Niveaux d'un manuel (ancien champ « level » repris). */
+export const levelsOf = (m) => (m?.levels?.length ? m.levels : m?.level ? [m.level] : []);
 const KINDS = ['manuel', 'guide du maître', 'cahier / fichier élève', 'méthode', 'site / ressource en ligne', 'autre'];
 // Suggestions : seuls l'éditeur ou la collection sont proposés ; tout le reste est à compléter.
 const SUGGEST = [{ title: 'Méthode Picot', publisher: '' }, { title: 'Accès', publisher: 'Accès Éditions' }, { title: '', publisher: 'Retz' }];
@@ -29,7 +31,7 @@ function card(m, rerender) {
   const uses = ['session', 'sequence'].flatMap(t => store.all(t)).filter(x => (x.manualRefs || []).some(r => r.manualId === m.id));
   return h('section', { class: 'card', 'data-testid': 'manual-card' },
     h('div', { class: 'card-head' },
-      h('h2', {}, m.title, ' ', m.kind ? badge(m.kind, 'muted') : null, m.level ? badge(m.level) : null),
+      h('h2', {}, m.title, ' ', m.kind ? badge(m.kind, 'muted') : null, levelsOf(m).length ? badge(levelsOf(m).join(', ')) : null),
       h('div', { class: 'row' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => { openId = open ? null : m.id; rerender(); } }, open ? 'Replier' : 'Pages et fichiers'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => manualDialog(m) }, 'Modifier'),
@@ -58,11 +60,16 @@ function manualDialog(m = null) {
     h('div', { class: 'grid-3' },
       field('Type', h('select', { name: 'kind' }, KINDS.map(k => h('option', { value: k, selected: m?.kind === k }, k)))),
       field('Discipline', h('select', { name: 'subject' }, h('option', { value: '' }, '—'), model.subjects().map(s => h('option', { value: s, selected: m?.subject === s }, s)))),
-      field('Niveau', h('select', { name: 'level' }, h('option', { value: '' }, '—'), model.NIVEAUX.map(l => h('option', { value: l, selected: m?.level === l }, l))))),
+      h('div', {})),
+    h('div', { class: 'field' }, h('label', {}, 'Niveaux (un ou plusieurs)'), h('div', { class: 'chips', 'data-testid': 'manual-levels' }, model.NIVEAUX.map(l => h('label', { class: 'chip' },
+      h('input', { type: 'checkbox', name: `lvl-${l}`, checked: levelsOf(m).includes(l), 'data-testid': `manual-level-${l}` }), l)))),
     field('Notes', h('textarea', { name: 'notes', rows: 2 }, m?.notes || '')));
   modal({ title: m ? 'Modifier le manuel' : 'Ajouter un manuel', wide: true, body: form, actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, onClick: async () => {
-    const d = formData(form);
-    if (!d.title) return false;
+    const raw = formData(form);
+    if (!raw.title) return false;
+    const levels = model.NIVEAUX.filter(l => form.querySelector(`[name="lvl-${l}"]`)?.checked);
+    const d = Object.fromEntries(Object.entries(raw).filter(([k]) => !k.startsWith('lvl-')));
+    Object.assign(d, { levels, level: levels[0] || '' });
     if (m) await store.update(m.id, d, `Manuel ${d.title}`);
     else await store.create('manual', { ...d, pages: [], fileIds: [] }, `Manuel ${d.title} ajouté`);
   } }] });

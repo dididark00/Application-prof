@@ -1065,3 +1065,50 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .jd-phases td:first-child { width: 4.5em; color: var(--ink-2); }
 @media (max-width: 600px) { .jd-phases td:nth-child(2) { width: 30%; } }
 .seg.seg-inline { display: inline-flex; width: auto; align-self: flex-start; }
+/* Mon espace (Aujourd'hui) */
+.dash-banner { background: linear-gradient(180deg, var(--accent-soft, var(--surface-2)), var(--surface-2)); border-radius: 14px; padding: 26px 16px; text-align: center; margin: 0 0 14px; }
+.dash-banner span { font-weight: 800; letter-spacing: .06em; font-size: clamp(1.4rem, 4vw, 2.6rem); color: var(--ink-2); }
+.espace { margin-bottom: 14px; }
+.espace-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .espace-grid { grid-template-columns: minmax(0, 1fr); } }
+.pill-title { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border-radius: 99px; padding: 4px 12px; font-size: 1rem; margin: 0; }
+.espace-add { width: 100%; }
+.espace-event { padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.mat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.mat-card { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; color: inherit; text-decoration: none; background: var(--surface); }
+.section-band { text-align: center; background: var(--surface-2); border-radius: 8px; padding: 8px; letter-spacing: .06em; margin: 0; }
+/* Tâches */
+.task-card { border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; background: var(--surface); display: grid; gap: 4px; }
+.task-card.done .task-title { text-decoration: line-through; color: var(--ink-2); }
+.task-card.important { border-left: 4px solid var(--warn); }
+.task-card-head { display: flex; gap: 6px; align-items: flex-start; }
+.task-title { text-align: left; font-weight: 600; }
+.task-tags { gap: 4px; }
+.tag { font-size: .75rem; padding: 1px 7px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+.tag.prio { font-weight: 700; } .tag.prio-1 { background: var(--warn-soft, #f6e3c3); }
+.task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.wk-cal { display: grid; gap: 8px; }
+.wk-nav { gap: 6px; align-items: center; }
+.wk-nav strong { margin-right: auto; }
+.wk-grid { display: grid; grid-template-columns: repeat(var(--wk-cols, 7), minmax(0, 1fr)); gap: 6px; }
+.wk-day { min-height: 120px; border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); min-width: 0; }
+.wk-day.today { background: var(--info-soft); border-color: var(--info-line, var(--line)); }
+.wk-head { display: flex; align-items: center; gap: 4px; }
+.wk-head .wk-add { margin-left: auto; padding: 2px; }
+.wk-event { text-align: left; font: inherit; font-size: .85rem; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.wk-day .task-card { padding: 4px 6px; font-size: .85rem; }
+.wk-day .task-title { overflow-wrap: break-word; hyphens: auto; }
+.wk-compact .wk-day { padding: 4px; gap: 4px; }
+.wk-compact .task-card { padding: 3px 4px; border-radius: 6px; }
+.wk-compact .task-card-head { gap: 3px; }
+.wk-compact .task-title { font-size: .8rem; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wk-compact .wk-event { font-size: .78rem; padding: 3px 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wk-compact input[type=checkbox] { width: 14px; height: 14px; margin: 2px 0 0; flex: none; }
+@media (max-width: 700px) { .wk-grid { grid-template-columns: minmax(0, 1fr); } .wk-day { min-height: 0; } }
+
+/* Tutoriel */
+.tip-card { border: 1px solid var(--info-line, var(--line)); background: var(--info-soft); border-radius: 10px; padding: 10px 14px; margin: 0 0 12px; }
+.tip-card ul { margin: 6px 0; padding-left: 18px; }
+.tour-panel { position: fixed; z-index: 60; right: 16px; bottom: 16px; max-width: 360px; background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.18); display: grid; gap: 6px; }
+.tour-panel p { margin: 0; }
+@media (max-width: 700px) { .tour-panel { left: 10px; right: 10px; bottom: 74px; max-width: none; } }
