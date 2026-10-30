@@ -184,6 +184,51 @@ await test('Fiches imprimées : phases, institutionnalisation, problématique, s
   assert(!(await page.evaluate(() => window.__p || '')).includes('Transmission'), 'pas de transmission sans binôme');
 });
 
+await test('Coopérative : modifier le montant d’un mouvement puis le supprimer', async () => {
+  const mv = await S(`const FI = await import('./js/finance.js'); const y = model.currentYear(); let acc = FI.accounts(y.id)[0];
+    if (!acc) acc = await FI.createAccount({ name: 'Coop test', yearId: y.id });
+    const r = await FI.addMovement({ kind: 'recette', abs: 1000, date: model.todayIso(), accountId: acc.id, mode: 'espèces', label: 'Vente test' }); return r.id;`);
+  await go('#/argent?t=journal');
+  const row = page.getByTestId('journal-row').filter({ hasText: 'Vente test' });
+  await row.getByTestId('mv-edit').click(); await page.waitForTimeout(150);
+  await page.getByTestId('mv-amount').fill('12,50'); await page.getByTestId('mv-save').click(); await page.waitForTimeout(300);
+  eq(await S(`return store.get(a).amount;`, mv), 1250, 'montant modifié');
+  await page.getByTestId('journal-row').filter({ hasText: 'Vente test' }).getByTestId('mv-delete').click(); await page.waitForTimeout(150);
+  await page.getByTestId('mv-delete-confirm').click(); await page.waitForTimeout(300);
+  eq(await S(`return !!store.get(a)?.deletedAt;`, mv), true, 'mouvement à la corbeille');
+});
+
+await test('Collègues : saisis une fois dans Contacts, choisis dans la surveillance, la répartition et le décloisonnement', async () => {
+  await go('#/contacts');
+  for (const [n, c] of [['Mme Alpha (exemple)', 'CM1'], ['M. Beta (exemple)', 'CE2 A']]) {
+    await page.getByTestId('new-colleague').click(); await page.waitForTimeout(150);
+    await page.locator('.modal input[name=name]').fill(n); await page.getByTestId('contact-classe').fill(c);
+    await page.locator('.modal').getByRole('button', { name: 'Enregistrer' }).click(); await page.waitForTimeout(250);
+  }
+  await go('#/recreation');
+  await page.getByTestId('recre-pick').click(); await page.waitForTimeout(150);
+  for (const cb of await page.locator('.modal .pick-item input').all()) await cb.check();
+  await page.locator('.modal').getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(300);
+  const t = await page.getByTestId('recre-people').innerText();
+  assert(t.includes('Mme Alpha (exemple) (CM1)') && t.includes('M. Beta (exemple) (CE2 A)'), 'collègues ajoutés à la surveillance');
+  await go('#/repartition'); await page.getByTestId('rep-tab-repartition').click(); await page.getByTestId('rep-new').click(); await page.waitForTimeout(150);
+  await page.getByTestId('rep-pick-colleagues').click(); await page.waitForTimeout(150);
+  for (const cb of await page.locator('.modal .pick-item input').all()) await cb.check();
+  await page.locator('.modal').last().getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(200);
+  const names = await page.getByTestId('rep-colleague-name').evaluateAll(els => els.map(e => e.value));
+  assert(names.includes('Mme Alpha (exemple)') && names.includes('M. Beta (exemple)'), `collègues dans la répartition : ${names}`);
+  await page.getByTestId('rep-auto').click(); await page.getByTestId('rep-save').click(); await page.waitForTimeout(300);
+  const r = await S(`return store.all('repartition').sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];`);
+  assert(r.colleagues.some(c => c.room === 'CM1'), 'classe reprise du contact');
+  await page.getByTestId('rep-tab-declo').click(); await page.waitForTimeout(150);
+  if (!(await page.getByTestId('declo-enabled').isChecked())) { await page.getByTestId('declo-enabled').check(); await page.waitForTimeout(250); }
+  await page.getByTestId('declo-new').click(); await page.waitForTimeout(150);
+  const opt = await page.getByTestId('declo-colleague').locator('option', { hasText: 'Beta' }).getAttribute('value');
+  await page.getByTestId('declo-colleague').selectOption(opt);
+  eq(await page.getByTestId('declo-other').inputValue(), 'CE2 A', 'classe remplie depuis le contact');
+  await page.locator('.modal').getByRole('button', { name: 'Annuler' }).click();
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

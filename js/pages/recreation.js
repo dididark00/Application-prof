@@ -3,6 +3,8 @@
 import * as store from '../store.js';
 import * as model from '../model.js';
 import { h, icon, toast, field } from '../ui.js';
+import { pickMany } from '../forms.js';
+import * as O from '../orga.js';
 import { pageHeader, subTabs } from '../components.js';
 import { printDocument } from '../print.js';
 
@@ -88,7 +90,16 @@ export function render({ rerender }) {
           h('button', { class: 'btn btn-link small', type: 'button', onclick: () => save({ people: people.filter((_, j) => j !== i) }, 'Adulte retiré', false) }, 'retirer')))) : h('p', { class: 'muted' }, 'Ajoutez les adultes qui surveillent.'),
         h('div', { class: 'row' }, pname, ...p.days.map(d => h('label', { class: 'chip' }, h('input', { type: 'checkbox', onchange: (e) => { e.target.checked ? pdays.add(d) : pdays.delete(d); } }), model.JOURS[d].slice(0, 3))),
           h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'recre-add', onclick: async () => { const n = pname.value.trim(); if (!n) return; if (people.some(x => x.name === n)) { toast('Déjà dans la liste'); return; } await save({ people: [...people, { name: n, days: [...pdays].sort() }] }, 'Adulte ajouté', false); } }, '+ Ajouter')),
-        h('p', { class: 'muted small' }, 'Cochez les jours de présence (aucun = tous les jours).')),
+        h('p', { class: 'muted small' }, 'Cochez les jours de présence (aucun = tous les jours).'),
+        h('div', { class: 'row wrap' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'recre-pick', onclick: async () => {
+          const cols = O.colleagues();
+          if (!cols.length) { toast('Ajoutez d’abord vos collègues dans Organisation › Contacts (bouton « + Collègue »).'); return; }
+          const chosen = await pickMany({ title: 'Mes collègues (Contacts)', items: cols.map(c => ({ id: c.id, label: O.colleagueLabel(c), detail: c.availability || '' })), selected: cols.filter(c => people.some(x => x.contactId === c.id)).map(c => c.id) });
+          if (!chosen) return;
+          const keep = people.filter(x => !x.contactId || chosen.includes(x.contactId));
+          const add = chosen.filter(id => !keep.some(x => x.contactId === id)).map(id => store.get(id)).filter(c => !keep.some(x => x.name === O.colleagueLabel(c))).map(c => ({ name: O.colleagueLabel(c), contactId: c.id, days: [] }));
+          await save({ people: [...keep, ...add] }, 'Collègues choisis', false);
+        } }, icon('plus', 14), 'Choisir mes collègues'), h('a', { class: 'btn btn-small btn-link', href: '#/contacts' }, 'Gérer les collègues (Contacts)'))),
       h('section', { class: 'card stack' }, h('h2', {}, 'Récréations, accueils et zones'),
         field('Jours', h('div', { class: 'chips' }, [1, 2, 3, 4, 5].map(d => h('label', { class: 'chip' }, h('input', { type: 'checkbox', checked: p.days.includes(d), onchange: (e) => { const s = new Set(p.days); e.target.checked ? s.add(d) : s.delete(d); save({ days: [...s].sort() }, 'Jours', false); } }), model.JOURS[d])))),
         h('div', { class: 'field' }, h('label', {}, 'Surveillances de la journée'),

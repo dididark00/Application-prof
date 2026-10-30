@@ -10,6 +10,7 @@ import { pageHeader, subTabs, needClass } from '../components.js';
 import { pickMany } from '../forms.js';
 import { printDocument } from '../print.js';
 import { consumeFlag } from '../router.js';
+import * as O from '../orga.js';
 
 let tab = 'repartition';
 const DAYS = [1, 2, 3, 4, 5];
@@ -116,7 +117,18 @@ function repartDialog(cls, r = null) {
   modal({ title: r?.id ? 'Modifier la répartition' : 'Nouvelle répartition', wide: true, body: h('div', { class: 'stack' },
     h('div', { class: 'grid-2' }, field('Date', date), field('Motif (facultatif)', title)),
     h('h3', {}, 'Collègues qui accueillent'), colBox,
-    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rep-add-colleague', onclick: () => { colleagues.push({ id: uid(), name: '', room: '', max: '' }); drawCols(); } }, icon('plus', 14), 'Ajouter un collègue'),
+    h('div', { class: 'row wrap' },
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rep-pick-colleagues', onclick: async () => {
+        const cols = O.colleagues();
+        if (!cols.length) { toast('Ajoutez vos collègues dans Organisation › Contacts (bouton « + Collègue ») : ils seront proposés ici.'); return; }
+        const chosen = await pickMany({ title: 'Mes collègues (Contacts)', items: cols.map(c => ({ id: c.id, label: O.colleagueLabel(c) })), selected: colleagues.filter(c => c.contactId).map(c => c.contactId) });
+        if (!chosen) return;
+        colleagues = colleagues.filter(c => (c.contactId ? chosen.includes(c.contactId) : c.name.trim()));
+        for (const id of chosen) if (!colleagues.some(c => c.contactId === id)) { const ct = store.get(id); colleagues.push({ id: uid(), contactId: id, name: ct.name, room: ct.classe || '', max: '' }); }
+        for (const k of Object.keys(assign)) if (!colleagues.some(c => c.id === assign[k])) delete assign[k];
+        drawCols(); drawSt();
+      } }, icon('plus', 14), 'Choisir mes collègues'),
+      h('button', { class: 'btn btn-small btn-link', type: 'button', 'data-testid': 'rep-add-colleague', onclick: () => { colleagues.push({ id: uid(), name: '', room: '', max: '' }); drawCols(); } }, 'Autre (taper le nom)')),
     h('div', { class: 'row wrap' },
       h('button', { class: 'btn btn-primary btn-small', type: 'button', 'data-testid': 'rep-auto', onclick: () => auto(false) }, 'Répartir équitablement (ordre alphabétique)'),
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rep-shuffle', onclick: () => auto(true) }, 'Répartir au hasard')),
@@ -126,7 +138,7 @@ function repartDialog(cls, r = null) {
     if (!cols.length) { toast('Indiquez au moins un collègue.', { kind: 'error' }); return false; }
     const ids = new Set(cols.map(c => c.id)); const a = Object.fromEntries(Object.entries(assign).filter(([, v]) => ids.has(v)));
     const data = { classId: cls.id, date: date.value, title: title.value.trim(), work: work.value.trim(), colleagues: cols, assign: a, absent: [...absent] };
-    await store.setSettings({ repartColleagues: cols.map(({ name: n, room, max }) => ({ name: n, room, max })) });
+    await store.setSettings({ repartColleagues: cols.map(({ name: n, room, max, contactId }) => ({ name: n, room, max, contactId: contactId || null })) });
     if (r?.id) await store.update(r.id, data, 'Répartition modifiée'); else await store.create('repartition', data, 'Répartition enregistrée');
   } }] });
 }
@@ -177,6 +189,9 @@ function decloDialog(cls, d = null) {
   const dir = h('select', { 'data-testid': 'declo-dir' }, Object.entries(DIRS).map(([k, l]) => h('option', { value: k, selected: k === (d?.direction || 'echange') }, l)));
   const other = h('input', { value: d?.otherClass || '', placeholder: 'ex. CE2 A', 'data-testid': 'declo-other' });
   const teacher = h('input', { value: d?.teacher || '', placeholder: 'ex. M. Dupont' });
+  const cols = O.colleagues();
+  const pickCol = cols.length ? h('select', { 'aria-label': 'Choisir une collègue', 'data-testid': 'declo-colleague', onchange: (e) => { const c = store.get(e.target.value); if (c) { teacher.value = c.name; if (c.classe) other.value = c.classe; } } },
+    h('option', { value: '' }, 'Choisir parmi mes collègues…'), cols.map(c => h('option', { value: c.id, selected: d?.teacher === c.name }, O.colleagueLabel(c)))) : null;
   const from = h('input', { type: 'date', value: d?.from || '' }); const to = h('input', { type: 'date', value: d?.to || '' });
   const note = h('textarea', { rows: 2, placeholder: 'ex. j’apporte le matériel de sciences ; elle fait anglais avec ma classe' }, d?.note || '');
   let ids = [...(d?.studentIds || [])];
@@ -184,7 +199,7 @@ function decloDialog(cls, d = null) {
   modal({ title: d ? 'Modifier le créneau' : 'Nouveau créneau de décloisonnement', body: h('div', { class: 'stack' },
     h('div', { class: 'grid-3' }, field('Jour', day), field('Début', start), field('Fin', end)),
     field('Discipline', subject), field('Organisation', dir),
-    h('div', { class: 'grid-2' }, field('Autre classe', other), field('Collègue', teacher)),
+    pickCol, h('div', { class: 'grid-2' }, field('Autre classe', other), field('Collègue', teacher)),
     h('div', { class: 'row' }, h('strong', {}, 'Élèves : '), who, h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
       const r = await pickMany({ title: 'Élèves concernés (aucun = toute la classe)', items: studentsOf(cls).map(s => ({ id: s.id, label: name(s) })), selected: ids });
       if (r) { ids = r; drawWho(); } } }, 'Choisir')),

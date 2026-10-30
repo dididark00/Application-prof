@@ -64,6 +64,25 @@ export async function addMovement(data, label) {
     label || `${KINDS.find(k => k[0] === data.kind)[1]} ${euros(abs)}`);
 }
 
+/** Modifie un mouvement saisi (montant, date, nature…) ; l'historique garde l'ancienne version. */
+export async function updateMovement(mv, data) {
+  const abs = Number(data.abs);
+  if (!Number.isInteger(abs) || abs <= 0) throw new Error('Montant invalide.');
+  if (!SIGN[data.kind]) throw new Error('Nature du mouvement inconnue.');
+  if (!data.accountId || !store.get(data.accountId)) throw new Error('Choisissez un compte.');
+  if (!data.date) throw new Error('Date obligatoire.');
+  if ((data.kind === 'versement' || data.kind === 'remboursement') && !data.studentId) throw new Error('Indiquez l’élève concerné.');
+  const { abs: _a, ...rest } = data;
+  return store.update(mv.id, { ...rest, amount: SIGN[data.kind] * abs, yearId: store.get(data.accountId).yearId }, `Mouvement modifié : ${euros(abs)}`);
+}
+/** Supprime un mouvement (corbeille) ; une annulation liée part avec lui. */
+export async function deleteMovement(mv) {
+  const at = new Date().toISOString(); const ops = [{ id: mv.id, patch: { deletedAt: at } }];
+  if (mv.reversedById && store.get(mv.reversedById)) ops.push({ id: mv.reversedById, patch: { deletedAt: at } });
+  if (mv.correctsId && store.get(mv.correctsId)) ops.push({ id: mv.correctsId, patch: { reversedById: null } });
+  return store.batch(ops, 'Mouvement supprimé');
+}
+
 /** Correction tracée : annule le mouvement par un mouvement inverse ; l'original reste visible. */
 export async function reverse(mv, reason) {
   if (mv.reversedById) throw new Error('Ce mouvement est déjà annulé.');

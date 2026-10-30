@@ -8,6 +8,9 @@ import * as model from './model.js';
 export const CONTACT_ROLES = ['direction', 'collègue', 'ATSEM', 'AESH', 'RASED', 'infirmière / médecin scolaire', 'psychologue EN', 'conseiller pédagogique', 'inspection', 'INSPE / formateur', 'tuteur', 'intervenant', 'mairie / périscolaire', 'association', 'autre'];
 export const contacts = () => store.all('contact').sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
 export const contactName = (id) => store.get(id)?.name || '';
+/** Collègues enregistrés dans Contacts (enseignants, direction), avec la classe dont ils s'occupent. */
+export const colleagues = () => contacts().filter(c => ['collègue', 'direction'].includes(c.role));
+export const colleagueLabel = (c) => `${c.name}${c.classe ? ` (${c.classe})` : ''}`;
 
 // ───── Réunions et rendez-vous
 export const MEETING_KINDS = ['conseil des maîtres', 'conseil de cycle', 'conseil d’école', 'équipe éducative', 'équipe de suivi de scolarisation (ESS)', 'rendez-vous parents', 'animation pédagogique', 'formation', 'réunion de rentrée', 'rendez-vous', 'autre'];

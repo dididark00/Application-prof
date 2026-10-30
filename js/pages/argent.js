@@ -106,18 +106,30 @@ export function movementDialog(pre = {}) {
   };
   sync();
   const err = h('div', { class: 'form-errors', role: 'alert' });
-  modal({ title: 'Nouveau mouvement', body: h('div', {}, form, err, h('p', { class: 'muted small' }, 'Un mouvement validé ne peut plus être supprimé : en cas d’erreur, on l’annule (correction tracée) puis on saisit le bon.')),
+  const editing = !!pre.id;
+  modal({ title: editing ? 'Modifier le mouvement' : 'Nouveau mouvement', body: h('div', {}, form, err, h('p', { class: 'muted small' }, editing ? 'L’ancienne version reste dans l’historique des modifications (Réglages › Historique).' : 'Modifiable ou supprimable ensuite depuis le journal.')),
     actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, testid: 'mv-save', onClick: async () => {
       const d = formData(form);
       const abs = FI.parseEuros(d.abs);
       if (!abs || Number.isNaN(abs)) { err.textContent = 'Montant invalide (ex. 12,50).'; return false; }
       if (!(d.kind === 'versement' || d.kind === 'remboursement')) d.studentId = '';
       try {
-        await FI.addMovement({ ...d, abs, projectId: d.projectId || null, studentId: d.studentId || null });
-        toast('Mouvement enregistré');
+        if (editing) { await FI.updateMovement(store.get(pre.id), { ...d, abs, projectId: d.projectId || null, studentId: d.studentId || null }); toast('Mouvement modifié'); }
+        else { await FI.addMovement({ ...d, abs, projectId: d.projectId || null, studentId: d.studentId || null }); toast('Mouvement enregistré'); }
       } catch (e) { err.textContent = e.message; return false; }
     } }] });
 }
+
+/** Boutons Modifier / Supprimer d'un mouvement. */
+export function editMovement(m) { movementDialog({ ...m, abs: Math.abs(m.amount) }); }
+async function deleteMovementAsk(m) {
+  modal({ title: 'Supprimer ce mouvement ?', body: h('div', {}, h('p', {}, `${model.frShort(m.date)} — ${m.label || kindLabel(m)} : ${FI.euros(m.amount, { sign: true })}`),
+    h('p', { class: 'muted small' }, m.reversedById ? 'Son annulation est supprimée avec lui. ' : '', 'Il va dans la corbeille (Réglages › Corbeille) : récupérable.')),
+  actions: [{ label: 'Retour' }, { label: 'Supprimer', danger: true, testid: 'mv-delete-confirm', onClick: async () => { await FI.deleteMovement(m); toast('Mouvement supprimé', { action: 'Annuler', onAction: () => store.undo() }); } }] });
+}
+const mvActions = (m) => h('span', { class: 'row-actions nowrap' },
+  !m.correctsId ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'mv-edit', onclick: () => editMovement(m) }, 'Modifier') : null,
+  h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Supprimer le mouvement', 'data-testid': 'mv-delete', onclick: () => deleteMovementAsk(m) }, icon('trash', 16)));
 
 function reverseDialog(mv) {
   const input = h('input', { name: 'reason', placeholder: 'ex. erreur de montant', 'data-testid': 'reverse-reason' });
@@ -147,7 +159,7 @@ function journalTab(year, rerender) {
         h('td', {}, m.studentId ? h('a', { href: `#/eleve/${m.studentId}?t=vie` }, model.fullName(store.get(m.studentId) || {})) : ''),
         h('td', {}, m.projectId ? h('a', { href: `#/argent/projet/${m.projectId}` }, store.get(m.projectId)?.title || '') : ''),
         h('td', {}, m.mode || ''), h('td', { class: 'num nowrap' }, FI.euros(m.amount, { sign: true })), h('td', {}, statusBadge(m)),
-        h('td', {}, !m.reversedById && !m.correctsId ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'reverse', onclick: () => reverseDialog(m) }, 'Annuler') : null)))),
+        h('td', { class: 'nowrap' }, mvActions(m), !m.reversedById && !m.correctsId ? h('button', { class: 'btn btn-small btn-link', type: 'button', 'data-testid': 'reverse', title: 'Garder une trace : ajoute un mouvement inverse', onclick: () => reverseDialog(m) }, 'Annuler (tracé)') : null)))),
       h('tfoot', {}, h('tr', {}, h('th', { colspan: 7 }, 'Total'), h('th', { class: 'num', 'data-testid': 'journal-total' }, FI.euros(total)), h('th', { colspan: 2 }))))) : emptyState('Aucun mouvement', 'Les versements, dépenses et recettes apparaîtront ici.'));
 }
 const kindLabel = (m) => ({ versement: 'versement', remboursement: 'remboursement', recette: 'recette', 'dépense': 'dépense' })[m.kind] || '';
@@ -218,14 +230,14 @@ function projectPage(id, rerender) {
             onchange: async (e) => { const v = FI.parseEuros(e.target.value); if (v == null || Number.isNaN(v)) { toast('Montant invalide', { kind: 'error' }); return; } await store.update(p.id, { overrides: { ...(p.overrides || {}), [r.sid]: v === p.perStudent ? null : v } }, 'Montant attendu ajusté'); } })),
           h('td', { class: 'num' }, FI.euros(r.paid)),
           h('td', { class: 'num' }, r.rest > 0 ? badge(FI.euros(r.rest), 'warn') : r.rest < 0 ? badge(`trop-perçu ${FI.euros(-r.rest)}`, 'info') : badge('réglé', 'ok')),
-          h('td', { class: 'small' }, r.movements.map(m => h('div', { class: m.reversedById ? 'reversed' : '' }, `${model.frShort(m.date)} ${FI.euros(m.amount, { sign: true })} (${m.mode})`))),
+          h('td', { class: 'small' }, r.movements.map(m => h('div', { class: m.reversedById ? 'reversed' : '' }, h('button', { class: 'linklike', type: 'button', title: 'Modifier ou supprimer', 'data-testid': 'mv-edit-inline', onclick: () => editMovement(m) }, `${model.frShort(m.date)} ${FI.euros(m.amount, { sign: true })} (${m.mode})`)))),
           h('td', {}, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'pay', onclick: () => movementDialog({ projectId: p.id, studentId: r.sid, kind: 'versement', abs: Math.max(0, r.rest) || '' }) }, '+ versement'))))))) : h('p', { class: 'muted' }, 'Aucun participant.')),
     h('div', { class: 'grid-2' },
       h('section', { class: 'card' }, h('h2', {}, 'Budget prévisionnel'), budgetEditor(p, s),
         h('p', { class: 'muted small' }, `Réalisé : recettes hors familles ${FI.euros(s.otherIncome)}, dépenses ${FI.euros(-s.expenses)}.`),
         Object.keys(s.stands).length ? h('div', {}, h('h3', {}, 'Recettes par stand'), h('ul', { class: 'plain' }, Object.entries(s.stands).map(([k, v]) => h('li', {}, `${k} : ${FI.euros(v)}`)))) : null),
       h('section', { class: 'card' }, h('h2', {}, 'Mouvements du projet'),
-        s.movements.length ? h('ul', { class: 'plain small' }, s.movements.map(m => h('li', { class: m.reversedById ? 'reversed' : '' }, `${model.frShort(m.date)} · ${kindLabel(m)} · ${m.label || ''}${m.studentId ? ` (${store.get(m.studentId)?.firstName || ''})` : ''} : `, h('strong', {}, FI.euros(m.amount, { sign: true })), ' ', statusBadge(m)))) : h('p', { class: 'muted' }, 'Aucun mouvement.'),
+        s.movements.length ? h('ul', { class: 'plain small' }, s.movements.map(m => h('li', { class: `row ${m.reversedById ? 'reversed' : ''}` }, mvActions(m), ' ', `${model.frShort(m.date)} · ${kindLabel(m)} · ${m.label || ''}${m.studentId ? ` (${store.get(m.studentId)?.firstName || ''})` : ''} : `, h('strong', {}, FI.euros(m.amount, { sign: true })), ' ', statusBadge(m)))) : h('p', { class: 'muted' }, 'Aucun mouvement.'),
         h('a', { class: 'btn btn-small', href: '#/argent?t=journal', onclick: () => { st.project = p.id; } }, 'Voir dans le journal'))),
     projectDetails(p),
     h('section', { class: 'card' }, filesBlock(p.id, { title: 'Justificatifs et documents' })));
