@@ -166,6 +166,24 @@ await test('Décloisonnement : activable, créneau du vendredi sur Aujourd’hui
   if (wd <= 5) { await go('#/aujourdhui'); eq(await page.getByTestId('today-declo').count(), 0, 'plus affiché'); }
 });
 
+
+await test('Fiches imprimées : phases, institutionnalisation, problématique, séance « si nécessaire », transmission seulement avec une binôme', async () => {
+  const ids = await S(`const s = store.all('session').find(x => (x.phases || []).length && !x.deletedAt);
+    await store.update(s.id, { problematique: 'PB-TEST', trace: 'TRACE-TEST', prolongement: 'PROLONG-TEST' });
+    const P = await import('./js/pedago.js'); const last = P.sessionsOfSequence(s.sequenceId).at(-1); await store.update(last.id, { optional: true });
+    return { s: s.id, q: s.sequenceId, cls: s.classId };`);
+  await go(`#/seance/${ids.s}`); await page.getByTestId('print-session').click(); await page.waitForTimeout(200);
+  let t = await page.evaluate(() => window.__p || '');
+  for (const x of ['Fiche de préparation', 'Déroulement de la séance', 'Rôle de l’enseignante', 'Institutionnalisation, correction et évaluation', 'PB-TEST', 'TRACE-TEST', 'PROLONG-TEST', 'Bilan après la séance']) assert(t.includes(x), `séance : ${x}`);
+  await S(`await store.update(a, { binome: { name: 'Binôme-test', active: true } });`, ids.cls);
+  await go(`#/sequence/${ids.q}`); await page.getByTestId('print-sequence').click(); await page.waitForTimeout(200);
+  t = await page.evaluate(() => window.__p || '');
+  for (const x of ['Fiche de séquence', 'Institutionnalisation, évaluation et prolongement', 'si nécessaire', 'Transmission à Binôme-test']) assert(t.includes(x), `séquence : ${x}`);
+  await S(`const c = store.get(a); await store.update(a, { binome: { ...c.binome, active: false } });`, ids.cls);
+  await go(`#/sequence/${ids.q}`); await page.getByTestId('print-sequence').click(); await page.waitForTimeout(200);
+  assert(!(await page.evaluate(() => window.__p || '')).includes('Transmission'), 'pas de transmission sans binôme');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

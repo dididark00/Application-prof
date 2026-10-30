@@ -54,12 +54,12 @@ export function printSession(id, { blank = false } = {}) {
     h('header', { class: 'print-head print-head-center' }, h('h1', {}, 'Fiche de préparation'), blank ? null : h('p', { class: 'print-sub' }, P.sessionTitle(s))),
     kv4([['Enseignante', teacher()], ['Classe', `${cls.name} — ${nbStudents(cls)} élèves${levels && levels !== cls.name ? ' · ' + levels : ''}`],
       ['Date et horaire', dates], ['Durée', model.durationLabel(P.sessionDuration(s))],
-      ['Domaine', [s.subject, s.subdomain].filter(Boolean).join(' — ')], ['Organisation', s.organisation],
-      ['Séquence', seq ? P.sequenceTitle(seq) : ''], ['Séance', [P.sessionNumber(s) ? `n° ${P.sessionNumber(s)}` : '', s.title].filter(Boolean).join(' — ')]], { blank }),
+      ['Domaine', [s.subject, s.subdomain].filter(Boolean).join(' — ')], ['Place', lines(s.place, s.organisation ? `Organisation : ${s.organisation}` : '')],
+      ['Séquence', seq ? P.sequenceTitle(seq) : ''], ['Séance', [P.sessionNumber(s) ? `n° ${P.sessionNumber(s)}${s.optional ? ' (si nécessaire)' : ''}` : '', s.title].filter(Boolean).join(' — ')]], { blank }),
     h2('Cadre pédagogique'),
     kv4([['Compétences', comps], ['Objectif', s.objective], ['Prérequis', s.prerequis], ['Critères de réussite', s.criteres],
       ['Matériel et supports', lines(s.avant, pre('À projeter', s.projeter), pre('À imprimer', s.imprimer), pre('À distribuer', s.distribuer), (s.fileIds || []).map(f => store.get(f)?.name).filter(Boolean).join(', '))],
-      ['Trace et cahier', lines(s.trace, pre('Correction', s.correction))],
+      ['Trace et cahier', lines(s.cahier, pre('Correction', s.correction))],
       ['Manuel', manualRefsText(s.manualRefs)], ['Vocabulaire', s.vocabulaire],
       ['Photocopies', (s.copies || []).map(c => `${c.label} (${c.perStudent}/élève + ${c.extra})`).join(' ; ')]], o),
     s.problematique ? h('p', { class: 'print-problem' }, h('strong', {}, 'Problématique : '), s.problematique) : null,
@@ -71,9 +71,16 @@ export function printSession(id, { blank = false } = {}) {
   const phases = blank ? P.defaultPhases().map(p => ({ ...p, duration: null })) : (s.phases || []);
   sections.push(h2(blank ? 'Déroulement de la séance' : `Déroulement de la séance${P.sessionDuration(s) ? ' — ' + model.durationLabel(P.sessionDuration(s)) : ''}`),
     h('table', { class: 'print-table deroule' },
-      h('thead', {}, h('tr', {}, [['Durée et modalité', '10%'], ['Phase', '14%'], ['Déroulement et consignes', '24%'], ['Activité des élèves', '17%'], ['Rôle de l’enseignant', '17%'], ['Différenciation et évaluation', '18%']].map(([t, w]) => h('th', { style: { width: w } }, t)))),
+      h('thead', {}, h('tr', {}, [['Durée et modalité', '10%'], ['Phase', '14%'], ['Déroulement et consignes', '24%'], ['Activité des élèves', '17%'], ['Rôle de l’enseignante', '17%'], ['Différenciation et évaluation', '18%']].map(([t, w]) => h('th', { style: { width: w } }, t)))),
       h('tbody', {}, phases.map(ph => h('tr', {}, phaseCells(blank ? { kind: ph.kind } : ph).map(c => h('td', {}, c)))))));
-  sections.push(h('div', { class: 'keep' }, h2('Après la séance'), kv4(P.AFTER_FIELDS.map(f => [f.label, '']), { blank: true })));
+  sections.push(h('div', { class: 'keep' }, h2('Institutionnalisation, correction et évaluation'),
+    kv4([['Trace ou synthèse', s.trace], ['Correction attendue', s.correctionAttendue], ['Évaluation', s.evaluation], ['Prolongement', s.prolongement]], { blank })));
+  // Bilan : celui saisi au cahier journal pour chaque date, sinon des lignes à remplir à la main.
+  const bilans = blank ? [] : occs.filter(x => x.after && Object.values(x.after).some(Boolean));
+  sections.push(h('div', { class: 'keep' }, h2('Bilan après la séance'), bilans.length
+    ? bilans.map(x => [bilans.length > 1 ? h('p', { class: 'print-mini' }, model.frDate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })) : null,
+      kv4(P.AFTER_FIELDS.map(f => [f.label, x.after[f.key]]), { skipEmpty: true })])
+    : h('div', { class: 'print-lines' }, ['Réussites observées', 'Obstacles rencontrés', 'Élèves à reprendre et remédiation prévue'].map(l => h('p', {}, `${l} : `)))));
   if (full) {
     sections.push(h('div', { class: 'keep' }, h2('Checklist avant visite / INSPE'), h('ul', { class: 'print-check' }, P.VISIT_CHECKLIST.map(([k, l]) => h('li', {}, `${!blank && s.checklist?.[k] ? '☑' : '☐'} ${l}`)))));
   }
@@ -110,12 +117,17 @@ export function printSequence(id, { blank = false } = {}) {
   out.push(h2('Déroulement de la séquence'), h('table', { class: 'print-table deroule' },
     h('thead', {}, h('tr', {}, [['Séance', '16%'], ['Date / durée', '14%'], ['Objectif opérationnel', '22%'], ['Déroulement / activité centrale', '30%'], ['Trace / évaluation', '18%']].map(([t, w]) => h('th', { style: { width: w } }, t)))),
     h('tbody', {}, rows.map((x, i) => h('tr', {},
-      h('td', {}, h('strong', {}, `S${i + 1}`), x?.title ? ` · ${x.title}` : ''),
+      h('td', {}, h('strong', {}, P.sessionShort(x, i)), x?.title ? ` · ${x.title}` : ''),
       h('td', {}, x ? lines(P.occurrencesOfSession(x.id).filter(o2 => o2.status !== 'reportée').map(o2 => model.frShort(o2.date)).join(', '), model.durationLabel(P.sessionDuration(x))) : ''),
       h('td', {}, x?.objective || ''),
       h('td', {}, x ? (x.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ' : ' + ph.consigne : ''}`).join('\n') : ''),
       h('td', {}, x ? lines(x.trace, x.criteres) : ''))))));
-  out.push(h('div', { class: 'keep' }, h2('Bilan de séquence'), kv4(P.SEQUENCE_BILAN.map(f => [f.label, s[f.key]]), o)));
+  const done = sessions.filter(x => P.occurrencesOfSession(x.id).some(o2 => o2.status === 'faite')).length;
+  out.push(h('div', { class: 'keep' }, h2('Institutionnalisation, évaluation et prolongement'),
+    kv4([['Trace ou synthèse', s.traceSynthese], ['Correction attendue', s.correctionAttendue],
+      ['Évaluation', lines(pre('Diagnostique', s.evalDiag), pre('Formative', s.evalFormative), pre('Finale', s.evalFinale))], ['Prolongement', s.prolongement],
+      ['Gestion des besoins', lines(s.adaptations, pre('AESH', s.aesh))], ['Bilan de progression', lines(s.bilanProgression, !blank && sessions.length ? `${done}/${sessions.length} séance(s) faite(s) au cahier journal` : '')]], o)));
+  out.push(h('div', { class: 'keep' }, h2('Bilan après la séquence'), kv4(P.sequenceBilan(cls).map(f => [f.label, s[f.key]]), o)));
   out.push(docFoot(cls, 'Fiche de séquence'));
   return h('div', { class: 'print-doc fiche' }, out);
 }

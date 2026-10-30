@@ -1172,3 +1172,5 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .cj-break span { color: #555; }
 .week-item { border-left: 3px solid transparent; padding-left: 4px; }
 .print-root.bw .cj-card { border-left-color: #000 !important; }
+.print-lines p { border-bottom: 1px dotted #888; padding: 6px 0 2px; margin: 0; }
+.print-mini { font-weight: 700; margin: 6px 0 2px; font-size: .9em; }

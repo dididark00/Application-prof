@@ -94,9 +94,11 @@ function detail(id) {
       bound({ label: 'Sous-domaine', type: 'text', value: s.subdomain, onSave: (v) => save({ subdomain: v }, 'Sous-domaine') }),
       bound({ label: 'Durée prévue (min)', type: 'number', value: s.duration, placeholder: String(P.sessionDuration({ phases: s.phases }) || ''), hint: 'Vide : somme des phases', onSave: (v) => save({ duration: v }, 'Durée') })),
     h('div', { class: 'grid-3' },
+      bound({ label: 'Place dans la journée', type: 'text', value: s.place, placeholder: 'ex. début de journée, lundi matin', testid: 'f-place', onSave: (v) => save({ place: v }, 'Place') }),
       bound({ label: 'Organisation', type: 'text', value: s.organisation, placeholder: 'collectif / individuel / binômes / groupes', onSave: (v) => save({ organisation: v }, 'Organisation') }),
       bound({ label: 'Encadrement (cahier journal)', type: 'select', value: s.teacherMode || 'dirigé', options: PL.MODES.slice(0, 5).map(m => [m[0], m[1]]), onSave: (v) => save({ teacherMode: v }, 'Encadrement') }),
       h('div', { class: 'field' }, h('label', {}, 'Niveau(x)'), levelChips(s.levels || [], cls.levels || [], (v) => save({ levels: v }, 'Niveaux')))),
+    bound({ type: 'checkbox', label: 'Séance de remédiation « si nécessaire » (faite seulement si besoin)', value: !!s.optional, testid: 'f-optional', onSave: (v) => save({ optional: v }, 'Séance si nécessaire') }),
     h('div', { class: 'field' }, h('label', {}, 'Dates (cahier journal)'),
       occ.length ? h('ul', { class: 'plain', 'data-testid': 'session-dates' }, occ.map(o => h('li', {}, h('a', { href: `#/cahier?d=${o.date}` }, `${model.frDate(o.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${o.start || ''}`), ' ', badge(o.status, PL.OCC_STATUS[o.status]))))
         : h('p', { class: 'muted small' }, 'Pas encore programmée.')));
@@ -124,6 +126,7 @@ function detail(id) {
     h('div', { class: 'row' }, h('span', { class: 'muted' }, 'Ajouter une phase :'), Object.entries(P.PHASE_KINDS).map(([k, d]) =>
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => save({ phases: [...(store.get(s.id).phases || []), { id: store.uid(), kind: k, title: '', duration: null }] }, 'Phase ajoutée', false) }, d.label))));
 
+  const instit = h('section', { class: 'card' }, h('h2', {}, P.SESSION_SECTIONS[2].title), sectionFields(s.id, P.SESSION_SECTIONS[2].fields));
   const reuse = occ.filter(o => o.after && Object.values(o.after).some(Boolean));
   const after = h('section', { class: 'card' }, h('h2', {}, 'Après la séance'),
     h('p', { class: 'muted small' }, 'Le bilan se saisit pour chaque date dans le cahier journal : il ne modifie pas cette fiche, qui reste réutilisable.'),
@@ -153,7 +156,7 @@ function detail(id) {
         } }, icon('trash', 16))] }),
     s.copiedFrom && store.get(s.copiedFrom) ? h('p', { class: 'muted small' }, 'Copie de ', h('a', { href: `#/seance/${s.copiedFrom}` }, P.sessionTitle(store.get(s.copiedFrom))), ' : les deux fiches évoluent séparément.') : null,
     visit ? h('p', { class: 'muted small' }, 'Mode visite : toutes les rubriques sont affichées et imprimées. Ce modèle reprend votre fiche personnelle ; il n’est pas un format imposé par l’inspection.') : null,
-    ident, objectifs, materiel, variants, adaptations, phases, after, checklist, links);
+    ident, objectifs, materiel, variants, adaptations, phases, instit, after, checklist, links);
 }
 
 /** Différenciation par élèves (ou groupes) : les aides enregistrées sont proposées, jamais appliquées d'office. */

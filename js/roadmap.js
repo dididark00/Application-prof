@@ -240,6 +240,7 @@ export const ROADMAP = [
   R(5, '§23 Bibliothèque', 'Modifier ou supprimer un emprunt (élève, dates, retour, remarque)', 'fait'),
   R(5, '§10 Suivi', 'Informations élèves : la coche se met bien à jour au clic (correctif)', 'fait'),
   R(5, '§6 Planifier', 'Impressions colorées d’après vos modèles : fiche de préparation et fiche de séquence (tableaux bleus, déroulement en 6 colonnes), programmation et progression teintées par période, cahier-journal en cartes de la couleur de chaque discipline avec récréations', 'fait', 'Réglages › Général › Style des impressions : coloré ou sobre (noir et blanc).'),
+  R(5, '§6 Planifier', 'Fiches au niveau de détail des modèles validés : problématique, place dans la journée, trace et cahier, bloc « Institutionnalisation, correction et évaluation », bilan après la séance repris du cahier journal ; séquence : institutionnalisation et prolongement, bilan de progression, séances de remédiation « si nécessaire », transmission à la binôme seulement si la classe en a une', 'fait', 'Les phases restent détaillées dans le déroulement. Sans binôme (Réglages › Classes), la ligne de transmission disparaît.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

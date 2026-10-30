@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (181) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 194 entrées.
+Légende : ✅ Réalisé (182) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 195 entrées.
 
 ## Étape 1 — Socle
 
@@ -222,3 +222,4 @@ Légende : ✅ Réalisé (181) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §23 Bibliothèque | Modifier ou supprimer un emprunt (élève, dates, retour, remarque) |  |
 | ✅ | §10 Suivi | Informations élèves : la coche se met bien à jour au clic (correctif) |  |
 | ✅ | §6 Planifier | Impressions colorées d’après vos modèles : fiche de préparation et fiche de séquence (tableaux bleus, déroulement en 6 colonnes), programmation et progression teintées par période, cahier-journal en cartes de la couleur de chaque discipline avec récréations | Réglages › Général › Style des impressions : coloré ou sobre (noir et blanc). |
+| ✅ | §6 Planifier | Fiches au niveau de détail des modèles validés : problématique, place dans la journée, trace et cahier, bloc « Institutionnalisation, correction et évaluation », bilan après la séance repris du cahier journal ; séquence : institutionnalisation et prolongement, bilan de progression, séances de remédiation « si nécessaire », transmission à la binôme seulement si la classe en a une | Les phases restent détaillées dans le déroulement. Sans binôme (Réglages › Classes), la ligne de transmission disparaît. |

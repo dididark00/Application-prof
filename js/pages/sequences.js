@@ -130,11 +130,11 @@ function detail(id) {
         h('thead', {}, h('tr', {}, ['Séance', 'Titre', 'Objectif spécifique', 'Durée', 'Trace / production attendue', 'Cahier journal', ''].map(t => h('th', {}, t)))),
         h('tbody', {}, sessions.map((x, i) => {
           const occ = P.occurrencesOfSession(x.id);
-          return h('tr', {}, h('td', {}, `Séance ${i + 1}`), h('td', {}, h('a', { href: `#/seance/${x.id}` }, x.title || '[à compléter]')), h('td', {}, x.objective || ''),
+          return h('tr', {}, h('td', {}, P.sessionShort(x, i)), h('td', {}, h('a', { href: `#/seance/${x.id}` }, x.title || '[à compléter]')), h('td', {}, x.objective || ''),
             h('td', { class: 'nowrap' }, model.durationLabel(P.sessionDuration(x))), h('td', {}, x.trace || ''),
             h('td', {}, occ.length ? occ.map(o => h('div', { class: 'small' }, h('a', { href: `#/cahier?d=${o.date}` }, model.frShort(o.date)), ' ', o.status)) : h('span', { class: 'muted small' }, '—')),
             h('td', { class: 'row-actions' }, iconBtn('up', 'Monter', () => moveSession(i, -1)), iconBtn('down', 'Descendre', () => moveSession(i, 1)),
               iconBtn('copy', 'Dupliquer (copie indépendante)', async () => { await P.duplicateSession(x.id); toast('Copie créée dans la séquence'); })));
         })))) : emptyState('Aucune séance', 'Ajoutez les fiches de séance de cette séquence.')),
-    h('section', { class: 'card' }, h('h2', {}, 'Bilan de séquence'), sectionFields(s.id, P.SEQUENCE_BILAN, { prefix: 'Bilan : ' })));
+    h('section', { class: 'card' }, h('h2', {}, 'Bilan de séquence'), sectionFields(s.id, P.sequenceBilan(cls), { prefix: 'Bilan : ' })));
 }

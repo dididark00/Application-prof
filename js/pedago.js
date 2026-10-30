@@ -38,15 +38,21 @@ export const SESSION_SECTIONS = [
     F('competencesText', 'Compétence(s) travaillée(s)'),
     F('criteres', 'Critère(s) de réussite annoncé(s) aux élèves'),
     F('prerequis', 'Prérequis mobilisés'),
-    F('vocabulaire', 'Vocabulaire / notion')] },
+    F('vocabulaire', 'Vocabulaire / notion'),
+    F('problematique', 'Problématique', 'la question posée aux élèves')] },
   { title: 'Préparation matérielle', fields: [
     F('avant', 'À préparer avant la séance'), F('projeter', 'À projeter'), F('imprimer', 'À imprimer'),
-    F('distribuer', 'À distribuer / faire coller', 'quoi ? dans quel cahier ?'), F('trace', 'Trace écrite prévue'),
+    F('distribuer', 'À distribuer / faire coller', 'quoi ? dans quel cahier ?'), F('cahier', 'Trace et cahier', 'où la trace est copiée ou collée : cahier rouge, petit cahier bleu…', 'text'),
     F('correction', 'Correction', 'collective / individuelle / projetée', 'text')] },
+  { title: 'Institutionnalisation, correction et évaluation', fields: [
+    F('trace', 'Trace ou synthèse', 'la règle ou le savoir construit, formulé comme les élèves l’écriront'),
+    F('correctionAttendue', 'Correction attendue', 'réponses justes, exemples précis'),
+    F('evaluation', 'Évaluation', 'ce qui est observé, comment (ardoise, cahier, ticket de sortie…)'),
+    F('prolongement', 'Prolongement', 'séance suivante, réinvestissement')] },
 ];
 export const AFTER_FIELDS = [
   { key: 'atteint', label: 'Objectif atteint ?', type: 'select', options: ['', 'oui', 'partiellement', 'non'] },
-  F('aReprendre', 'Élèves à reprendre'), F('erreurs', 'Erreur(s) fréquente(s) repérée(s)'),
+  F('reussites', 'Réussites observées'), F('erreurs', 'Obstacles rencontrés / erreurs fréquentes'), F('aReprendre', 'Élèves à reprendre'),
   F('remediation', 'Remédiation prévue'), F('modifReuse', 'Modification avant réutilisation'),
 ];
 export const VISIT_CHECKLIST = [
@@ -61,10 +67,10 @@ export const SEQUENCE_SECTIONS = [
   { title: 'Références et objectifs', fields: [
     F('attendus', 'Attendus de fin de cycle / repères'), F('competencesText', 'Compétences travaillées'),
     F('objectifGeneral', 'Objectif général de la séquence'), F('objectifsInter', 'Objectifs intermédiaires'),
-    F('notionsVocab', 'Notions / vocabulaire à acquérir')] },
+    F('notionsVocab', 'Notions / vocabulaire à acquérir'), F('problematique', 'Problématique')] },
   { title: 'Matériel et supports', fields: [
     F('supportsEleves', 'Supports élèves', 'manuel, fiche, cahier, ardoise…'), F('supportsEnseignant', 'Supports enseignant', 'diaporama, affichage, correction…'),
-    F('materiel', 'Matériel'), F('documents', 'Documents à projeter / imprimer')] },
+    F('materiel', 'Matériel'), F('documents', 'Documents à projeter / imprimer'), F('traces', 'Traces et cahiers', 'quel cahier, quelle partie', 'text')] },
   { title: 'Différenciation et besoins particuliers', fields: [
     F('adaptations', 'Adaptations prévues', 'lecture facilitée, consignes reformulées, quantité réduite, police adaptée, manipulation…'),
     F('aesh', 'Rôle de l’AESH si nécessaire'), F('fragiles', 'Étayer les élèves fragiles'),
@@ -72,8 +78,19 @@ export const SEQUENCE_SECTIONS = [
   { title: 'Évaluation', fields: [
     F('evalDiag', 'Évaluation diagnostique éventuelle'), F('evalFormative', 'Évaluation formative au fil de la séquence'),
     F('criteres', 'Critères de réussite'), F('evalFinale', 'Évaluation finale / production attendue')] },
+  { title: 'Institutionnalisation et prolongement', fields: [
+    F('traceSynthese', 'Trace ou synthèse', 'la règle ou le savoir construit'),
+    F('correctionAttendue', 'Correction attendue', 'exemples précis'),
+    F('prolongement', 'Prolongement', 'séquence suivante et lien avec la progression'),
+    F('bilanProgression', 'Bilan de progression', 'réalisé / en cours / à reprendre / reporté', 'text')] },
 ];
-export const SEQUENCE_BILAN = [F('acquis', 'Ce qui a été acquis'), F('difficultes', 'Difficultés rencontrées'), F('remediations', 'Remédiations prévues'), F('aReprendre', 'À reprendre / réinvestir plus tard')];
+export const SEQUENCE_BILAN = [F('acquis', 'Réussites observées'), F('difficultes', 'Obstacles rencontrés'), F('aReprendre', 'Élèves à reprendre'), F('remediations', 'Remédiations prévues')];
+/** Bilan de séquence d'une classe : « Transmission à la binôme » seulement si la classe a une binôme (Réglages › Classes). */
+export function sequenceBilan(cls) {
+  return model.hasBinome(cls) ? [...SEQUENCE_BILAN, F('transmission', `Transmission à ${cls.binome?.name || 'la binôme'}`)] : SEQUENCE_BILAN;
+}
+/** Libellé court d'une séance dans sa séquence (« S6 si nécessaire »). */
+export const sessionShort = (x, i) => `S${i + 1}${x?.optional ? ' si nécessaire' : ''}`;
 
 // ───────── Progression de période (modèle « Progression période »)
 export const PROG_STATUSES = ['À venir', 'En cours', 'Réalisé', 'À reprendre', 'Reporté'];
