@@ -229,6 +229,26 @@ await test('Collègues : saisis une fois dans Contacts, choisis dans la surveill
   await page.locator('.modal').getByRole('button', { name: 'Annuler' }).click();
 });
 
+await test('Diaporamas : ajouter un lien Canva relié à une séance, puis un diaporama libre', async () => {
+  const sid = await S(`return store.all('session').find(x => !x.deletedAt && x.classId === store.getSettings().currentClassId)?.id;`);
+  await go('#/diaporamas');
+  await page.getByTestId('diapo-add-link').click(); await page.waitForTimeout(150);
+  await page.getByTestId('diapo-new-url').fill('https://www.canva.com/design/EXEMPLE/view');
+  await page.getByTestId('diapo-new-title').fill('Canva test');
+  if (sid) await page.getByTestId('diapo-new-session').selectOption(sid);
+  await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(400);
+  const ss = await S(`return store.all('slideshow').find(x => x.slides.some(s => s.url === 'https://www.canva.com/design/EXEMPLE/view'));`);
+  assert(ss, 'diaporama avec le lien'); if (sid) eq(ss.sessionId, sid, 'relié à la séance');
+  assert(page.url().includes(`#/diaporamas/${ss.id}`), 'éditeur ouvert');
+  await go('#/diaporamas'); await page.getByTestId('diapo-new').click(); await page.waitForTimeout(150);
+  await page.getByTestId('diapo-new-title').fill('Rituels test'); await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(300);
+  assert(await S(`return store.all('slideshow').some(x => x.title === 'Rituels test');`), 'diaporama libre créé');
+  await go('#/diaporamas'); await page.getByTestId('diapo-add-link').click(); await page.getByTestId('diapo-new-url').fill('pas une adresse');
+  await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(150);
+  assert((await page.locator('.modal .form-errors').innerText()).includes('Adresse invalide'), 'adresse refusée');
+  await page.locator('.modal').getByRole('button', { name: 'Annuler' }).click();
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

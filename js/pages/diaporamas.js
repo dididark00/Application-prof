@@ -42,6 +42,29 @@ export async function createFor(session) {
   return ss;
 }
 
+/** Nouveau diaporama, ou lien à projeter (Canva, Google Slides, Drive…), relié ou non à une séance. */
+export function newDialog({ session = null, link = false } = {}) {
+  const cls = model.currentClass(); if (!cls) return;
+  const title = h('input', { name: 'title', value: session ? (session.title || '') : '', placeholder: link ? 'ex. Diaporama Canva — les fractions' : 'ex. Rituels de la semaine', 'data-testid': 'diapo-new-title' });
+  const url = link ? h('input', { name: 'url', type: 'url', placeholder: 'https://www.canva.com/… ou https://docs.google.com/presentation/…', 'data-testid': 'diapo-new-url' }) : null;
+  const sessions = P.ofClass('session', cls.id).sort((a, b) => (a.subject || '').localeCompare(b.subject || '') || P.sessionTitle(a).localeCompare(P.sessionTitle(b)));
+  const sel = h('select', { name: 'sessionId', 'data-testid': 'diapo-new-session' }, h('option', { value: '' }, '— aucune (diaporama libre) —'), sessions.map(s => h('option', { value: s.id, selected: session?.id === s.id }, `${s.subject ? s.subject + ' · ' : ''}${P.sessionTitle(s)}`)));
+  const err = h('p', { class: 'form-errors', role: 'alert' });
+  modal({ title: link ? 'Ajouter un lien à projeter' : 'Nouveau diaporama', body: h('div', { class: 'form' },
+    url ? field('Adresse du lien', url, 'Partagez le document « à toute personne disposant du lien » pour qu’il s’affiche dans l’appli ; sinon un bouton l’ouvre dans un onglet.') : null,
+    field('Titre', title), field('Séance (pour le retrouver le jour venu)', sel), err),
+  actions: [{ label: 'Annuler' }, { label: link ? 'Ajouter' : 'Créer', primary: true, testid: 'diapo-new-save', onClick: async () => {
+    const u = url ? url.value.trim() : '';
+    if (url && !safeUrl(u)) { err.textContent = 'Adresse invalide : elle doit commencer par https://'; return false; }
+    const sid = sel.value || null; const t = title.value.trim() || (sid ? P.sessionTitle(store.get(sid)) : 'Diaporama');
+    const slide = link ? { id: store.uid(), kind: 'lien', title: t, text: '', notes: '', url: u } : { id: store.uid(), kind: 'titre', title: t, text: '', notes: '' };
+    const existing = link && sid ? slideshowsOf(sid)[0] : null;
+    if (existing) { await store.update(existing.id, { slides: [...existing.slides, slide] }, 'Lien ajouté au diaporama'); location.hash = `#/diaporamas/${existing.id}`; return; }
+    const ss = await store.create('slideshow', { classId: cls.id, sessionId: sid, title: t, slides: [slide], ready: link }, link ? 'Lien à projeter ajouté' : 'Diaporama créé');
+    location.hash = `#/diaporamas/${ss.id}`;
+  } }] });
+}
+
 export function render({ params, rerender }) {
   const cls = model.currentClass();
   const missing = needClass();
@@ -57,20 +80,23 @@ export function render({ params, rerender }) {
       h('span', {}, h('strong', {}, e.subject || ''), ' ', e.session ? h('a', { href: `#/seance/${e.session.id}` }, e.title) : e.title),
       sss.map(ss => h('span', { class: 'row' }, h('a', { class: 'btn btn-small', href: `#/diaporamas/${ss.id}` }, ss.title), ss.ready ? badge('prêt', 'ok') : badge('à finir', 'warn'), view === 'jour' ? h('button', { class: 'btn btn-small btn-primary', type: 'button', onclick: () => present(ss) }, 'Présenter') : null)),
       e.session && !sss.length ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'gen-diapo', onclick: async () => { const ss = await createFor(e.session); location.hash = `#/diaporamas/${ss.id}`; } }, 'Créer depuis la fiche') : null,
+      e.session ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'diapo-row-link', title: 'Ajouter un lien Canva, Google Slides… pour cette séance', onclick: () => newDialog({ session: e.session, link: true }) }, icon('link', 12), '+ lien') : null,
       files.filter(f => f.kind === 'link').map(f => h('a', { class: 'btn btn-small', href: safeUrl(f.url) || '#', target: '_blank', rel: 'noopener noreferrer' }, icon('link', 12), f.name)),
       !e.session ? h('span', { class: 'muted small' }, 'pas de fiche') : null);
   };
   let body;
   if (view === 'tous') {
     const all = store.all('slideshow').filter(s => s.classId === cls.id);
-    body = all.length ? h('ul', { class: 'plain' }, all.map(s => h('li', {}, h('a', { href: `#/diaporamas/${s.id}` }, s.title), ` · ${s.slides.length} diapositive(s) · `, s.sessionId ? P.sessionTitle(store.get(s.sessionId)) : 'sans séance'))) : emptyState('Aucun diaporama');
+    body = all.length ? h('ul', { class: 'plain' }, all.map(s => h('li', {}, h('a', { href: `#/diaporamas/${s.id}` }, s.title), ` · ${s.slides.length} diapositive(s) · `, s.sessionId ? P.sessionTitle(store.get(s.sessionId)) : 'sans séance'))) : emptyState('Aucun diaporama', '« Ajouter un lien » pour un Canva ou un Google Slides, « Nouveau diaporama » pour en créer un ici.');
   } else {
     const days = view === 'jour' ? [today] : model.classDays(cls).map(d => model.addDays(model.mondayOf(today), d - 1));
     const rows = days.flatMap(d => PL.dayPlan(cls, d).entries.filter(e => e.kind !== 'event' && !['annulée', 'reportée'].includes(e.status)).map(e => entryRow(d, e)));
     body = rows.length ? h('ul', { class: 'plain diapo-list', 'data-testid': 'diapo-list' }, rows) : emptyState(view === 'jour' ? 'Rien au cahier journal aujourd’hui' : 'Rien cette semaine');
   }
   return h('div', { class: 'page' },
-    pageHeader('Diaporamas', { favKey: 'preparer/diaporamas', subtitle: cls.name }), subTabs(), tabs,
+    pageHeader('Diaporamas', { favKey: 'preparer/diaporamas', subtitle: cls.name, actions: [
+      h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'diapo-add-link', onclick: () => newDialog({ link: true }) }, icon('link', 16), 'Ajouter un lien (Canva, Slides…)'),
+      h('button', { class: 'btn', type: 'button', 'data-testid': 'diapo-new', onclick: () => newDialog() }, icon('plus', 16), 'Nouveau diaporama')] }), subTabs(), tabs,
     h('section', { class: 'card' }, body),
     h('section', { class: 'card later-card' }, h('h2', {}, 'Formats'),
       h('ul', {}, h('li', {}, 'Affichés directement : images (JPG, PNG, SVG…) et PDF.'),

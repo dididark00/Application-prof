@@ -243,6 +243,7 @@ export const ROADMAP = [
   R(5, '§6 Planifier', 'Fiches au niveau de détail des modèles validés : problématique, place dans la journée, trace et cahier, bloc « Institutionnalisation, correction et évaluation », bilan après la séance repris du cahier journal ; séquence : institutionnalisation et prolongement, bilan de progression, séances de remédiation « si nécessaire », transmission à la binôme seulement si la classe en a une', 'fait', 'Les phases restent détaillées dans le déroulement. Sans binôme (Réglages › Classes), la ligne de transmission disparaît.'),
   R(5, '§12 Organisation', 'Coopérative : modifier un mouvement (montant, date, nature…) ou le supprimer ; l’annulation tracée reste possible', 'fait', 'Journal : « Modifier » et la corbeille sur chaque ligne ; l’ancienne version reste dans l’historique.'),
   R(5, '§12 Organisation', 'Collègues saisis une fois dans Contacts (avec leur classe) puis choisis dans les surveillances, la répartition des élèves et le décloisonnement', 'fait', 'Contacts › « + Collègue ».'),
+  R(5, '§6 Planifier', 'Diaporamas : « Ajouter un lien (Canva, Slides…) » et « Nouveau diaporama » en haut de la page, « + lien » sur chaque séance de la semaine', 'fait'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

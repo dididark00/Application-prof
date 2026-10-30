@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (184) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 197 entrées.
+Légende : ✅ Réalisé (185) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 198 entrées.
 
 ## Étape 1 — Socle
 
@@ -225,3 +225,4 @@ Légende : ✅ Réalisé (184) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §6 Planifier | Fiches au niveau de détail des modèles validés : problématique, place dans la journée, trace et cahier, bloc « Institutionnalisation, correction et évaluation », bilan après la séance repris du cahier journal ; séquence : institutionnalisation et prolongement, bilan de progression, séances de remédiation « si nécessaire », transmission à la binôme seulement si la classe en a une | Les phases restent détaillées dans le déroulement. Sans binôme (Réglages › Classes), la ligne de transmission disparaît. |
 | ✅ | §12 Organisation | Coopérative : modifier un mouvement (montant, date, nature…) ou le supprimer ; l’annulation tracée reste possible | Journal : « Modifier » et la corbeille sur chaque ligne ; l’ancienne version reste dans l’historique. |
 | ✅ | §12 Organisation | Collègues saisis une fois dans Contacts (avec leur classe) puis choisis dans les surveillances, la répartition des élèves et le décloisonnement | Contacts › « + Collègue ». |
+| ✅ | §6 Planifier | Diaporamas : « Ajouter un lien (Canva, Slides…) » et « Nouveau diaporama » en haut de la page, « + lien » sur chaque séance de la semaine |  |
