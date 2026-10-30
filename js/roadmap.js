@@ -231,6 +231,14 @@ export const ROADMAP = [
   R(4, '§26 Agenda', 'Générateurs d’exercices : séries de calculs, problèmes, dictées, textes de lecture', 'fait', 'Préparer › Générateurs d’exercices : calculs (en ligne ou posés, tables, sans retenue), problèmes (9 types), dictées de mots par son (15 sons), fiches de fluence ; graine et corrigé. Pas de génération de textes originaux sans IA : vos textes servent de base.'),
   R(4, '§26 Agenda', 'Planning des surveillances de récréation (école)', 'fait', 'Organisation › Surveillances de récréation : adultes et jours de présence, répartition équitable, modification case par case, impression.'),
   R(5, '§26 Agenda', 'Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens', 'fait', 'Organisation › Liens utiles : liens officiels vérifiés le 23/10/2026 (Éduscol, BO, apps.education.fr, IPS des écoles, Lumni…), liste modifiable.'),
+  R(5, '§10 Suivi', 'Livrets reliés aux évaluations : choisir les évaluations de chaque période, générer le livret de chaque élève ou de toute la classe (compétence par compétence, niveaux, appréciations)', 'fait', 'Livrets et bilans › « Évaluations reliées au livret » puis « Générer les livrets de la classe ». Modèles officiels de l’école : à intégrer quand vous les envoyez.'),
+  R(5, '§10 Suivi', 'Maternelle : carnet de suivi des apprentissages (réussites observées, portfolio, synthèse des acquis)', 'fait', 'Même page, vocabulaire et document adaptés quand la classe est en maternelle.'),
+  R(5, '§12 Organisation', 'Répartition des élèves chez les collègues (équitable, places limitées, absents, fiche par classe d’accueil)', 'fait', 'Organisation › Répartition et décloisonnement ; collègues retenus pour la fois suivante.'),
+  R(5, '§12 Organisation', 'Décloisonnement activable par classe : créneaux réguliers, autre classe, élèves concernés, affichage sur Aujourd’hui', 'fait', 'Désactivé : rien ne s’affiche et les créneaux sont gardés.'),
+  R(5, '§6 Planifier', 'Supprimer en une fois : programmations, progressions, séquences (avec leurs fiches), fiches de séance — au choix ou toutes', 'fait', 'Bouton « Supprimer… » sur chaque page ; tout va dans la corbeille.'),
+  R(5, '§15 Fiabilité', 'Corbeille : sélection, restaurer ou supprimer plusieurs éléments, vidage automatique après un délai choisi', 'fait', 'Réglages › Corbeille : 7, 30, 90, 365 jours ou jamais (30 par défaut).'),
+  R(5, '§23 Bibliothèque', 'Modifier ou supprimer un emprunt (élève, dates, retour, remarque)', 'fait'),
+  R(5, '§10 Suivi', 'Informations élèves : la coche se met bien à jour au clic (correctif)', 'fait'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -312,6 +320,7 @@ export const RUBRIQUES = [
     { id: 'recreation', titre: 'Surveillances (récré, accueil)', route: 'recreation' },
     { id: 'liens', titre: 'Liens utiles', route: 'liens' },
     { id: 'contacts', titre: 'Contacts', route: 'contacts' },
+    { id: 'repartition', titre: 'Répartition et décloisonnement', route: 'repartition' },
     { id: 'missions', titre: 'Mes remplacements (brigade)', route: 'missions' },
     { id: 'remplacement', titre: 'Dossiers remplacement et visite', route: 'remplacement' },
     { id: 'pes', titre: 'PES et visites', route: 'pes' },

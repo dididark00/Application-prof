@@ -1112,3 +1112,7 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .tour-panel { position: fixed; z-index: 60; right: 16px; bottom: 16px; max-width: 360px; background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.18); display: grid; gap: 6px; }
 .tour-panel p { margin: 0; }
 @media (max-width: 700px) { .tour-panel { left: 10px; right: 10px; bottom: 74px; max-width: none; } }
+.livret-page { break-after: page; page-break-after: always; }
+.livret-sub { break-inside: avoid; }
+.rep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.rep-col { border: 1px solid var(--line, #ddd); border-radius: 10px; padding: 8px; }

@@ -93,7 +93,7 @@ export function activityDialog(cls, e, date) {
     sessSel ? field('Fiche de séance (facultatif)', sessSel) : null,
     h('div', { class: 'grid-3' }, field('Début', start), field('Fin', end), field('Durée (min)', dur)),
     h('div', { class: 'row wrap' }, radio('classe', 'Classe entière'), radio('groupes', 'Groupes'),
-      h('label', { class: 'inline' }, declo, 'Décloisonnement'), h('label', { class: 'inline' }, hors, 'Hors horaires')),
+      cls.declo?.enabled || occ.decloisonnement ? h('label', { class: 'inline' }, declo, 'Décloisonnement') : null, h('label', { class: 'inline' }, hors, 'Hors horaires')),
     multi ? h('div', { class: 'field' }, h('label', {}, 'Niveaux (aucun = toute la classe)'), levelChips(levels, cls.levels, (v) => { levels = v; })) : null,
     h('div', { class: 'grid-2' }, field('Domaine', domain), field('Discipline', subject)),
     field('Intitulé', title),

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (172) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 185 entrées.
+Légende : ✅ Réalisé (180) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 193 entrées.
 
 ## Étape 1 — Socle
 
@@ -213,3 +213,11 @@ Légende : ✅ Réalisé (172) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §21 PWA | Archiver une année terminée dans un fichier (chiffré, vérifié) pour libérer la place ; consultation en lecture seule | Réglages › Années : « Archiver dans un fichier… » sur une année archivée ; « Consulter une archive ». Les communs (référentiels, manuels, bibliothèque, fichiers, contacts) restent. |
 | ✅ | §21 PWA | Politique de rétention distante | Un seul fichier par appareil dans Nuage, remplacé à chaque envoi ; Nuage garde ses propres versions. Supprimer le fichier dans Nuage suffit à tout retirer. |
 | ✅ | §26 Agenda | Ressources externes utiles (IPS, mouvement, grille de salaire, vidéos d’albums) : liens | Organisation › Liens utiles : liens officiels vérifiés le 23/10/2026 (Éduscol, BO, apps.education.fr, IPS des écoles, Lumni…), liste modifiable. |
+| ✅ | §10 Suivi | Livrets reliés aux évaluations : choisir les évaluations de chaque période, générer le livret de chaque élève ou de toute la classe (compétence par compétence, niveaux, appréciations) | Livrets et bilans › « Évaluations reliées au livret » puis « Générer les livrets de la classe ». Modèles officiels de l’école : à intégrer quand vous les envoyez. |
+| ✅ | §10 Suivi | Maternelle : carnet de suivi des apprentissages (réussites observées, portfolio, synthèse des acquis) | Même page, vocabulaire et document adaptés quand la classe est en maternelle. |
+| ✅ | §12 Organisation | Répartition des élèves chez les collègues (équitable, places limitées, absents, fiche par classe d’accueil) | Organisation › Répartition et décloisonnement ; collègues retenus pour la fois suivante. |
+| ✅ | §12 Organisation | Décloisonnement activable par classe : créneaux réguliers, autre classe, élèves concernés, affichage sur Aujourd’hui | Désactivé : rien ne s’affiche et les créneaux sont gardés. |
+| ✅ | §6 Planifier | Supprimer en une fois : programmations, progressions, séquences (avec leurs fiches), fiches de séance — au choix ou toutes | Bouton « Supprimer… » sur chaque page ; tout va dans la corbeille. |
+| ✅ | §15 Fiabilité | Corbeille : sélection, restaurer ou supprimer plusieurs éléments, vidage automatique après un délai choisi | Réglages › Corbeille : 7, 30, 90, 365 jours ou jamais (30 par défaut). |
+| ✅ | §23 Bibliothèque | Modifier ou supprimer un emprunt (élève, dates, retour, remarque) |  |
+| ✅ | §10 Suivi | Informations élèves : la coche se met bien à jour au clic (correctif) |  |

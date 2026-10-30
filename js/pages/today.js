@@ -1,3 +1,4 @@
+import { declosOn } from './repartition.js';
 import * as store from '../store.js';
 import * as model from '../model.js';
 import { h, icon, badge } from '../ui.js';
@@ -115,6 +116,7 @@ export function render({ rerender } = {}) {
     cards.unshift(h('section', { class: 'card', 'data-testid': 'today-class' }, h('h2', {}, 'En classe'),
       h('div', { class: 'row' }, halves.map(x => h('a', { class: `btn ${x.a?.validated ? '' : 'btn-primary'}`, href: `#/appel?d=${today}&h=${encodeURIComponent(x.k)}` }, `Appel ${x.l.toLowerCase()}`, x.a?.validated ? badge(`validé · ${x.absents} absent(s) ou retard(s)`, 'ok') : x.a ? badge('en cours', 'warn') : null))),
       svc.length ? h('p', { class: 'small' }, svc.map(x => `${x.sv} : ${x.n}`).join(' · ')) : null,
+      (() => { const dl = declosOn(cls, today); return dl.length ? h('p', { class: 'small', 'data-testid': 'today-declo' }, h('strong', {}, 'Décloisonnement : '), dl.map(x => `${x.start}–${x.end} ${x.subject}${x.otherClass ? ' avec ' + x.otherClass : ''}`).join(' · ')) : null; })(),
       (() => { const dd = dutiesOn(s.recreMe, today); return dd.length ? h('p', { class: 'small', 'data-testid': 'today-duties' }, h('strong', {}, 'Je surveille : '), dd.map(x => `${slotLabel(x.slot)}${x.zone ? ' — ' + x.zone : ''}`).join(' · ')) : null; })(),
       h('div', { class: 'row' }, h('a', { class: 'btn btn-small', href: V.planOf(cls.id) ? '#/services' : '#/services?t=semaine', 'data-testid': 'today-services' }, 'Cantine, étude, garderie'), h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, icon('clock', 14), 'Timer'), h('a', { class: 'btn btn-small', href: '#/projection' }, 'Projection'), h('a', { class: 'btn btn-small', href: '#/enclasse', 'data-testid': 'today-enclasse' }, 'Mode en classe'))));
   }

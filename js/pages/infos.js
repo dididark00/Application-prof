@@ -60,7 +60,9 @@ export function render({ rerender }) {
     h('p', { class: 'muted small' }, '✓ oui / reçu / autorisé · ✗ refusé ou expiré · ◐ en partie · … à recevoir ou à renseigner. Les colonnes confidentielles (dispositifs, santé, famille) sont masquées tant que vous ne les affichez pas, et ne sont jamais projetées ni indexées dans la recherche.'));
 }
 
-function cellNode(c, s, cls, today, redraw) {
+function cellNode(c, s0, cls, today, redraw) {
+  // Toujours la fiche à jour : après un clic, la case affiche la nouvelle valeur (et non celle d'avant).
+  const s = store.get(s0.id) || s0;
   const v = I.cell(c, s, cls, today);
   const td = h('td', { class: `info-cell mark-${v.mark || 'vide'}`, title: v.title, 'data-col': c.key });
   const showText = v.text && (['service', 'plan', 'projet'].includes(c.kind) || v.mark === 'partiel' || v.text === 'expirée');

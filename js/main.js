@@ -67,6 +67,7 @@ import * as pImporter from './pages/importer.js';
 import * as pAvancement from './pages/avancement.js';
 import * as pSorties from './pages/sorties.js';
 import * as pMissions from './pages/missions.js';
+import * as pRepart from './pages/repartition.js';
 import * as pMethodes from './pages/methodes.js';
 import * as pRadar from './pages/radar.js';
 import * as Tuto from './tuto.js';
@@ -135,6 +136,7 @@ const ROUTES = {
   avancement: pAvancement,
   sorties: pSorties, sortie: pSorties,
   missions: pMissions,
+  repartition: pRepart,
   methodes: pMethodes,
   radar: pRadar,
   enclasse: pEnClasse,
@@ -182,6 +184,13 @@ export async function render() {
   } finally { rendering = false; if (pending) { pending = false; render(); } }
 }
 
+export async function autoPurgeTrash(now = Date.now()) {
+  const days = store.getSettings().trashDays ?? 30;
+  if (!days) return 0;
+  const limit = new Date(now - days * 86400000).toISOString();
+  return store.purgeWhere(r => r.deletedAt && r.deletedAt < limit, `Corbeille : éléments de plus de ${days} jours supprimés définitivement`);
+}
+
 async function start() {
   Theme.init();
   setRenderer(render);
@@ -206,6 +215,8 @@ async function start() {
   });
   await render();
   T.init();
+  // Corbeille : vidée automatiquement des éléments plus anciens que le délai choisi (30 jours par défaut).
+  setTimeout(() => autoPurgeTrash().catch(() => {}), 3000);
   import('./rappels.js').then(R => R.start()).catch(() => {});
   // Polices d'écriture importées (ex. Marelle) : chargées puis la page est redessinée si besoin.
   F.loadAll().then(() => { if (location.hash.startsWith('#/atelier')) render(); }).catch(() => {});

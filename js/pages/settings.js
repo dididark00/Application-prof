@@ -443,20 +443,46 @@ async function historique() {
 // ───────── Corbeille
 function corbeille() {
   const items = store.trash();
-  const name = (r) => r.name || r.label || r.title || (r.firstName ? `${r.firstName} ${r.lastName || ''}` : null) || r.text?.slice(0, 40) || (r.type === 'occurrence' ? `${r.subject || 'Séance'} du ${model.frShort(r.date)}` : r.type);
-  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', attendance: 'Appel', serviceplan: 'Services', serviceexc: 'Exception de service', studentdoc: 'Document élève', observation: 'Observation', levelmark: 'Niveau', aid: 'Aide', portfolio: 'Portfolio', need: 'Besoin particulier', plan: 'Dispositif', infoconf: 'Informations confidentielles', studentinfo: 'Informations de l’année', incident: 'Rapport d’incident', soin: 'Registre de soins', aeshsheet: 'Fiche AESH', familynote: 'Mot aux familles', rewardjar: 'Pot de récompense', exchange: 'Échange', carnet: 'Carnet de liaison', outing: 'Sortie', mission: 'Remplacement', list: 'Liste', evaluation: 'Évaluation', report: 'Bilan de période', catchup: 'Rattrapage', layout: 'Plan de classe', groupset: 'Groupes', jobs: 'Responsabilités', book: 'Livre', loan: 'Prêt', slideshow: 'Diaporama', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel' };
+  const name = (r) => r.name || r.label || r.title || (r.firstName ? `${r.firstName} ${r.lastName || ''}` : null) || r.text?.slice(0, 40) || (r.type === 'occurrence' ? `${r.subject || 'Séance'} du ${model.frShort(r.date)}` : r.type) || (r.type === 'session' ? 'Fiche sans titre' : r.type);
+  const typeLabel = { year: 'Année', class: 'Classe', student: 'Élève', enrollment: 'Inscription', file: 'Fichier', folder: 'Dossier', inbox: 'Réception', referential: 'Référentiel', attendance: 'Appel', serviceplan: 'Services', serviceexc: 'Exception de service', studentdoc: 'Document élève', observation: 'Observation', levelmark: 'Niveau', aid: 'Aide', portfolio: 'Portfolio', need: 'Besoin particulier', plan: 'Dispositif', infoconf: 'Informations confidentielles', studentinfo: 'Informations de l’année', incident: 'Rapport d’incident', soin: 'Registre de soins', aeshsheet: 'Fiche AESH', familynote: 'Mot aux familles', rewardjar: 'Pot de récompense', exchange: 'Échange', carnet: 'Carnet de liaison', outing: 'Sortie', mission: 'Remplacement', list: 'Liste', evaluation: 'Évaluation', report: 'Bilan de période', catchup: 'Rattrapage', layout: 'Plan de classe', groupset: 'Groupes', jobs: 'Responsabilités', book: 'Livre', loan: 'Prêt', slideshow: 'Diaporama', programmation: 'Programmation', notion: 'Notion', progression: 'Progression', sequence: 'Séquence', session: 'Fiche de séance', occurrence: 'Cahier journal', timetable: 'Emploi du temps', intervention: 'Intervention', event: 'Événement', task: 'Tâche', homework: 'Devoir', lesson: 'Leçon', manual: 'Manuel', repartition: 'Répartition', declo: 'Décloisonnement' };
+  const days = store.getSettings().trashDays ?? 30;
+  const chosen = new Set();
+  const types = [...new Set(items.map(r => r.type))];
+  let filter = '';
+  const tbody = h('tbody', {});
+  const count = h('span', { class: 'small', 'data-testid': 'trash-count' });
+  const shown = () => items.filter(r => !filter || r.type === filter);
+  const left = (r) => days ? Math.max(0, days - Math.floor((Date.now() - new Date(r.deletedAt)) / 86400000)) : null;
+  const draw = () => {
+    tbody.replaceChildren(...shown().map(r => h('tr', {},
+      h('td', {}, h('input', { type: 'checkbox', checked: chosen.has(r.id), 'aria-label': `Choisir ${name(r)}`, 'data-testid': 'trash-item', onchange: (e) => { e.target.checked ? chosen.add(r.id) : chosen.delete(r.id); count.textContent = `${chosen.size} sélectionné(s)`; } })),
+      h('td', {}, name(r)), h('td', {}, typeLabel[r.type] || r.type), h('td', {}, `${model.frDateTime(r.deletedAt)}${r.deletedBy ? ' par ' + r.deletedBy : ''}`),
+      h('td', { class: 'muted small' }, days ? `encore ${left(r)} j` : '—'),
+      h('td', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: async () => { await store.restore(r.id); toast('Élément restauré'); } }, 'Restaurer')))));
+    count.textContent = `${chosen.size} sélectionné(s)`;
+  };
+  draw();
+  const sel = () => [...chosen].filter(id => items.some(r => r.id === id));
   return h('div', { class: 'stack' },
-    h('p', { class: 'muted' }, 'Les éléments supprimés restent ici jusqu’à leur suppression définitive. Ils sont exclus de la recherche et des listes.'),
-    items.length ? h('div', { class: 'card' }, h('table', { class: 'table' },
-      h('thead', {}, h('tr', {}, h('th', {}, 'Élément'), h('th', {}, 'Type'), h('th', {}, 'Supprimé le'), h('th', {}, ''))),
-      h('tbody', {}, items.map(r => h('tr', {},
-        h('td', {}, name(r)), h('td', {}, typeLabel[r.type] || r.type), h('td', {}, `${model.frDateTime(r.deletedAt)} par ${r.deletedBy || '?'}`),
-        h('td', { class: 'row' },
-          h('button', { class: 'btn', type: 'button', onclick: async () => { await store.restore(r.id); toast('Élément restauré'); } }, 'Restaurer'),
-          h('button', { class: 'btn btn-ghost-danger', type: 'button', onclick: async () => {
-            if (!await confirmDialog('Supprimer définitivement ?', `« ${name(r)} » sera effacé sans retour possible (sauf depuis une sauvegarde exportée).`, { confirmLabel: 'Supprimer définitivement', danger: true })) return;
-            await store.purge(r.id); toast('Supprimé définitivement');
-          } }, 'Supprimer définitivement'))))))) : emptyState('La corbeille est vide'));
+    h('p', { class: 'muted' }, 'Les éléments supprimés restent ici, récupérables, puis sont effacés automatiquement après le délai choisi. Ils sont exclus de la recherche et des listes.'),
+    h('div', { class: 'card row wrap' }, h('label', { class: 'inline' }, 'Supprimer définitivement après', h('select', { 'data-testid': 'trash-days', onchange: (e) => store.setSettings({ trashDays: Number(e.target.value) }) },
+      [[7, '7 jours'], [30, '30 jours'], [90, '3 mois'], [365, '1 an'], [0, 'jamais (je vide moi-même)']].map(([v, l]) => h('option', { value: v, selected: days === v }, l))))),
+    items.length ? h('div', { class: 'card stack' },
+      h('div', { class: 'row wrap' },
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', 'data-testid': 'trash-all', onchange: (e) => { for (const r of shown()) e.target.checked ? chosen.add(r.id) : chosen.delete(r.id); draw(); } }), 'Tout sélectionner'),
+        types.length > 1 ? h('select', { 'aria-label': 'Type', onchange: (e) => { filter = e.target.value; draw(); } }, h('option', { value: '' }, `Tous les types (${items.length})`), types.map(t => h('option', { value: t }, `${typeLabel[t] || t} (${items.filter(r => r.type === t).length})`))) : null,
+        count,
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'trash-restore', onclick: async () => { const ids = sel(); if (!ids.length) return; await store.batch(ids.map(id => ({ id, patch: { deletedAt: null, deletedBy: null } })), `${ids.length} élément(s) restauré(s)`); toast(`${ids.length} élément(s) restauré(s)`); } }, 'Restaurer la sélection'),
+        h('button', { class: 'btn btn-ghost-danger', type: 'button', 'data-testid': 'trash-purge', onclick: async () => {
+          const ids = sel(); if (!ids.length) return;
+          if (!await confirmDialog('Supprimer définitivement ?', `${ids.length} élément(s) seront effacés sans retour possible (sauf depuis une sauvegarde exportée).`, { confirmLabel: 'Supprimer définitivement', danger: true })) return;
+          const set = new Set(ids); await store.purgeWhere(r => set.has(r.id), `${ids.length} élément(s) supprimé(s) définitivement`); toast('Supprimé définitivement');
+        } }, 'Supprimer définitivement'),
+        h('button', { class: 'btn btn-ghost-danger', type: 'button', 'data-testid': 'trash-empty', onclick: async () => {
+          if (!await confirmDialog('Vider la corbeille ?', `Les ${items.length} élément(s) seront effacés sans retour possible.`, { confirmLabel: 'Vider la corbeille', danger: true })) return;
+          await store.purgeWhere(r => !!r.deletedAt, 'Corbeille vidée'); toast('Corbeille vidée');
+        } }, 'Vider la corbeille')),
+      h('div', { class: 'table-wrap' }, h('table', { class: 'table', 'data-testid': 'trash-table' }, h('thead', {}, h('tr', {}, ['', 'Élément', 'Type', 'Supprimé le', 'Effacement', ''].map(t => h('th', {}, t)))), tbody))) : emptyState('La corbeille est vide'));
 }
 
 // ───────── Démonstration

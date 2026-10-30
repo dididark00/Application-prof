@@ -1,5 +1,6 @@
 // Progression de période (modèle « Progression période » de l’enseignante) : suivi semaine par semaine
 // de l'avancement réel, distinct de la programmation validée, avec bilan de période.
+import { bulkDelete } from '../bulk.js';
 import * as store from '../store.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
@@ -25,7 +26,8 @@ export function render({ params, rerender: rr }) {
   const list = per ? P.ofClass('progression', cls.id).filter(x => x.periodId === per.id) : [];
   return h('div', { class: 'page' },
     pageHeader('Progressions de période', { favKey: 'preparer/progressions', subtitle: `${cls.name} · suivi de l’avancement réel, semaine par semaine`,
-      actions: per ? [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-progression', onclick: () => newDialog(cls, per) }, icon('plus', 16), 'Nouvelle progression')] : [] }),
+      actions: per ? [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-progression', onclick: () => newDialog(cls, per) }, icon('plus', 16), 'Nouvelle progression'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => { const all = P.ofClass('progression', cls.id); const yp = model.periodsOf(store.get(cls.yearId)); bulkDelete({ title: 'Supprimer des progressions (toutes périodes)', items: all.sort((a, b) => yp.findIndex(x => x.id === a.periodId) - yp.findIndex(x => x.id === b.periodId)).map(pr => ({ id: pr.id, label: `${pr.subject}${pr.subdomain ? ' — ' + pr.subdomain : ''}`, detail: `P${yp.findIndex(x => x.id === pr.periodId) + 1} · ${(pr.rows || []).length} ligne(s)` })) }); } }, icon('trash', 16), 'Supprimer…')] : [] }),
     subTabs(),
     periods.length ? h('div', { class: 'seg', role: 'group', 'aria-label': 'Période' }, periods.map((p, i) => h('button', { type: 'button', class: per && p.id === per.id ? 'on' : '', onclick: () => { selPeriod = p.id; rerender(); } }, `P${i + 1}`))) : null,
     per ? h('p', { class: 'muted' }, `Du ${model.frDate(per.start)} au ${model.frDate(per.end)} · ${model.weeksOfPeriod(per).length} semaine(s)`) : emptyState('Aucune période', 'Définissez les périodes de l’année dans Réglages.'),

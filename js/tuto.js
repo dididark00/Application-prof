@@ -27,6 +27,7 @@ export const TIPS = {
   plan: ['Plan de classe', ['« + Ajouter » : tables, rangements, espaces ; taille avec L et P ou le coin orange ; taille de la salle en cm.']],
   messages: ['Carnet et comportement', ['« Noter » : un ou plusieurs élèves, un motif, et si un mot est écrit dans le carnet.', 'Les mots à faire signer et le bilan par élève se font tout seuls.']],
   recreation: ['Surveillances', ['Récréations et accueils (8 h 20, 13 h 20) ; « Répartir équitablement » ; cochez « c’est moi ».']],
+  repartition: ['Répartition et décloisonnement', ['Absente ? Choisissez les collègues : les élèves sont répartis équitablement, puis imprimez une liste par classe.', 'Décloisonnement : activez-le pour la classe, notez vos créneaux ; désactivez-le l’année où vous n’en faites pas.']],
   missions: ['Mes remplacements', ['Un remplacement crée une classe à part (élèves tapés ou lus sur une photo) ; « Terminer » la range.']],
   reglages: ['Réglages', ['Sauvegarde, synchronisation (Nuage), classes, années, apparence. Les astuces se désactivent dans Général.']],
 };

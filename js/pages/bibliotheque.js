@@ -174,7 +174,8 @@ function loansView(cls, loans, rerender) {
       h('tbody', {}, sorted.map(l => h('tr', {}, h('td', {}, h('input', { type: 'checkbox', checked: filt.selected.has(l.id), 'aria-label': 'Sélectionner', onchange: (e) => { e.target.checked ? filt.selected.add(l.id) : filt.selected.delete(l.id); rerender(); } })),
         h('td', {}, h('a', { href: `#/eleve/${l.studentId}?t=vie` }, `${store.get(l.studentId)?.firstName || '?'} ${store.get(l.studentId)?.lastName || ''}`)), h('td', {}, copyLabel(l)), h('td', {}, model.frShort(l.start)),
         h('td', {}, l.due ? model.frShort(l.due) : '—', late(l) ? badge('en retard', 'warn') : null),
-        h('td', {}, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'return-loan', onclick: () => returnDialog([l]) }, 'Retour en un clic'))))))) : emptyState('Aucun prêt en cours'));
+        h('td', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'return-loan', onclick: () => returnDialog([l]) }, 'Retour en un clic'),
+          h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edit-loan', onclick: () => editLoanDialog(cls, l) }, 'Modifier'))))))) : emptyState('Aucun prêt en cours'));
 }
 
 function studentView(cls, rerender) {
@@ -184,7 +185,26 @@ function studentView(cls, rerender) {
   return h('section', { class: 'card' }, h('select', { 'aria-label': 'Élève', onchange: (e) => { filt.studentId = e.target.value; rerender(); } }, h('option', { value: '' }, 'Choisir un élève'),
     students.map(x => h('option', { value: x.id, selected: x.id === filt.studentId }, `${x.firstName} ${x.lastName}${openLoansOfStudent(x.id).length ? ` — ${openLoansOfStudent(x.id).length} en cours` : ''}`))),
     s ? (all.length ? h('ul', { class: 'plain' }, all.map(l => h('li', {}, `${copyLabel(l)} : du ${model.frShort(l.start)}`, l.returnedAt ? ` au ${model.frShort(l.returnedAt)} (${l.returnState || 'rendu'})` : ' — en cours', late(l) ? badge('en retard', 'warn') : null,
-      !l.returnedAt ? h('button', { class: 'btn btn-link small', type: 'button', onclick: () => returnDialog([l]) }, 'retour') : null))) : h('p', { class: 'muted' }, 'Aucun prêt.')) : null);
+      !l.returnedAt ? h('button', { class: 'btn btn-link small', type: 'button', onclick: () => returnDialog([l]) }, 'retour') : null,
+      h('button', { class: 'btn btn-link small', type: 'button', onclick: () => editLoanDialog(cls, l) }, 'modifier')))) : h('p', { class: 'muted' }, 'Aucun prêt.')) : null);
+}
+
+/** Modifier un prêt (élève, dates, retour, note) ou le supprimer (erreur de saisie). */
+function editLoanDialog(cls, l) {
+  const students = model.studentsOfClass(cls.id, { includeLeft: true }).map(x => x.student);
+  const who = h('select', { 'data-testid': 'loan-student' }, students.map(x => h('option', { value: x.id, selected: x.id === l.studentId }, `${x.firstName} ${x.lastName || ''}`)));
+  const start = h('input', { type: 'date', value: l.start || '', 'data-testid': 'loan-start' });
+  const due = h('input', { type: 'date', value: l.due || '', 'data-testid': 'loan-due' });
+  const ret = h('input', { type: 'date', value: l.returnedAt || '', 'data-testid': 'loan-returned' });
+  const note = h('input', { value: l.note || '' });
+  modal({ title: `Prêt : ${copyLabel(l)}`, body: h('div', { class: 'form' }, field('Élève', who), h('div', { class: 'grid-3' }, field('Prêté le', start), field('Retour prévu', due), field('Rendu le (vide = en cours)', ret)), field('Note', note)),
+    actions: [{ label: 'Supprimer le prêt', danger: true, testid: 'loan-delete', onClick: async () => { await store.remove(l.id, `Prêt supprimé (${copyLabel(l)})`); toast('Prêt supprimé.', { action: 'Annuler', onAction: () => store.undo() }); } },
+      { label: 'Annuler' },
+      { label: 'Enregistrer', primary: true, testid: 'loan-save', onClick: async () => {
+        const other = loanOfCopy(l.copyId);
+        if (!ret.value && other && other.id !== l.id) { toast('Cet exemplaire est déjà prêté à quelqu’un d’autre.', { kind: 'error' }); return false; }
+        await store.update(l.id, { studentId: who.value, start: start.value || l.start, due: due.value || null, returnedAt: ret.value || null, note: note.value.trim() }, `Prêt modifié (${copyLabel(l)})`);
+      } }] });
 }
 
 function historyView(cls) {

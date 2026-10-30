@@ -1,5 +1,6 @@
 // Programmation annuelle (modèle « Programmation annuelle » de l’enseignante) :
 // une fiche par discipline et par niveau, notions réparties par période et sous-domaine.
+import { bulkDelete } from '../bulk.js';
 import * as store from '../store.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
@@ -23,7 +24,8 @@ export function render({ params, rerender: rr }) {
   const list = P.ofClass('programmation', cls.id).sort((a, b) => (a.level || '').localeCompare(b.level || '') || model.subjects().indexOf(a.subject) - model.subjects().indexOf(b.subject));
   return h('div', { class: 'page' },
     pageHeader('Programmations annuelles', { favKey: 'preparer/programmations', subtitle: `${cls.name} · une fiche par discipline`,
-      actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-prog', onclick: () => newDialog(cls) }, icon('plus', 16), 'Nouvelle programmation')] }),
+      actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-prog', onclick: () => newDialog(cls) }, icon('plus', 16), 'Nouvelle programmation'),
+        list.length ? h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des programmations', childAlways: true, items: list.map(p => ({ id: p.id, label: `${p.subject} ${p.level || ''}`, detail: `${P.notionsOf(p.id).length} notion(s)`, children: P.notionsOf(p.id).map(n => n.id) })) }) }, icon('trash', 16), 'Supprimer…') : null] }),
     subTabs(),
     list.length ? h('div', { class: 'dash' }, list.map(p => {
       const notions = P.notionsOf(p.id);

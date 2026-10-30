@@ -148,7 +148,7 @@ await test('Corbeille : supprimer puis restaurer une fiche', async () => {
   await page.waitForTimeout(200);
   eq(await count('student'), 2, 'élèves hors corbeille');
   await go('#/reglages/corbeille');
-  await page.getByRole('button', { name: 'Restaurer' }).first().click();
+  await page.getByRole('button', { name: 'Restaurer', exact: true }).first().click();
   await page.waitForTimeout(150);
   eq(await count('student'), 3, 'élèves après restauration');
 });

@@ -1,13 +1,13 @@
 {
   "name": "classeur",
-  "version": "0.5.19",
+  "version": "0.5.20",
   "private": true,
   "type": "module",
   "description": "Application de gestion de classe (PWA, sans dépendance à l'exécution)",
   "scripts": {
     "start": "python3 serveur.py",
     "build": "node tools/build-sw.mjs && node tools/roadmap-md.mjs",
-    "test": "node tests/e2e.mjs && node tests/e2e-etape2.mjs && node tests/e2e-etape3.mjs && node tests/e2e-etape4.mjs && node tests/e2e-etape4b.mjs && node tests/e2e-etape5.mjs && node tests/e2e-etape5b.mjs && node tests/e2e-complements.mjs && node tests/e2e-archive.mjs && node tests/e2e-semaine.mjs && node tests/e2e-registre.mjs && node tests/e2e-avancement.mjs && node tests/e2e-retours.mjs && node tests/e2e-sorties.mjs",
+    "test": "node tests/e2e.mjs && node tests/e2e-etape2.mjs && node tests/e2e-etape3.mjs && node tests/e2e-etape4.mjs && node tests/e2e-etape4b.mjs && node tests/e2e-etape5.mjs && node tests/e2e-etape5b.mjs && node tests/e2e-complements.mjs && node tests/e2e-archive.mjs && node tests/e2e-semaine.mjs && node tests/e2e-registre.mjs && node tests/e2e-avancement.mjs && node tests/e2e-retours.mjs && node tests/e2e-sorties.mjs && node tests/e2e-livrets.mjs",
     "explorer": "node tests/explore.mjs"
   },
   "devDependencies": {

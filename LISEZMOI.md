@@ -2,7 +2,7 @@
 
 Application web installable (PWA) pour professeurs des écoles, en français. Référence : le cahier des charges (document de travail personnel, non publié dans ce dépôt). Suivi de tout le périmètre : `FEUILLE_DE_ROUTE.md` (aussi visible dans l'application : Réglages › Feuille de route).
 
-**État : les cinq étapes sont réalisées et testées (version 0.5.19).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par le **cahier de liaison, l'e-mail ou l'application de l'école** (au choix, sans ENT), sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (rien « à développer » ; ce qui est impossible gratuitement et sans serveur est marqué « Retiré », gardé pour mémoire).
+**État : les cinq étapes sont réalisées et testées (version 0.5.20).** Étape 5 selon votre choix du 23/10/2026 : synchronisation par **Nuage** (apps.education.fr) et communication avec les familles par le **cahier de liaison, l'e-mail ou l'application de l'école** (au choix, sans ENT), sans aucun serveur ni service payant. Ce qui reste est listé dans `FEUILLE_DE_ROUTE.md` (rien « à développer » ; ce qui est impossible gratuitement et sans serveur est marqué « Retiré », gardé pour mémoire).
 
 ---
 

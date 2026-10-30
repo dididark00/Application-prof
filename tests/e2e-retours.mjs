@@ -143,6 +143,7 @@ await test('Étiquettes : aucun prénom ne dépasse, tous formats et polices', a
 
 await test('Cahier journal : fiche d’activité complète (durée, organisation, domaine, déroulement, lieu, compétences…)', async () => {
   await S(`await store.create('referential', { name: 'Réf. test (exemple)', version: '1', levels: ['CE2'], status: 'validé', items: [{ id: 'k1', code: 'NC1', label: 'Calculer mentalement (exemple)' }] }, 'r');`);
+  await S(`const c = store.get(store.getSettings().currentClassId); await store.update(c.id, { declo: { enabled: true } });`);
   await go('#/cahier?d=2026-11-03');
   await page.getByTestId('add-activity').click();
   await page.getByTestId('act-start').fill('13:30'); await page.getByTestId('act-duration').fill('45'); await page.getByTestId('act-duration').dispatchEvent('change');
