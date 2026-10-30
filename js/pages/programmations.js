@@ -222,10 +222,10 @@ export function printProgrammation(p) {
   if (notions.some(n => n.subdomain && !cols.includes(n.subdomain)) || (cols[0] !== '' && notions.some(n => !n.subdomain))) cols.push('Autres');
   const cellOf = (per, c) => notions.filter(n => n.periodId === per.id && (c === 'Autres' ? (!n.subdomain || !(p.subdomains || []).includes(n.subdomain)) : c === '' ? true : n.subdomain === c)).map(n => n.title).join(' ; ');
   return h('div', { class: 'print-doc' },
-    h('header', { class: 'print-head' }, h('h1', {}, `Programmation annuelle — ${p.subject} ${p.level}`),
+    h('header', { class: 'print-head print-head-center' }, h('h1', {}, `Programmation annuelle — ${p.subject} ${p.level}`),
       h('p', {}, [cls.name, year?.label, p.references, p.owner ? `Répartition : ${model.ownerLabel(p.owner, cls)}` : ''].filter(Boolean).join(' · '))),
     h('table', { class: 'print-table' },
-      h('thead', {}, h('tr', {}, h('th', { style: { width: '6%' } }, 'Période'), cols.map(c => h('th', {}, c || 'Notions – apprentissages')))),
-      h('tbody', {}, periods.map((per, i) => h('tr', {}, h('td', {}, h('strong', {}, `P${i + 1}`)), cols.map(c => h('td', {}, cellOf(per, c))))))),
+      h('thead', {}, h('tr', {}, h('th', { style: { width: '8%' } }, 'Période'), cols.map(c => h('th', {}, c || 'Notions – apprentissages')))),
+      h('tbody', {}, periods.map((per, i) => h('tr', { class: `per-row p${i % 5}` }, h('td', {}, h('strong', {}, `P${i + 1}`)), cols.map(c => h('td', {}, cellOf(per, c))))))),
     p.bilan ? h('p', { class: 'print-foot' }, `Bilan / réajustements : ${p.bilan}`) : null);
 }

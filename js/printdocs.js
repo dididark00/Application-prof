@@ -8,13 +8,37 @@ import * as EPS from './eps.js';
 import { manualRefsText } from './pedago-ui.js';
 import { competencyIndex, competencyLabel, competencySource } from './pages/referentiels.js';
 
-const kv = (rows, { blank = false, skipEmpty = false } = {}) => {
-  const shown = rows.filter(([, v]) => blank || !skipEmpty || (v != null && String(v).trim() !== ''));
-  if (!shown.length) return null;
-  return h('table', { class: 'print-table kv' }, h('tbody', {}, shown.map(([k, v]) => h('tr', {}, h('th', { style: { width: '32%' } }, k), h('td', {}, blank ? '' : (v ?? ''))))));
-};
 const head = (title, sub) => h('header', { class: 'print-head' }, h('h1', {}, title), sub ? h('p', {}, sub) : null);
 const h2 = (t) => h('h2', { class: 'print-h2' }, t);
+
+// ───────── Mise en page colorée (d'après les modèles de l'enseignante : fiche de séquence et fiche de préparation « INSPE »)
+/** Tableau à 4 colonnes : intitulé | valeur | intitulé | valeur. */
+const kv4 = (pairs, { blank = false, skipEmpty = false } = {}) => {
+  const shown = pairs.filter(([, v]) => blank || !skipEmpty || (v != null && String(v).trim() !== ''));
+  if (!shown.length) return null;
+  const rows = []; for (let i = 0; i < shown.length; i += 2) rows.push(shown.slice(i, i + 2));
+  return h('table', { class: 'print-table kv4' }, h('tbody', {}, rows.map(r => h('tr', {}, r.flatMap(([k, v]) => [h('th', {}, k), h('td', {}, blank ? '' : (v ?? ''))]),
+    r.length < 2 ? [h('th', {}), h('td', {})] : null))));
+};
+const teacher = () => store.getSettings().userName || '';
+const nbStudents = (cls) => model.studentsOfClass(cls.id).length;
+const yearLabel = (cls) => store.get(cls.yearId)?.label || '';
+const docFoot = (cls, what) => h('p', { class: 'print-footer' }, [cls.name, what, yearLabel(cls)].filter(Boolean).join(' · '));
+const lines = (...xs) => xs.filter(x => x && String(x).trim()).join('\n');
+const pre = (label, v) => (v && String(v).trim() ? `${label} : ${v}` : '');
+
+/** Une phase → les 6 colonnes du déroulement (durée et modalité, phase, consignes, élèves, enseignant, différenciation et évaluation). */
+function phaseCells(ph) {
+  const def = P.PHASE_KINDS[ph.kind] || P.PHASE_KINDS.libre;
+  return [
+    lines(ph.duration ? `${ph.duration} min` : '', ph.modalite),
+    h('strong', {}, ph.title || def.label),
+    lines(pre('But', ph.but), ph.consigne, pre('Exercices', ph.exercices), pre('Relances', ph.relances), pre('Au tableau', ph.tableau), pre('Trace', ph.trace), pre('Où', ph.traceLieu), pre('Question', ph.question), pre('Suite', ph.suite)),
+    lines(ph.eleves, pre('Attendu', ph.reponses)),
+    lines(ph.enseignant, pre('Correction', ph.correction), pre('Vérification', ph.verification)),
+    lines(ph.differenciation, pre('Critères', ph.criteres), pre('Difficultés', ph.difficultes), pre('Autonomie', ph.autonomie)),
+  ];
+}
 
 export function printSession(id, { blank = false } = {}) {
   const s = store.get(id); const cls = store.get(s.classId);
@@ -23,35 +47,38 @@ export function printSession(id, { blank = false } = {}) {
   const o = { blank, skipEmpty: !full };
   const idx = competencyIndex();
   const comps = [s.competencesText, ...(s.competencyIds || []).map(c => `${competencyLabel(c, idx)} (${competencySource(c, idx)})`)].filter(Boolean).join('\n');
-  const dates = P.occurrencesOfSession(s.id).filter(x => x.status !== 'reportée').map(x => model.frShort(x.date)).join(', ');
+  const occs = P.occurrencesOfSession(s.id).filter(x => x.status !== 'reportée');
+  const dates = occs.map(x => `${model.frDate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })}${x.start ? ` · ${x.start.replace(':', ' h ')} à ${(x.end || '').replace(':', ' h ')}` : ''}`).join('\n');
   const levels = (s.levels?.length ? s.levels : cls.levels).join(', ');
   const sections = [
-    head(blank ? 'Fiche séance' : P.sessionTitle(s), `${cls.name} · Fiche séance${s.mode === 'visite' ? ' · version détaillée (visite)' : ''}`),
-    h2('Identification'),
-    kv([['Séquence', seq ? P.sequenceTitle(seq) : ''], ['Séance n°', P.sessionNumber(s) || ''], ['Titre de la séance', s.title], ['Discipline / domaine', s.subject], ['Sous-domaine', s.subdomain],
-      ['Date', dates], ['Durée prévue', model.durationLabel(P.sessionDuration(s))], ['Niveau', levels], ['Organisation', s.organisation]], { blank, skipEmpty: false }),
-    h2('Objectifs et compétences'),
-    kv(P.SESSION_SECTIONS[0].fields.map(f => [f.label, f.key === 'competencesText' ? comps : s[f.key]]), o),
-    h2('Préparation matérielle'),
-    kv([...P.SESSION_SECTIONS[1].fields.map(f => [f.label, s[f.key]]),
-      ['Manuels (pages vérifiées)', manualRefsText(s.manualRefs)],
-      ['Supports liés', (s.fileIds || []).map(f => store.get(f)?.name).filter(Boolean).join(', ')],
+    h('header', { class: 'print-head print-head-center' }, h('h1', {}, 'Fiche de préparation'), blank ? null : h('p', { class: 'print-sub' }, P.sessionTitle(s))),
+    kv4([['Enseignante', teacher()], ['Classe', `${cls.name} — ${nbStudents(cls)} élèves${levels && levels !== cls.name ? ' · ' + levels : ''}`],
+      ['Date et horaire', dates], ['Durée', model.durationLabel(P.sessionDuration(s))],
+      ['Domaine', [s.subject, s.subdomain].filter(Boolean).join(' — ')], ['Organisation', s.organisation],
+      ['Séquence', seq ? P.sequenceTitle(seq) : ''], ['Séance', [P.sessionNumber(s) ? `n° ${P.sessionNumber(s)}` : '', s.title].filter(Boolean).join(' — ')]], { blank }),
+    h2('Cadre pédagogique'),
+    kv4([['Compétences', comps], ['Objectif', s.objective], ['Prérequis', s.prerequis], ['Critères de réussite', s.criteres],
+      ['Matériel et supports', lines(s.avant, pre('À projeter', s.projeter), pre('À imprimer', s.imprimer), pre('À distribuer', s.distribuer), (s.fileIds || []).map(f => store.get(f)?.name).filter(Boolean).join(', '))],
+      ['Trace et cahier', lines(s.trace, pre('Correction', s.correction))],
+      ['Manuel', manualRefsText(s.manualRefs)], ['Vocabulaire', s.vocabulaire],
       ['Photocopies', (s.copies || []).map(c => `${c.label} (${c.perStudent}/élève + ${c.extra})`).join(' ; ')]], o),
+    s.problematique ? h('p', { class: 'print-problem' }, h('strong', {}, 'Problématique : '), s.problematique) : null,
   ];
   if (!blank && (s.variants || []).some(v => v.objective || v.consigne || v.support)) {
     sections.push(h2('Multiniveau'), h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, ['Niveau', 'Objectif', 'Consigne', 'Support'].map(t => h('th', {}, t)))),
       h('tbody', {}, s.variants.map(v => h('tr', {}, h('td', {}, v.level), h('td', {}, v.objective || ''), h('td', {}, v.consigne || ''), h('td', {}, v.support || ''))))));
   }
-  (s.phases || []).forEach((ph, i) => {
-    const def = P.PHASE_KINDS[ph.kind] || P.PHASE_KINDS.libre;
-    const rows = def.fields.map(f => [f.key === 'duration' ? 'Durée' : f.label, f.key === 'duration' ? (ph.duration ? `${ph.duration} min` : '') : ph[f.key]]);
-    sections.push(h('div', { class: 'keep' }, h2(`Phase ${i + 1} — ${ph.title || def.label}`), kv(rows, o)));
-  });
-  sections.push(h('div', { class: 'keep' }, h2('Après la séance'), kv(P.AFTER_FIELDS.map(f => [f.label, '']), { blank: true })));
-  if (blank || s.mode === 'visite') {
+  const phases = blank ? P.defaultPhases().map(p => ({ ...p, duration: null })) : (s.phases || []);
+  sections.push(h2(blank ? 'Déroulement de la séance' : `Déroulement de la séance${P.sessionDuration(s) ? ' — ' + model.durationLabel(P.sessionDuration(s)) : ''}`),
+    h('table', { class: 'print-table deroule' },
+      h('thead', {}, h('tr', {}, [['Durée et modalité', '10%'], ['Phase', '14%'], ['Déroulement et consignes', '24%'], ['Activité des élèves', '17%'], ['Rôle de l’enseignant', '17%'], ['Différenciation et évaluation', '18%']].map(([t, w]) => h('th', { style: { width: w } }, t)))),
+      h('tbody', {}, phases.map(ph => h('tr', {}, phaseCells(blank ? { kind: ph.kind } : ph).map(c => h('td', {}, c)))))));
+  sections.push(h('div', { class: 'keep' }, h2('Après la séance'), kv4(P.AFTER_FIELDS.map(f => [f.label, '']), { blank: true })));
+  if (full) {
     sections.push(h('div', { class: 'keep' }, h2('Checklist avant visite / INSPE'), h('ul', { class: 'print-check' }, P.VISIT_CHECKLIST.map(([k, l]) => h('li', {}, `${!blank && s.checklist?.[k] ? '☑' : '☐'} ${l}`)))));
   }
-  return h('div', { class: 'print-doc' }, sections);
+  sections.push(docFoot(cls, 'Fiches de préparation'));
+  return h('div', { class: 'print-doc fiche' }, sections);
 }
 
 export function printSequence(id, { blank = false } = {}) {
@@ -59,23 +86,38 @@ export function printSequence(id, { blank = false } = {}) {
   const sessions = P.sessionsOfSequence(id);
   const idx = competencyIndex();
   const o = { blank };
-  const val = (k) => (k === 'competencesText' ? [s.competencesText, ...(s.competencyIds || []).map(c => competencyLabel(c, idx))].filter(Boolean).join('\n') : s[k]);
-  const out = [head(blank ? 'Fiche de séquence' : P.sequenceTitle(s), `${cls.name} · Document d’ensemble relié aux fiches de séance`),
-    h2('Informations générales'),
-    kv([['Titre de la séquence', s.title], ['Discipline / domaine', s.subject], ['Sous-domaine', s.subdomain], ['Niveau', (s.levels?.length ? s.levels : cls.levels).join(', ')],
-      ['Période', model.periodLabel(year, s.periodId)], ['Nombre de séances', sessions.length || ''], ['Durée totale estimée', model.durationLabel(sessions.reduce((t, x) => t + P.sessionDuration(x), 0))],
-      ['Prérequis', s.prerequis], ['Notions de la programmation', (s.notionIds || []).map(n => store.get(n)?.title).filter(Boolean).join(' ; ')]], o)];
-  for (const sec of P.SEQUENCE_SECTIONS.slice(1)) {
-    const rows = sec.fields.map(f => [f.label, val(f.key)]);
-    if (sec.title === 'Matériel et supports') rows.push(['Manuels (pages vérifiées)', manualRefsText(s.manualRefs)]);
-    out.push(h('div', { class: 'keep' }, h2(sec.title), kv(rows, o)));
-  }
-  const lines = blank ? Array.from({ length: 6 }, () => null) : sessions;
-  out.push(h2('Déroulé de la séquence'), h('table', { class: 'print-table' },
-    h('thead', {}, h('tr', {}, ['Séance', 'Titre', 'Objectif spécifique', 'Durée', 'Trace / production attendue'].map(t => h('th', {}, t)))),
-    h('tbody', {}, lines.map((x, i) => h('tr', {}, h('td', {}, `Séance ${i + 1}`), h('td', {}, x?.title || ''), h('td', {}, x?.objective || ''), h('td', {}, x ? model.durationLabel(P.sessionDuration(x)) : ''), h('td', {}, x?.trace || ''))))));
-  out.push(h('div', { class: 'keep' }, h2('Bilan de séquence'), kv(P.SEQUENCE_BILAN.map(f => [f.label, s[f.key]]), o)));
-  return h('div', { class: 'print-doc' }, out);
+  const per = model.periodsOf(year).find(p => p.id === s.periodId);
+  const comps = [s.competencesText, ...(s.competencyIds || []).map(c => competencyLabel(c, idx))].filter(Boolean).join('\n');
+  const total = sessions.reduce((t, x) => t + P.sessionDuration(x), 0);
+  const out = [
+    h('header', { class: 'print-head print-head-center' }, h('h1', {}, 'Fiche de séquence'), blank ? null : h('p', { class: 'print-sub' }, P.sequenceTitle(s)),
+      h('p', { class: 'print-meta' }, [cls.name, year?.label, teacher()].filter(Boolean).join(' • '))),
+    h2('Identification de la séquence'),
+    kv4([['Enseignante', teacher()], ['Classe', `${cls.name} — ${nbStudents(cls)} élèves`],
+      ['Période et dates', per ? `${model.periodLabel(year, s.periodId)} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}` : model.periodLabel(year, s.periodId)], ['Durée totale', model.durationLabel(total)],
+      ['Discipline', s.subject], ['Domaine', s.subdomain],
+      ['N° séquence', s.number ? `S${s.number}` : ''], ['Nombre de séances', sessions.length || ''],
+      ['Titre de séquence', s.title], ['Place dans la progression', (s.notionIds || []).map(n => store.get(n)?.title).filter(Boolean).join(' ; ')]], o),
+    h2('Cadre pédagogique'),
+    kv4([['Compétence(s) officielle(s)', lines(s.attendus, comps)], ['Objectif général', lines(s.objectifGeneral, s.objectifsInter)],
+      ['Prérequis', s.prerequis], ['Critères de réussite', s.criteres],
+      ['Notions / vocabulaire', s.notionsVocab], ['Problématique', s.problematique],
+      ['Matériel / supports', lines(s.supportsEleves, s.supportsEnseignant, s.materiel, s.documents, manualRefsText(s.manualRefs))], ['Traces et cahiers', s.traces],
+      ['Différenciation', lines(s.adaptations, pre('Élèves fragiles', s.fragiles), pre('AESH', s.aesh), pre('Approfondissement', s.approfondissement))],
+      ['Évaluation prévue', lines(pre('Diagnostique', s.evalDiag), pre('Formative', s.evalFormative), pre('Finale', s.evalFinale))]], o),
+  ];
+  const rows = blank ? Array.from({ length: 6 }, () => null) : sessions;
+  out.push(h2('Déroulement de la séquence'), h('table', { class: 'print-table deroule' },
+    h('thead', {}, h('tr', {}, [['Séance', '16%'], ['Date / durée', '14%'], ['Objectif opérationnel', '22%'], ['Déroulement / activité centrale', '30%'], ['Trace / évaluation', '18%']].map(([t, w]) => h('th', { style: { width: w } }, t)))),
+    h('tbody', {}, rows.map((x, i) => h('tr', {},
+      h('td', {}, h('strong', {}, `S${i + 1}`), x?.title ? ` · ${x.title}` : ''),
+      h('td', {}, x ? lines(P.occurrencesOfSession(x.id).filter(o2 => o2.status !== 'reportée').map(o2 => model.frShort(o2.date)).join(', '), model.durationLabel(P.sessionDuration(x))) : ''),
+      h('td', {}, x?.objective || ''),
+      h('td', {}, x ? (x.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ' : ' + ph.consigne : ''}`).join('\n') : ''),
+      h('td', {}, x ? lines(x.trace, x.criteres) : ''))))));
+  out.push(h('div', { class: 'keep' }, h2('Bilan de séquence'), kv4(P.SEQUENCE_BILAN.map(f => [f.label, s[f.key]]), o)));
+  out.push(docFoot(cls, 'Fiche de séquence'));
+  return h('div', { class: 'print-doc fiche' }, out);
 }
 
 export function printTimetable(tt, version, cls) {
@@ -97,32 +139,50 @@ function compText(e, s) {
   const comps = ids.map(id => idx.get(id)).filter(Boolean).map(i => `${i.code ? i.code + ' ' : ''}${i.label}`);
   return [seq && `Séquence : ${P.sequenceTitle(seq)}`, comps.length && `Compétences : ${comps.join(' ; ')}`].filter(Boolean).join('\n');
 }
-function entryRow(e, cls, multi) {
+function entryCard(e, cls, multi) {
   const s = e.status === 'faite' || e.status === 'partielle' ? (e.occ?.snapshot || e.session) : e.session;
   const o = e.occ || {};
-  const details = [o.domain, [o.org === 'groupes' ? 'groupes' : '', o.decloisonnement ? 'décloisonnement' : '', o.horsHoraires ? 'hors horaires' : '', o.lieu && o.lieu !== 'Classe' ? o.lieu : ''].filter(Boolean).join(' · '),
-    (o.objective || s?.objective) && `Objectif : ${o.objective || s.objective}`,
-    o.deroule ? o.deroule : s ? (s.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ` : ${ph.consigne}` : ''}`).join(' · ') : '',
-    o.materiel && `Matériel : ${o.materiel}`, o.notes && `Notes : ${o.notes}`, compText(e, s)].filter(Boolean).join('\n');
-  return h('tr', {}, h('td', { class: 'nowrap' }, `${e.start}–${e.end}`), h('td', {}, e.subject || ''), multi ? h('td', {}, (e.levels?.length ? e.levels : cls.levels).join(', ')) : null,
-    h('td', {}, h('strong', {}, e.title), e.mode && e.mode !== 'dirigé' ? ` (${e.mode})` : '', details ? h('div', { class: 'small pre' }, details) : null),
-    h('td', {}, e.status !== 'prévue' ? e.status : '', e.occ?.note ? h('div', { class: 'small' }, e.occ.note) : null));
+  const col = model.subjectColor(e.subject);
+  const dur = e.allDay ? 0 : model.minutes(e.end) - model.minutes(e.start);
+  const tags = [o.org === 'groupes' ? 'groupes' : '', o.decloisonnement ? 'décloisonnement' : '', o.horsHoraires ? 'hors horaires' : '', o.lieu && o.lieu !== 'Classe' ? o.lieu : '', e.mode && e.mode !== 'dirigé' ? e.mode : '', multi ? (e.levels?.length ? e.levels : cls.levels).join(', ') : ''].filter(Boolean);
+  const objective = o.objective || s?.objective;
+  const deroule = o.deroule || (s ? (s.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ` : ${ph.consigne}` : ''}`).join('\n') : '');
+  const block = (label, v) => (v && String(v).trim() ? h('div', { class: 'cj-block' }, h('strong', {}, `${label} : `), h('span', { class: 'pre' }, v)) : null);
+  return h('section', { class: 'cj-card', style: { borderLeftColor: col, '--c': col } },
+    h('div', { class: 'cj-title' }, h('strong', {}, e.title || e.subject || ''), dur > 0 ? h('span', { class: 'cj-dur' }, model.durationLabel(dur)) : null,
+      h('span', { class: 'cj-time' }, e.allDay ? 'journée' : `${e.start} - ${e.end}`), e.status && e.status !== 'prévue' ? h('span', { class: 'cj-status' }, e.status) : null),
+    h('div', { class: 'cj-sub' }, [e.subject, o.domain || s?.subdomain].filter(Boolean).join(' · '), tags.length ? ` · ${tags.join(' · ')}` : ''),
+    objective ? h('div', { class: 'cj-obj' }, h('span', { class: 'cj-obj-label' }, 'Objectif'), h('div', { class: 'pre' }, objective)) : null,
+    deroule ? h('div', { class: 'cj-block' }, h('strong', {}, 'Déroulement :'), h('div', { class: 'pre' }, deroule)) : null,
+    block('Matériel', o.materiel || s?.avant), block('Différenciation', s?.differenciation), block('Notes', o.notes), block('Bilan', o.note),
+    (() => { const t = compText(e, s); return t ? h('div', { class: 'cj-comp pre' }, t) : null; })());
+}
+/** Les pauses (récréation, pause méridienne) entre deux activités. */
+function breakBar(prev, next) {
+  const a = model.minutes(prev.end), b = model.minutes(next.start);
+  if (!(b - a >= 10) || prev.allDay || next.allDay) return null;
+  const label = a <= 12 * 60 + 30 && b >= 12 * 60 + 30 || b - a >= 60 ? 'Pause méridienne' : 'Récréation';
+  return h('div', { class: 'cj-break' }, h('span', {}, label), ` ${prev.end} - ${next.start}`);
 }
 
 export function printDay(cls, date) {
   const plan = PL.dayPlan(cls, date);
   const multi = (cls.levels || []).length > 1;
-  return h('div', { class: 'print-doc' }, head(`Cahier journal — ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`, `${cls.name}${plan.school.ok ? '' : ' · ' + plan.school.reason}`),
+  const entries = plan.entries;
+  const items = []; entries.forEach((e, i) => { if (i) { const br = breakBar(entries[i - 1], e); if (br) items.push(br); } items.push(entryCard(e, cls, multi)); });
+  return h('div', { class: 'print-doc cj' },
+    h('header', { class: 'cj-head' }, h('span', { class: 'cj-tag' }, 'Cahier-journal'), h('h1', {}, model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())), h('span', { class: 'cj-class' }, cls.name)),
+    plan.school.ok ? null : h('p', { class: 'print-warn' }, plan.school.reason),
     plan.warnings.length ? h('p', { class: 'print-warn' }, plan.warnings.map(w => w.message).join(' ')) : null,
-    h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, h('th', { style: { width: '11%' } }, 'Horaire'), h('th', { style: { width: '13%' } }, 'Discipline'), multi ? h('th', { style: { width: '8%' } }, 'Niveaux') : null, h('th', {}, 'Séance'), h('th', { style: { width: '18%' } }, 'Réalisé / bilan'))),
-      h('tbody', {}, plan.entries.map(e => entryRow(e, cls, multi)))));
+    entries.length ? items : h('p', { class: 'muted' }, 'Aucune activité prévue.'),
+    docFoot(cls, `Cahier-journal du ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' })}`));
 }
 
 export function printWeek(cls, monday) {
   const days = model.classDays(cls).map(d => model.addDays(monday, d - 1));
   return h('div', { class: 'print-doc' }, head(`Cahier journal — semaine du ${model.frDate(monday)}`, cls.name),
     h('table', { class: 'print-table week-print' }, h('thead', {}, h('tr', {}, days.map(d => h('th', {}, model.frDate(d, { weekday: 'long', day: 'numeric', month: 'short' }))))),
-      h('tbody', {}, h('tr', {}, days.map(d => { const p = PL.dayPlan(cls, d); return h('td', {}, p.school.ok ? p.entries.map(e => h('div', { class: 'week-item' }, h('strong', {}, `${e.start} ${e.subject || ''}`), h('div', {}, e.title), e.status !== 'prévue' ? h('div', { class: 'small' }, e.status) : null)) : h('em', {}, p.school.reason)); })))));
+      h('tbody', {}, h('tr', {}, days.map(d => { const p = PL.dayPlan(cls, d); return h('td', {}, p.school.ok ? p.entries.map(e => h('div', { class: 'week-item', style: { borderLeftColor: model.subjectColor(e.subject) } }, h('strong', {}, `${e.start} ${e.subject || ''}`), h('div', {}, e.title), e.status !== 'prévue' ? h('div', { class: 'small' }, e.status) : null)) : h('em', {}, p.school.reason)); })))));
 }
 
 export function printMaterials(cls, dates, title) {

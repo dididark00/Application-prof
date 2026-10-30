@@ -1,5 +1,6 @@
 // Impression : le document est placé dans #print-root, seul élément imprimé.
 import { h } from './ui.js';
+import * as store from './store.js';
 
 export function printDocument(node, { orientation = 'portrait', color = true } = {}) {
   const root = document.getElementById('print-root');
@@ -8,6 +9,8 @@ export function printDocument(node, { orientation = 'portrait', color = true } =
   document.head.append(style);
   root.replaceChildren(node.cloneNode(true));
   root.classList.toggle('bw', !color);
+  // Style des impressions : coloré (d'après les modèles de l'enseignante) ou sobre (Réglages › Général).
+  root.classList.toggle('theme-couleur', color && store.getSettings().printStyle !== 'sobre');
   document.body.classList.add('printing');
   const cleanup = () => { document.body.classList.remove('printing'); root.replaceChildren(); window.removeEventListener('afterprint', cleanup); };
   window.addEventListener('afterprint', cleanup);

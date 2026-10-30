@@ -85,8 +85,8 @@ function detail(id) {
     h('p', {}, h('a', { href: '#/sequences', class: 'back' }, '← Séquences')),
     pageHeader(P.sequenceTitle(s), { subtitle: [cls.name, s.subject, s.subdomain, model.periodLabel(year, s.periodId)].filter(Boolean).join(' · '),
       actions: [
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-sequence', onclick: () => printDocument(printSequence(s.id)) }, icon('print', 16), 'Imprimer'),
-        h('button', { class: 'btn', type: 'button', onclick: () => printDocument(printSequence(s.id, { blank: true })) }, 'Version vierge'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-sequence', onclick: () => printDocument(printSequence(s.id), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer'),
+        h('button', { class: 'btn', type: 'button', onclick: () => printDocument(printSequence(s.id, { blank: true }), { orientation: 'landscape' }) }, 'Version vierge'),
         h('button', { class: 'btn', type: 'button', onclick: async () => { const nid = await P.duplicateSequence(s.id); toast('Séquence dupliquée avec ses séances (copies indépendantes)'); location.hash = `#/sequence/${nid}`; } }, icon('copy', 16), 'Dupliquer'),
         h('button', { class: 'btn btn-ghost-danger', type: 'button', 'aria-label': 'Mettre à la corbeille', onclick: async () => {
           if (!await confirmDialog('Mettre la séquence à la corbeille ?', `Ses ${sessions.length} fiche(s) de séance sont conservées (elles apparaîtront hors séquence si la séquence n’est pas restaurée).`, { confirmLabel: 'Mettre à la corbeille', danger: true })) return;

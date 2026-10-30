@@ -169,11 +169,11 @@ export function printProgression(pr) {
   const rows = (pr.rows || []).slice().sort((a, b) => a.week - b.week);
   const label = (r) => [r.sequenceId ? P.sequenceTitle(store.get(r.sequenceId)) : '', r.sessionId ? P.sessionTitle(store.get(r.sessionId)) : '', r.title].filter(Boolean).join(' · ');
   return h('div', { class: 'print-doc' },
-    h('header', { class: 'print-head' }, h('h1', {}, `Progression P${pi + 1} — ${pr.subject}${pr.subdomain ? ' / ' + pr.subdomain : ''}`),
+    h('header', { class: 'print-head print-head-center' }, h('h1', {}, `Progression P${pi + 1} — ${pr.subject}${pr.subdomain ? ' / ' + pr.subdomain : ''}`),
       h('p', {}, [cls.name, pr.level, per ? `du ${model.frShort(per.start)} au ${model.frShort(per.end)}` : '', pr.owner ? `Enseignante : ${model.ownerLabel(pr.owner, cls)}` : ''].filter(Boolean).join(' · '))),
     h('table', { class: 'print-table' },
       h('thead', {}, h('tr', {}, h('th', { style: { width: '5%' } }, 'Sem.'), h('th', {}, 'Séquence / séance'), h('th', {}, 'Objectif précis'), h('th', {}, 'Support / exercices'), extras.map(c => h('th', {}, c)), h('th', { style: { width: '9%' } }, 'Statut'), h('th', {}, 'Ajustements'))),
-      h('tbody', {}, rows.map(r => h('tr', {}, h('td', {}, `S${r.week}`), h('td', {}, label(r)), h('td', {}, r.objective), h('td', {}, r.support), extras.map(c => h('td', {}, r.extra?.[c] || '')), h('td', {}, r.status), h('td', {}, r.adjustments))))),
+      h('tbody', {}, rows.map(r => h('tr', { class: `per-row p${(pi < 0 ? 0 : pi) % 5}` }, h('td', {}, h('strong', {}, `S${r.week}`)), h('td', {}, label(r)), h('td', {}, r.objective), h('td', {}, r.support), extras.map(c => h('td', {}, r.extra?.[c] || '')), h('td', {}, r.status), h('td', {}, r.adjustments))))),
     h('h2', { class: 'print-h2' }, 'Bilan de période'),
     h('table', { class: 'print-table' }, h('tbody', {}, P.PROGRESSION_BILAN.map(f => h('tr', {}, h('th', { style: { width: '28%' } }, f.label), h('td', {}, pr[f.key] || ''))))));
 }

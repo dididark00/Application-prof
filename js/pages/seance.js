@@ -144,8 +144,8 @@ function detail(id) {
           h('button', { type: 'button', class: (s.mode || 'quotidien') === m ? 'on' : '', 'data-testid': `mode-${m}`, onclick: () => save({ mode: m }, `Mode ${l}`, false) }, l))),
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'schedule', onclick: () => scheduleDialog(s, cls) }, icon('calendar', 16), 'Programmer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'duplicate-session', title: 'Crée une copie indépendante : la modifier ne change pas cette fiche', onclick: async () => { const c = await P.duplicateSession(s.id); toast('Copie indépendante créée'); location.hash = `#/seance/${c.id}`; } }, icon('copy', 16), 'Dupliquer'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-session', onclick: () => printDocument(printSession(s.id)) }, icon('print', 16), 'Imprimer'),
-        h('button', { class: 'btn', type: 'button', onclick: () => printDocument(printSession(s.id, { blank: true })) }, 'Version vierge'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-session', onclick: () => printDocument(printSession(s.id), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer'),
+        h('button', { class: 'btn', type: 'button', onclick: () => printDocument(printSession(s.id, { blank: true }), { orientation: 'landscape' }) }, 'Version vierge'),
         h('button', { class: 'btn btn-ghost-danger', type: 'button', 'aria-label': 'Mettre à la corbeille', onclick: async () => {
           const planned = occ.filter(o => o.status === 'prévue').length;
           if (!await confirmDialog('Mettre la fiche à la corbeille ?', `${occ.length ? `Elle est utilisée à ${occ.length} date(s) du cahier journal${planned ? `, dont ${planned} à venir` : ''}. Ces dates gardent le lien et retrouveront la fiche si vous la restaurez. ` : ''}Vous pourrez la restaurer depuis la corbeille.`, { confirmLabel: 'Mettre à la corbeille', danger: true })) return;
