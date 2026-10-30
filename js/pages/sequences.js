@@ -29,7 +29,7 @@ function list() {
     .sort((a, b) => (periods.findIndex(p => p.id === a.periodId) - periods.findIndex(p => p.id === b.periodId)) || (a.subject || '').localeCompare(b.subject || '') || (Number(a.number) || 0) - (Number(b.number) || 0));
   return h('div', { class: 'page' },
     pageHeader('Séquences', { favKey: 'preparer/sequences', subtitle: cls.name, actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-sequence', onclick: () => newDialog(cls) }, icon('plus', 16), 'Nouvelle séquence'),
-      h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des séquences', childOption: 'avec leurs fiches de séance', items: P.ofClass('sequence', cls.id).map(s => ({ id: s.id, label: P.sequenceTitle(s), detail: s.subject || '', children: P.sessionsOfSequence(s.id).map(x => x.id) })) }) }, icon('trash', 16), 'Supprimer…')] }),
+      h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des séquences', childOption: 'avec leurs fiches de séance', items: P.ofClass('sequence', cls.id).map(s => ({ id: s.id, group: s.subject || 'Autre', label: P.sequenceTitle(s), detail: `${P.sessionsOfSequence(s.id).length} séance(s)`, children: P.sessionsOfSequence(s.id).map(x => x.id) })) }) }, icon('trash', 16), 'Supprimer…')] }),
     subTabs(),
     h('div', { class: 'filters' },
       h('select', { 'aria-label': 'Discipline', onchange: (e) => { filt.subject = e.target.value; rerender(); } }, h('option', { value: '' }, 'Toutes disciplines'), model.subjects().map(s => h('option', { value: s, selected: filt.subject === s }, s))),

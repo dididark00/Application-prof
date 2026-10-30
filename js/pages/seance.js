@@ -39,7 +39,7 @@ function list() {
   return h('div', { class: 'page' },
     pageHeader('Fiches de séance', { favKey: 'preparer/preparations', subtitle: `${cls.name} · modèles réutilisables ; chaque date du cahier journal y renvoie par lien`,
       actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-session', onclick: () => newSession(cls) }, icon('plus', 16), 'Nouvelle fiche'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des fiches de séance', items: P.ofClass('session', cls.id).sort((a, b) => (a.subject || '').localeCompare(b.subject || '')).map(s => ({ id: s.id, label: P.sessionTitle(s), detail: [s.subject, store.get(s.sequenceId) ? P.sequenceTitle(store.get(s.sequenceId)) : 'hors séquence'].filter(Boolean).join(' · ') })) }) }, icon('trash', 16), 'Supprimer…')] }),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des fiches de séance', items: P.ofClass('session', cls.id).sort((a, b) => (a.subject || '').localeCompare(b.subject || '')).map(s => ({ id: s.id, group: `${s.subject || 'Autre'} — ${store.get(s.sequenceId) ? P.sequenceTitle(store.get(s.sequenceId)) : 'hors séquence'}`, label: P.sessionTitle(s) })) }) }, icon('trash', 16), 'Supprimer…')] }),
     subTabs(),
     h('div', { class: 'filters' },
       h('input', { type: 'search', placeholder: 'Filtrer…', value: filt.q, 'aria-label': 'Filtrer', onchange: (e) => { filt.q = e.target.value; rerender(); } }),

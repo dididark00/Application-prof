@@ -217,7 +217,7 @@ Légende : ✅ Réalisé (180) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §10 Suivi | Maternelle : carnet de suivi des apprentissages (réussites observées, portfolio, synthèse des acquis) | Même page, vocabulaire et document adaptés quand la classe est en maternelle. |
 | ✅ | §12 Organisation | Répartition des élèves chez les collègues (équitable, places limitées, absents, fiche par classe d’accueil) | Organisation › Répartition et décloisonnement ; collègues retenus pour la fois suivante. |
 | ✅ | §12 Organisation | Décloisonnement activable par classe : créneaux réguliers, autre classe, élèves concernés, affichage sur Aujourd’hui | Désactivé : rien ne s’affiche et les créneaux sont gardés. |
-| ✅ | §6 Planifier | Supprimer en une fois : programmations, progressions, séquences (avec leurs fiches), fiches de séance — au choix ou toutes | Bouton « Supprimer… » sur chaque page ; tout va dans la corbeille. |
+| ✅ | §6 Planifier | Supprimer en une fois : programmations, progressions, séquences (avec leurs fiches), fiches de séance — au choix ou toutes | Bouton « Supprimer… » sur chaque page : liste rangée par discipline, séquence ou période, filtrable, « tout le groupe » ; tout va dans la corbeille. |
 | ✅ | §15 Fiabilité | Corbeille : sélection, restaurer ou supprimer plusieurs éléments, vidage automatique après un délai choisi | Réglages › Corbeille : 7, 30, 90, 365 jours ou jamais (30 par défaut). |
 | ✅ | §23 Bibliothèque | Modifier ou supprimer un emprunt (élève, dates, retour, remarque) |  |
 | ✅ | §10 Suivi | Informations élèves : la coche se met bien à jour au clic (correctif) |  |
