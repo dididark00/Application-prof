@@ -11,6 +11,8 @@ import { sectionFields, competencyBlock, filesBlock, manualRefsBlock, ownerBadge
 import { newSession } from './seance.js';
 import { printDocument } from '../print.js';
 import { printSequence } from '../printdocs.js';
+import { linkDialog } from '../link-comps.js';
+import { consumeFlag } from '../router.js';
 
 let rerender = () => {};
 const filt = { subject: '', period: '' };
@@ -24,11 +26,13 @@ function list() {
   const cls = model.currentClass();
   const missing = needClass();
   if (missing) return h('div', { class: 'page' }, pageHeader('Séquences'), subTabs(), missing);
+  if (consumeFlag('link')) setTimeout(() => linkDialog(cls), 0);
   const year = store.get(cls.yearId); const periods = model.periodsOf(year);
   const seqs = P.ofClass('sequence', cls.id).filter(s => (!filt.subject || s.subject === filt.subject) && (!filt.period || s.periodId === filt.period))
     .sort((a, b) => (periods.findIndex(p => p.id === a.periodId) - periods.findIndex(p => p.id === b.periodId)) || (a.subject || '').localeCompare(b.subject || '') || (Number(a.number) || 0) - (Number(b.number) || 0));
   return h('div', { class: 'page' },
     pageHeader('Séquences', { favKey: 'preparer/sequences', subtitle: cls.name, actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-sequence', onclick: () => newDialog(cls) }, icon('plus', 16), 'Nouvelle séquence'),
+      h('button', { class: 'btn', type: 'button', 'data-testid': 'link-comps', onclick: () => linkDialog(cls) }, 'Relier les compétences…'),
       h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des séquences', childOption: 'avec leurs fiches de séance', items: P.ofClass('sequence', cls.id).map(s => ({ id: s.id, group: s.subject || 'Autre', label: P.sequenceTitle(s), detail: `${P.sessionsOfSequence(s.id).length} séance(s)`, children: P.sessionsOfSequence(s.id).map(x => x.id) })) }) }, icon('trash', 16), 'Supprimer…')] }),
     subTabs(),
     h('div', { class: 'filters' },

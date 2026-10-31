@@ -1181,3 +1181,15 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .cj-par .cj-card { margin-bottom: 0; height: calc(100% - 18px); }
 .cj-group { font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--pn, #1f3b5c); margin: 0 0 2px 2px; }
 .more-menu .btn { white-space: normal; text-align: left; }
+.link-seq { border-top: 1px solid var(--line); padding: 8px 2px; }
+.link-seq-head { margin-bottom: 4px; }
+.link-comps details > summary { cursor: pointer; }
+.cj-sec { margin: 6px 0 2px; }
+.cj-label { font-size: .68em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--c, #1f4e79); margin-bottom: 1px; }
+.cj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+.cj-list { margin: 0; padding-left: 1.1em; } .cj-list li { margin: 0 0 1px; }
+.cj-phases { width: 100%; border-collapse: collapse; font-size: .95em; }
+.cj-phases td { border-top: 1px solid #dde2e8; padding: 3px 5px; vertical-align: top; }
+.cj-ph-dur { width: 11%; white-space: nowrap; color: var(--c, #333); font-weight: 700; }
+.cj-ph-name { width: 22%; } .cj-ph-mod { font-size: .85em; color: #666; }
+.cj-line { margin: 1px 0; }

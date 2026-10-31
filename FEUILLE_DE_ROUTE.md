@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (186) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 199 entrées.
+Légende : ✅ Réalisé (188) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 201 entrées.
 
 ## Étape 1 — Socle
 
@@ -227,3 +227,5 @@ Légende : ✅ Réalisé (186) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §12 Organisation | Collègues saisis une fois dans Contacts (avec leur classe) puis choisis dans les surveillances, la répartition des élèves et le décloisonnement | Contacts › « + Collègue ». |
 | ✅ | §6 Planifier | Diaporamas : « Ajouter un lien (Canva, Slides…) » et « Nouveau diaporama » en haut de la page, « + lien » sur chaque séance de la semaine |  |
 | ✅ | §6 Planifier | Cahier journal : dupliquer une activité (autre jour, ou au même moment pour une autre classe) ; créneaux côte à côte par groupe (ex. CE2 B et CE2 A en décloisonnement), sans fausse alerte de conflit ; à l’impression et à l’export, masquer ou non les créneaux de l’autre classe | Plus › Dupliquer ; « Groupe ou classe concernée » dans la fiche d’activité. |
+| ✅ | §6 Planifier | Programmes : « Tout importer pour ma classe » (toutes les disciplines en un clic, validées au choix) et « Relier les compétences à mes séquences » (suggestions par discipline et par mots de la séquence, rien n’est coché d’office) | Les fiches de séance et le cahier journal héritent des compétences de la séquence. |
+| ✅ | §6 Planifier | Cahier journal imprimé ou exporté en détail : sections comme la fiche de séance (objectif, compétences, critères, matériel, trace), déroulement en tableau avec durées et phases en gras |  |

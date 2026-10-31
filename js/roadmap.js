@@ -245,6 +245,8 @@ export const ROADMAP = [
   R(5, '§12 Organisation', 'Collègues saisis une fois dans Contacts (avec leur classe) puis choisis dans les surveillances, la répartition des élèves et le décloisonnement', 'fait', 'Contacts › « + Collègue ».'),
   R(5, '§6 Planifier', 'Diaporamas : « Ajouter un lien (Canva, Slides…) » et « Nouveau diaporama » en haut de la page, « + lien » sur chaque séance de la semaine', 'fait'),
   R(5, '§6 Planifier', 'Cahier journal : dupliquer une activité (autre jour, ou au même moment pour une autre classe) ; créneaux côte à côte par groupe (ex. CE2 B et CE2 A en décloisonnement), sans fausse alerte de conflit ; à l’impression et à l’export, masquer ou non les créneaux de l’autre classe', 'fait', 'Plus › Dupliquer ; « Groupe ou classe concernée » dans la fiche d’activité.'),
+  R(5, '§6 Planifier', 'Programmes : « Tout importer pour ma classe » (toutes les disciplines en un clic, validées au choix) et « Relier les compétences à mes séquences » (suggestions par discipline et par mots de la séquence, rien n’est coché d’office)', 'fait', 'Les fiches de séance et le cahier journal héritent des compétences de la séquence.'),
+  R(5, '§6 Planifier', 'Cahier journal imprimé ou exporté en détail : sections comme la fiche de séance (objectif, compétences, critères, matériel, trace), déroulement en tableau avec durées et phases en gras', 'fait'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

@@ -275,6 +275,27 @@ await test('Cahier journal : dupliquer une activité à côté pour les CE2 A, s
   void title;
 });
 
+await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
+  await go('#/referentiels');
+  await page.getByTestId('import-all').click(); await page.waitForTimeout(150);
+  await page.getByTestId('import-all-go').click(); await page.waitForTimeout(2500);
+  const nref = await S(`return store.all('referential').filter(r => r.status === 'validé').length;`);
+  assert(nref >= 5, `référentiels validés : ${nref}`);
+  await page.getByTestId('go-link').click(); await page.waitForTimeout(600);
+  await page.evaluate(() => document.querySelectorAll('.link-comps details').forEach(d => { d.open = true; }));
+  assert(await page.getByTestId('link-comp').count() > 0, 'compétences suggérées');
+  await page.getByTestId('link-comp').first().check(); await page.getByTestId('link-save').click(); await page.waitForTimeout(400);
+  const seq = await S(`return store.all('sequence').find(s => (s.competencyIds || []).length);`);
+  assert(seq, 'séquence reliée');
+  const d = await S(`const P = await import('./js/pedago.js'); const ses = P.sessionsOfSequence(a); for (const x of ses) { const o = P.occurrencesOfSession(x.id)[0]; if (o) return o.date; } return null;`, seq.id);
+  if (!d) return;
+  await go(`#/cahier?d=${d}`); await page.getByTestId('print-day').click(); await page.waitForTimeout(200);
+  if (await page.getByTestId('print-day-go').count()) { await page.getByTestId('print-day-go').click(); await page.waitForTimeout(200); }
+  const t = await page.evaluate(() => window.__p || '');
+  assert(/Compétences/i.test(t) && /MA\.CE2|FR\.CE2|CE2\./.test(t), 'compétences imprimées');
+  assert(/Déroulement/i.test(t), 'déroulement imprimé');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

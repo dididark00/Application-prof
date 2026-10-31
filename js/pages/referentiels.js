@@ -68,9 +68,7 @@ function officialCard(refs) {
   const levels = offState.all || !mine.length ? model.NIVEAUX : mine;
   const rows = PR.forLevels(levels);
   const body = h('tbody', {}, rows.map(r => {
-    const name = `${r.subject} — ${r.levels.length > 2 ? cycleOf(r.levels) : r.levels.join(', ')}`;
-    const source = `${r.t.title}, ${r.t.bo}${r.pdf ? ` — ${r.pdf}` : ''}`;
-    const key = `${r.text}|${r.pack || ''}|${r.domain || ''}|${r.sub || ''}|${r.levels.join(',')}`;
+    const { name, source, key } = officialMeta(r);
     const existing = refs.find(x => x.officialKey === key) || refs.find(x => !x.officialKey && x.source === source);
     return h('tr', { 'data-testid': 'official-row' },
       h('td', {}, h('strong', {}, r.subject), r.label ? h('div', { class: 'muted small' }, r.label) : null),
@@ -83,6 +81,8 @@ function officialCard(refs) {
   }));
   return h('div', { class: 'card', 'data-testid': 'official' },
     h('div', { class: 'card-head' }, h('h2', {}, `Programmes officiels en vigueur (${PR.YEAR})`),
+      mine.length ? h('button', { class: 'btn btn-primary btn-small', type: 'button', 'data-testid': 'import-all', onclick: () => importAllDialog() }, icon('download', 14), 'Tout importer pour ma classe') : null,
+      h('a', { class: 'btn btn-small', href: '#/sequences?link=1', 'data-testid': 'go-link' }, 'Relier les compétences à mes séquences'),
       mine.length ? h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: offState.all, 'data-testid': 'official-all', onchange: (e) => { offState.all = e.target.checked; rerenderRef(); } }), 'Tous les niveaux (TPS au CM2)') : null),
     h('p', { class: 'muted small' }, `${offState.all || !mine.length ? 'Tous les niveaux' : `Niveaux de la classe : ${mine.join(', ')}`}. Références relevées le ${model.frDate(PR.CHECKED_AT)} sur Éduscol (`,
       ...[1, 2, 3].flatMap((c, i) => [i ? ', ' : '', h('a', { href: PR.EDUSCOL[c], target: '_blank', rel: 'noopener' }, `cycle ${c}`)]),
@@ -92,17 +92,43 @@ function officialCard(refs) {
 }
 
 /** Importe les compétences extraites du texte officiel pour une ligne du tableau (une seule fois). */
-async function importOfficial(r, name, source, key, btn) {
+/** Ligne du tableau officiel → nom, source et clé du référentiel. */
+function officialMeta(r) {
+  return { name: `${r.subject} — ${r.levels.length > 2 ? cycleOf(r.levels) : r.levels.join(', ')}`, source: `${r.t.title}, ${r.t.bo}${r.pdf ? ` — ${r.pdf}` : ''}`,
+    key: `${r.text}|${r.pack || ''}|${r.domain || ''}|${r.sub || ''}|${r.levels.join(',')}` };
+}
+/** Importe d'un coup toutes les disciplines de la classe (celles qui ne le sont pas déjà). */
+function importAllDialog() {
+  const cls = model.currentClass(); const levels = model.sortLevels(cls?.levels || []);
+  if (!levels.length) { toast('Choisissez d’abord une classe avec ses niveaux.', { kind: 'error' }); return; }
+  const refs = store.all('referential');
+  const rows = PR.forLevels(levels).filter(r => r.pack).filter(r => { const m = officialMeta(r); return !refs.some(x => x.officialKey === m.key); });
+  if (!rows.length) { toast('Tous les programmes de la classe sont déjà importés.'); return; }
+  const validate = h('input', { type: 'checkbox', checked: true, 'data-testid': 'import-all-validate' });
+  modal({ title: `Importer tout le programme (${levels.join(', ')})`, body: h('div', { class: 'form' },
+    h('p', {}, `${rows.length} discipline(s) : `, rows.map(r => r.subject).join(', '), '.'),
+    h('label', { class: 'inline' }, validate, 'Les valider directement, pour pouvoir les relier tout de suite à mes séquences et fiches'),
+    h('p', { class: 'muted small' }, 'Intitulés extraits des textes officiels (page du PDF indiquée pour chacun). Vous pouvez les relire à tout moment dans chaque référentiel.')),
+  actions: [{ label: 'Annuler' }, { label: 'Importer', primary: true, testid: 'import-all-go', onClick: async () => {
+    let n = 0, c = 0;
+    for (const r of rows) { const m = officialMeta(r); const ref = await importOfficial(r, m.name, m.source, m.key, null, { status: validate.checked ? 'validé' : 'à vérifier', quiet: true }); if (ref) { n++; c += ref.items.length; } }
+    toast(`${n} référentiel(s) importé(s), ${c} compétences${validate.checked ? ' — prêtes à relier' : ' — à relire puis valider'}.`, { timeout: 8000 });
+  } }] });
+}
+
+async function importOfficial(r, name, source, key, btn, { status = 'à vérifier', quiet = false } = {}) {
   if (btn) { btn.disabled = true; btn.textContent = 'Import…'; }
   try {
     const items = await PR.packItems(r, r.levels);
-    if (!items.length) { toast('Aucune compétence extraite pour ces niveaux.', { kind: 'error' }); return; }
-    const ref = await store.create('referential', { name, version: '1', publishedAt: r.t.date, source, levels: r.levels, officialKey: key, pdf: r.pdf || r.t.pdf || '', status: 'à vérifier', previousVersionId: null,
+    if (!items.length) { if (!quiet) toast('Aucune compétence extraite pour ces niveaux.', { kind: 'error' }); return null; }
+    const ref = await store.create('referential', { name, version: '1', publishedAt: r.t.date, source, levels: r.levels, officialKey: key, pdf: r.pdf || r.t.pdf || '', status, previousVersionId: null, ...(status === 'validé' ? { validatedAt: new Date().toISOString() } : {}),
       extracted: { at: PR.CHECKED_AT, how: 'Extraction automatique du PDF officiel, contrôlée mot à mot contre le texte ; intitulés signalés « à relire » quand le contrôle n’est pas concluant.' },
       items: items.map(i => ({ id: store.uid(), code: i.code, domain: i.domain, subdomain: i.subdomain, label: i.label, levels: i.levels.filter(l => r.levels.includes(l)), page: i.page, check: !!i.check })) }, `Référentiel officiel « ${name} » importé`);
+    if (quiet) return ref;
     toast(`${items.length} compétence(s) importée(s) — à relire puis valider`);
     location.hash = `#/referentiels/${ref.id}`;
-  } catch (e) { toast(`Import impossible : ${e.message}`, { kind: 'error' }); }
+    return ref;
+  } catch (e) { toast(`Import impossible : ${e.message}`, { kind: 'error' }); return null; }
   finally { if (btn) { btn.disabled = false; } }
 }
 function cycleOf(levels) { const c = model.cycles(levels); return c.length === 1 ? `cycle ${c[0]}` : levels.join(', '); }

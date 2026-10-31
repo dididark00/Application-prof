@@ -144,13 +144,21 @@ export function printTimetable(tt, version, cls) {
         h('div', { class: 'edt-cell', style: { borderLeftColor: model.subjectColor(s.subject) } }, h('strong', {}, s.subject || ''), s.label ? ` — ${s.label}` : '', h('div', { class: 'small' }, `${s.start}–${s.end}${s.levels?.length ? ' · ' + s.levels.join(', ') : ''}${s.mode && s.mode !== 'dirigé' ? ' · ' + s.mode : ''}`))))))))));
 }
 
-function compText(e, s) {
+/** Séquence et compétences officielles d'une activité (fiche, séquence et activité du jour réunies). */
+function compsOf(e, s) {
   const seq = store.get(e.occ?.sequenceId) || store.get(s?.sequenceId);
   const ids = [...new Set([...(s?.competencyIds || []), ...(seq?.competencyIds || []), ...(e.occ?.competencyIds || [])])];
   const idx = new Map(); for (const r of store.all('referential')) for (const i of r.items || []) idx.set(i.id, i);
-  const comps = ids.map(id => idx.get(id)).filter(Boolean).map(i => `${i.code ? i.code + ' ' : ''}${i.label}`);
-  return [seq && `Séquence : ${P.sequenceTitle(seq)}`, comps.length && `Compétences : ${comps.join(' ; ')}`].filter(Boolean).join('\n');
+  return { seq, comps: ids.map(id => idx.get(id)).filter(Boolean).map(i => `${i.code ? i.code + ' — ' : ''}${i.label}`), text: s?.competencesText || '' };
 }
+/** Texte de déroulement libre : « 10 min Recherche : … » → durée et phase en gras. */
+function derouleLines(txt) {
+  return String(txt).split('\n').filter(l => l.trim()).map(l => {
+    const m = l.match(/^\s*((?:\d+\s*(?:min|mn|')\.?\s*)?[^:]{1,40}?)\s*:\s*(.*)$/);
+    return h('div', { class: 'cj-line' }, m ? [h('strong', {}, m[1]), ` : ${m[2]}`] : l);
+  });
+}
+const cjSec = (label, content) => (content == null || content === '' || (Array.isArray(content) && !content.length) ? null : h('div', { class: 'cj-sec' }, h('div', { class: 'cj-label' }, label), content));
 function entryCard(e, cls, multi) {
   const s = e.status === 'faite' || e.status === 'partielle' ? (e.occ?.snapshot || e.session) : e.session;
   const o = e.occ || {};
@@ -158,16 +166,24 @@ function entryCard(e, cls, multi) {
   const dur = e.allDay ? 0 : model.minutes(e.end) - model.minutes(e.start);
   const tags = [o.org === 'groupes' ? 'groupes' : '', o.decloisonnement ? 'décloisonnement' : '', o.horsHoraires ? 'hors horaires' : '', o.lieu && o.lieu !== 'Classe' ? o.lieu : '', e.mode && e.mode !== 'dirigé' ? e.mode : '', multi ? (e.levels?.length ? e.levels : cls.levels).join(', ') : ''].filter(Boolean);
   const objective = o.objective || s?.objective;
-  const deroule = o.deroule || (s ? (s.phases || []).map(ph => `${P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` (${ph.duration} min)` : ''}${ph.consigne ? ` : ${ph.consigne}` : ''}`).join('\n') : '');
-  const block = (label, v) => (v && String(v).trim() ? h('div', { class: 'cj-block' }, h('strong', {}, `${label} : `), h('span', { class: 'pre' }, v)) : null);
+  const { seq, comps, text: compsText } = compsOf(e, s);
+  const phases = (s?.phases || []).filter(ph => ph.title || ph.duration || ph.consigne || ph.but || ph.eleves || ph.exercices || ph.question);
+  const deroule = o.deroule ? h('div', {}, derouleLines(o.deroule))
+    : phases.length ? h('table', { class: 'cj-phases' }, h('tbody', {}, phases.map(ph => h('tr', {},
+      h('td', { class: 'cj-ph-dur' }, ph.duration ? `${ph.duration} min` : ''),
+      h('td', { class: 'cj-ph-name' }, h('strong', {}, ph.title || P.PHASE_KINDS[ph.kind]?.label || 'Phase'), ph.modalite ? h('div', { class: 'cj-ph-mod' }, ph.modalite) : null),
+      h('td', { class: 'pre' }, [ph.but ? `But : ${ph.but}` : '', ph.consigne, ph.exercices ? `Exercices : ${ph.exercices}` : '', ph.question, ph.eleves ? `Élèves : ${ph.eleves}` : '', ph.differenciation ? `Différenciation : ${ph.differenciation}` : ''].filter(Boolean).join('\n')))))) : null;
+  const materiel = [o.materiel || s?.avant, s?.projeter ? `À projeter : ${s.projeter}` : '', s?.imprimer ? `À imprimer : ${s.imprimer}` : '', s?.distribuer ? `À distribuer : ${s.distribuer}` : ''].filter(Boolean).join('\n');
+  const left = [cjSec('Compétences', comps.length || compsText ? h('ul', { class: 'cj-list' }, comps.map(c => h('li', {}, c)), compsText ? h('li', {}, compsText) : null) : null), cjSec('Critères de réussite', s?.criteres ? h('div', { class: 'pre' }, s.criteres) : null)].filter(Boolean);
+  const right = [cjSec('Matériel', materiel ? h('div', { class: 'pre' }, materiel) : null), cjSec('Trace écrite', s?.trace ? h('div', { class: 'pre' }, s.trace) : null)].filter(Boolean);
   return h('section', { class: 'cj-card', style: { borderLeftColor: col, '--c': col } },
     h('div', { class: 'cj-title' }, h('strong', {}, e.title || e.subject || ''), dur > 0 ? h('span', { class: 'cj-dur' }, model.durationLabel(dur)) : null,
       h('span', { class: 'cj-time' }, e.allDay ? 'journée' : `${e.start} - ${e.end}`), e.status && e.status !== 'prévue' ? h('span', { class: 'cj-status' }, e.status) : null),
-    h('div', { class: 'cj-sub' }, [e.subject, o.domain || s?.subdomain].filter(Boolean).join(' · '), tags.length ? ` · ${tags.join(' · ')}` : ''),
+    h('div', { class: 'cj-sub' }, [e.subject, o.domain || s?.subdomain, seq ? `Séquence : ${P.sequenceTitle(seq)}` : ''].filter(Boolean).join(' · '), tags.length ? ` · ${tags.join(' · ')}` : ''),
     objective ? h('div', { class: 'cj-obj' }, h('span', { class: 'cj-obj-label' }, 'Objectif'), h('div', { class: 'pre' }, objective)) : null,
-    deroule ? h('div', { class: 'cj-block' }, h('strong', {}, 'Déroulement :'), h('div', { class: 'pre' }, deroule)) : null,
-    block('Matériel', o.materiel || s?.avant), block('Différenciation', s?.differenciation), block('Notes', o.notes), block('Bilan', o.note),
-    (() => { const t = compText(e, s); return t ? h('div', { class: 'cj-comp pre' }, t) : null; })());
+    left.length || right.length ? h('div', { class: 'cj-grid' }, h('div', {}, left), h('div', {}, right)) : null,
+    cjSec('Déroulement', deroule),
+    cjSec('Notes', o.notes ? h('div', { class: 'pre' }, o.notes) : null), cjSec('Bilan', o.note ? h('div', { class: 'pre' }, o.note) : null));
 }
 /** Les pauses (récréation, pause méridienne) entre deux activités. */
 function breakBar(prev, next) {
