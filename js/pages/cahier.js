@@ -17,7 +17,7 @@ import { printDocument } from '../print.js';
 import { printDay, printWeek, printMaterials, printWeekDossier } from '../printdocs.js';
 import * as CP from '../cahier-plus.js';
 import { consumeFlag } from '../router.js';
-import { activityDialog, activityDetails, durLabel } from './cahier-activite.js';
+import { duplicateDialog, activityDialog, activityDetails, durLabel } from './cahier-activite.js';
 import { competencyIndex, competencyLabel } from './referentiels.js';
 import { download } from '../ui.js';
 import * as JD from '../journal-detail.js';
@@ -64,7 +64,7 @@ function dayView(cls, date, nav) {
     pageHeader('Cahier journal', { favKey: 'planifier/cahier', subtitle: `${cls.name} · ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${per ? ` · P${model.periodsOf(year).indexOf(per) + 1}${wk ? ` S${wk.n}` : ''}` : ''}`,
       actions: [
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => activityDialog(cls, null, date) }, icon('plus', 16), 'Activité'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDocument(printDay(cls, date)) }, icon('print', 16), 'Imprimer'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDayAsk(cls, date, plan) }, icon('print', 16), 'Imprimer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'clear-journal', onclick: () => clearDialog(cls, date) }, 'Vider…')] }),
@@ -76,7 +76,7 @@ function dayView(cls, date, nav) {
       h('ul', {}, plan.warnings.map(w => h('li', {}, w.message, ' ',
         [w.a, w.b].filter(x => x.kind !== 'event' && x.status === 'prévue').map(x => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'propose-postpone', onclick: () => postponeDialog(cls, x) }, `Reporter « ${x.title} »`))))),
       h('p', { class: 'muted small' }, 'Rien n’est déplacé automatiquement : choisissez ce que vous reportez.')) : null,
-    plan.entries.length ? (multi ? parallel(cls, plan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, plan.entries.map(e => entryCard(cls, e, inConflict))))
+    plan.entries.length ? (multi ? parallel(cls, plan, inConflict) : PL.otherGroups(cls, plan.entries).length ? sideBySide(cls, plan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, plan.entries.map(e => entryCard(cls, e, inConflict))))
       : emptyState(plan.school.ok ? 'Aucun créneau ce jour' : 'Pas de classe', plan.school.ok ? 'Créez l’emploi du temps (Planifier › Emploi du temps) ou ajoutez une activité ponctuelle.' : ''),
     (hwGiven.length || hwDue.length || lessons.length) ? h('section', { class: 'card' }, h('h2', {}, 'Devoirs et leçons du jour'),
       hwDue.length ? h('p', {}, h('strong', {}, 'À faire pour aujourd’hui : '), hwDue.map(x => x.title).join(' ; ')) : null,
@@ -104,6 +104,27 @@ function parallel(cls, plan, inConflict) {
     }))));
 }
 
+/** Groupes côte à côte (ex. CE2 B et CE2 A en décloisonnement) : les activités qui se chevauchent sont affichées en colonnes. */
+function sideBySide(cls, plan, inConflict) {
+  const clusters = [];
+  for (const e of plan.entries) { const c = clusters.at(-1); if (c && e.start < c.end) { c.items.push(e); if (e.end > c.end) c.end = e.end; } else clusters.push({ end: e.end, items: [e] }); }
+  return h('div', { class: 'stack', 'data-testid': 'day-entries' }, clusters.map(c => c.items.length === 1 ? entryCard(cls, c.items[0], inConflict)
+    : h('div', { class: 'side-row', 'data-testid': 'side-row', style: { gridTemplateColumns: `repeat(${c.items.length}, minmax(0, 1fr))` } },
+      c.items.slice().sort((a, b) => (PL.groupOf(a, cls) ? 1 : 0) - (PL.groupOf(b, cls) ? 1 : 0)).map(e => h('div', {}, h('div', { class: 'side-head' }, PL.groupOf(e, cls) || cls.name), entryCard(cls, e, inConflict))))));
+}
+
+/** Impression du jour : s'il y a des créneaux d'autres classes, on choisit de les montrer ou non. */
+function printDayAsk(cls, date, plan) {
+  const groups = PL.otherGroups(cls, plan.entries);
+  if (!groups.length) { printDocument(printDay(cls, date)); return; }
+  const boxes = groups.map(g => h('label', { class: 'inline' }, h('input', { type: 'checkbox', value: g, 'data-testid': 'print-hide-group' }), `Masquer les créneaux des ${g}`));
+  modal({ title: 'Imprimer la journée', body: h('div', { class: 'form' }, boxes, h('p', { class: 'muted small' }, 'Les créneaux de votre classe sont toujours imprimés.')),
+    actions: [{ label: 'Annuler' }, { label: 'Imprimer', primary: true, testid: 'print-day-go', onClick: () => {
+      const hide = new Set(boxes.map(b => b.querySelector('input')).filter(i => i.checked).map(i => i.value));
+      printDocument(printDay(cls, date, { hide }));
+    } }] });
+}
+
 function entryCard(cls, e, inConflict) {
   const s = e.session;
   const done = e.status === 'faite' || e.status === 'partielle';
@@ -123,7 +144,7 @@ function entryCard(cls, e, inConflict) {
     h('span', { class: 'entry-time' }, `${e.start}–${e.end}`), durLabel(e.start, e.end) ? h('span', { class: 'muted small' }, durLabel(e.start, e.end)) : null,
     h('span', { class: 'dot', style: { background: model.subjectColor(e.subject) } }), e.subject && e.subject !== e.title ? h('span', { class: 'muted' }, e.subject) : null,
     s ? h('a', { class: 'entry-title', href: `#/seance/${s.id}` }, e.title) : h('strong', { class: 'entry-title' }, e.title),
-    mode, statusBadge, e.kind === 'intervention' || e.intervention ? badge('intervention', 'info') : null,
+    PL.groupOf(e, cls) ? badge(PL.groupOf(e, cls), 'info') : null, mode, statusBadge, e.kind === 'intervention' || e.intervention ? badge('intervention', 'info') : null,
     e.occ?.postponedFrom ? badge(`report du ${model.frShort(store.get(e.occ.postponedFrom)?.date)}`, 'info') : null);
 
   const body = [];
@@ -132,7 +153,7 @@ function entryCard(cls, e, inConflict) {
   const comps = [...new Set([...(shown?.competencyIds || []), ...(store.get(shown?.sequenceId)?.competencyIds || []), ...(e.occ?.competencyIds || []), ...(store.get(e.occ?.sequenceId)?.competencyIds || [])])];
   if (detailed && e.status !== 'reportée' && (shown || e.occ)) body.push(...JD.detailBlock(e, shown));
   else if (comps.length) { const idx = competencyIndex(); body.push(h('p', { class: 'small entry-comps', 'data-testid': 'entry-comps', title: comps.map(c => competencyLabel(c, idx)).join('\n') }, '🎯 ', comps.slice(0, 3).map(c => { const x = idx.get(c); return x ? (x.code || x.label.slice(0, 60)) : ''; }).filter(Boolean).join(' · '), comps.length > 3 ? ` (+${comps.length - 3})` : '')); }
-  body.push(...activityDetails(e, shown));
+  body.push(...activityDetails(e, shown, { detailed: detailed && e.status !== 'reportée' && !!(shown || e.occ) }));
   if (e.status === 'reportée') {
     const to = e.occ?.postponedTo && store.get(e.occ.postponedTo);
     body.push(h('p', { class: 'small' }, 'Reportée', to ? [' au ', h('a', { href: `#/cahier?d=${to.date}` }, `${model.frDate(to.date)} ${to.start}`)] : '', '. Les supports restent attachés à la fiche.'));
@@ -163,6 +184,7 @@ function entryCard(cls, e, inConflict) {
     active ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => PL.setStatus(e, cls, e.status === 'annulée' ? 'prévue' : 'annulée') }, e.status === 'annulée' ? 'Rétablir' : 'Annuler') : null,
     h('details', { class: 'more' }, h('summary', { class: 'btn btn-small', 'data-testid': 'entry-more' }, 'Plus'), h('div', { class: 'more-menu', onclick: (ev) => { if (ev.target.closest('button')) ev.currentTarget.parentElement.open = false; } },
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edit-activity', onclick: () => activityDialog(cls, e) }, 'Modifier l’activité (objectif, déroulement…)'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'duplicate-activity', title: 'Autre jour, ou au même moment pour une autre classe (côte à côte)', onclick: () => duplicateDialog(cls, e) }, 'Dupliquer…'),
       s && (e.slot?.id || e.occ?.slotId) ? (() => { const slotId = e.slot?.id || e.occ.slotId; const isHab = store.get(cls.id).habitual?.[slotId] === s.id;
         return h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'set-habitual', title: 'Cette fiche sera proposée sur ce créneau chaque semaine par « Pré-remplir la semaine »', onclick: () => CP.setHabitual(cls, slotId, isHab ? null : s.id).then(() => toast(isHab ? 'Fiche habituelle retirée' : `★ Fiche habituelle du créneau ${model.JOURS[model.weekday(e.date)].toLowerCase()} ${e.start}`)) }, isHab ? '☆ Ne plus en faire la fiche habituelle' : '★ Fiche habituelle de ce créneau'); })() : null,
       s && active ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'detach', title: 'Crée une copie de la fiche utilisée seulement à cette date', onclick: async () => {
@@ -369,18 +391,22 @@ function exportDialog(cls, date) {
   const datesRow = h('div', { class: 'row', hidden: true }, 'Du', from, 'au', to);
   const format = h('select', { 'data-testid': 'export-format' }, [['detail', 'Détaillé : une page par jour (PDF / impression)'], ['semaines', 'Compact : une page par semaine (PDF / impression)'], ['csv', 'Tableau (CSV, pour Excel ou LibreOffice)']].map(([v, l]) => h('option', { value: v }, l)));
   const info = h('p', { class: 'muted small', 'data-testid': 'export-info' });
+  const allGroups = [...new Set(store.all('occurrence').filter(o => o.classId === cls.id && o.group && o.group !== cls.name).map(o => o.group))].sort();
+  const hideBox = allGroups.length ? h('input', { type: 'checkbox', 'data-testid': 'export-hide-groups' }) : null;
   const upd = () => { datesRow.hidden = kind.value !== 'dates'; const [a, b] = CP.rangeOf(kind.value, date, cls, from.value, to.value); const n = CP.schoolDaysBetween(cls, a, b).length; info.textContent = `Du ${model.frShort(a)} au ${model.frShort(b)} : ${n} jour(s) de classe.${n > 40 && format.value === 'detail' ? ' Document long : préférez « Compact » ou « Tableau ».' : ''}`; };
   [kind, from, to, format].forEach(x => x.addEventListener('change', upd)); upd();
   modal({ title: 'Exporter le cahier journal', body: h('div', { class: 'form' }, field('Période', kind), datesRow, field('Format', format), info,
+    hideBox ? h('label', { class: 'inline' }, hideBox, `Masquer les créneaux des autres classes (${allGroups.join(', ')})`) : null,
     h('p', { class: 'muted small' }, 'Pour un PDF : choisissez « Enregistrer au format PDF » dans la fenêtre d’impression.')),
   actions: [{ label: 'Annuler' }, { label: 'Exporter', primary: true, testid: 'export-go', onClick: () => {
     const [a, b] = CP.rangeOf(kind.value, date, cls, from.value, to.value);
     if (b < a) { toast('La date de fin précède la date de début.', { kind: 'error' }); return false; }
     const days = CP.schoolDaysBetween(cls, a, b);
     if (!days.length) { toast('Aucun jour de classe sur ces dates.', { kind: 'error' }); return false; }
+    const opts = { hide: new Set(hideBox?.checked ? allGroups : []) };
     if (format.value === 'csv') { download(`cahier-journal-${a}-${b}.csv`, CP.csvOf(cls, days), 'text/csv;charset=utf-8'); return; }
-    if (format.value === 'detail') { printDocument(h('div', {}, days.map((d, i) => h('div', { class: i ? 'page-break' : '' }, printDay(cls, d))))); return; }
+    if (format.value === 'detail') { printDocument(h('div', {}, days.map((d, i) => h('div', { class: i ? 'page-break' : '' }, printDay(cls, d, opts))))); return; }
     const mondays = [...new Set(days.map(d => model.mondayOf(d)))];
-    printDocument(h('div', {}, mondays.map((m, i) => h('div', { class: i ? 'page-break' : '' }, printWeek(cls, m)))), { orientation: 'landscape' });
+    printDocument(h('div', {}, mondays.map((m, i) => h('div', { class: i ? 'page-break' : '' }, printWeek(cls, m, opts)))), { orientation: 'landscape' });
   } }] });
 }

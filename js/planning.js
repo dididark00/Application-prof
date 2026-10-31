@@ -65,7 +65,7 @@ function entryFromOcc(o, slot = null) {
     title: (['faite', 'partielle'].includes(o.status) && o.snapshot?.title != null) ? `${o.snapshot.sequenceTitle && o.snapshot.number ? `S${o.snapshot.number} · ` : ''}${o.snapshot.title || 'Séance'}`
       : session ? P.sessionTitle(session) : (o.title || slot?.label || o.subject || 'Activité'), levels: o.levels || slot?.levels || [],
     mode: o.mode || slot?.mode || 'dirigé', status: o.status || 'prévue', occ: o, slot, session: session && !session.deletedAt ? session : null,
-    sessionId: o.sessionId || null, intervention: o.interventionId ? store.get(o.interventionId) : null };
+    sessionId: o.sessionId || null, intervention: o.interventionId ? store.get(o.interventionId) : null, group: o.group || '' };
 }
 
 /** Construit la journée d'une classe : EDT en vigueur + séances datées + interventions + événements. */
@@ -111,6 +111,10 @@ export function dayPlan(cls, date, { ignoreBlank = false } = {}) {
   return { date, school, entries, warnings, myDay: isMyDay(cls, date) };
 }
 
+/** Groupe d'une activité (« CE2 A » pour une activité menée en parallèle avec une autre classe) ; vide = la classe. */
+export const groupOf = (e, cls = null) => { const g = (e?.group || e?.occ?.group || '').trim(); return cls && g === cls.name ? '' : g; };
+/** Groupes autres que la classe présents dans une liste d'entrées. */
+export const otherGroups = (cls, entries) => [...new Set(entries.map(e => groupOf(e, cls)).filter(Boolean))].sort();
 const active = (e) => !['reportée', 'annulée'].includes(e.status) && (e.kind !== 'event' || e.blocks);
 const overlap = (a, b) => a.start < b.end && b.start < a.end;
 const levelsOf = (e, cls) => (e.levels?.length ? e.levels : cls.levels || []);
@@ -123,6 +127,7 @@ export function conflicts(entries, cls) {
   for (let i = 0; i < act.length; i++) for (let j = i + 1; j < act.length; j++) {
     const a = act[i], b = act[j];
     if (!overlap(a, b)) continue;
+    if (groupOf(a, cls) !== groupOf(b, cls)) continue; // deux groupes côte à côte (décloisonnement) : voulu
     const common = levelsOf(a, cls).filter(l => levelsOf(b, cls).includes(l));
     if (common.length) out.push({ type: 'eleves', a, b, message: `« ${a.title} » et « ${b.title} » se chevauchent (${a.start}–${a.end} / ${b.start}–${b.end}) pour les ${common.join(', ')}.` });
     else if (teacherOf(a) && teacherOf(b)) out.push({ type: 'enseignant', a, b, message: `Deux activités exigent l’enseignant en même temps : « ${a.title} » (${levelsOf(a, cls).join(', ')}) et « ${b.title} » (${levelsOf(b, cls).join(', ')}), ${a.start > b.start ? a.start : b.start}–${a.end < b.end ? a.end : b.end}.` });

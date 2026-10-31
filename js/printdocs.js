@@ -177,11 +177,18 @@ function breakBar(prev, next) {
   return h('div', { class: 'cj-break' }, h('span', {}, label), ` ${prev.end} - ${next.start}`);
 }
 
-export function printDay(cls, date) {
+export function printDay(cls, date, { hide = new Set() } = {}) {
   const plan = PL.dayPlan(cls, date);
   const multi = (cls.levels || []).length > 1;
-  const entries = plan.entries;
-  const items = []; entries.forEach((e, i) => { if (i) { const br = breakBar(entries[i - 1], e); if (br) items.push(br); } items.push(entryCard(e, cls, multi)); });
+  const entries = plan.entries.filter(e => !hide.has(PL.groupOf(e, cls)));
+  // Activités au même moment pour des groupes différents : côte à côte.
+  const clusters = [];
+  for (const e of entries) { const c = clusters.at(-1); if (c && e.start < c.end && PL.otherGroups(cls, [...c.items, e]).length) { c.items.push(e); if (e.end > c.end) c.end = e.end; } else clusters.push({ start: e.start, end: e.end, allDay: e.allDay, items: [e] }); }
+  const items = []; clusters.forEach((c, i) => {
+    if (i) { const br = breakBar(clusters[i - 1], c); if (br) items.push(br); }
+    items.push(c.items.length === 1 ? entryCard(c.items[0], cls, multi) : h('div', { class: 'cj-par', style: { gridTemplateColumns: `repeat(${c.items.length}, 1fr)` } },
+      c.items.map(e => h('div', {}, h('div', { class: 'cj-group' }, PL.groupOf(e, cls) || cls.name), entryCard(e, cls, multi)))));
+  });
   return h('div', { class: 'print-doc cj' },
     h('header', { class: 'cj-head' }, h('span', { class: 'cj-tag' }, 'Cahier-journal'), h('h1', {}, model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())), h('span', { class: 'cj-class' }, cls.name)),
     plan.school.ok ? null : h('p', { class: 'print-warn' }, plan.school.reason),
@@ -190,11 +197,11 @@ export function printDay(cls, date) {
     docFoot(cls, `Cahier-journal du ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' })}`));
 }
 
-export function printWeek(cls, monday) {
+export function printWeek(cls, monday, { hide = new Set() } = {}) {
   const days = model.classDays(cls).map(d => model.addDays(monday, d - 1));
   return h('div', { class: 'print-doc' }, head(`Cahier journal — semaine du ${model.frDate(monday)}`, cls.name),
     h('table', { class: 'print-table week-print' }, h('thead', {}, h('tr', {}, days.map(d => h('th', {}, model.frDate(d, { weekday: 'long', day: 'numeric', month: 'short' }))))),
-      h('tbody', {}, h('tr', {}, days.map(d => { const p = PL.dayPlan(cls, d); return h('td', {}, p.school.ok ? p.entries.map(e => h('div', { class: 'week-item', style: { borderLeftColor: model.subjectColor(e.subject) } }, h('strong', {}, `${e.start} ${e.subject || ''}`), h('div', {}, e.title), e.status !== 'prévue' ? h('div', { class: 'small' }, e.status) : null)) : h('em', {}, p.school.reason)); })))));
+      h('tbody', {}, h('tr', {}, days.map(d => { const p = PL.dayPlan(cls, d); return h('td', {}, p.school.ok ? p.entries.filter(e => !hide.has(PL.groupOf(e, cls))).map(e => h('div', { class: 'week-item', style: { borderLeftColor: model.subjectColor(e.subject) } }, h('strong', {}, `${e.start} ${e.subject || ''}${PL.groupOf(e, cls) ? ` (${PL.groupOf(e, cls)})` : ''}`), h('div', {}, e.title), e.status !== 'prévue' ? h('div', { class: 'small' }, e.status) : null)) : h('em', {}, p.school.reason)); })))));
 }
 
 export function printMaterials(cls, dates, title) {

@@ -24,6 +24,42 @@ function domainSuggestions(cls) {
   return [...out].sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
+/** Groupes proposés : autres classes du décloisonnement, classes des collègues, groupes déjà utilisés. */
+export function groupSuggestions(cls) {
+  const out = new Set([cls.name]);
+  for (const d of store.all('declo').filter(x => x.classId === cls.id)) if (d.otherClass) out.add(d.otherClass);
+  for (const c of store.all('contact')) if (c.classe && ['collègue', 'direction'].includes(c.role)) out.add(c.classe);
+  for (const o of store.all('occurrence').filter(x => x.classId === cls.id && x.group)) out.add(o.group);
+  return [...out];
+}
+
+/** Duplique une activité : à une autre date / heure, ou au même moment pour un autre groupe (côte à côte). */
+export function duplicateDialog(cls, e) {
+  const o = e.occ || {};
+  const date = h('input', { type: 'date', value: e.date, 'data-testid': 'dup-date' });
+  const start = h('input', { type: 'time', value: e.start, 'data-testid': 'dup-start' });
+  const end = h('input', { type: 'time', value: e.end, 'data-testid': 'dup-end' });
+  const sugg = groupSuggestions(cls).filter(g => g !== (PL.groupOf(e, cls) || cls.name));
+  const group = h('input', { list: 'dl-dup-groupes', value: '', placeholder: `vide = ${cls.name}`, 'data-testid': 'dup-group' });
+  const dlg = h('datalist', { id: 'dl-dup-groupes' }, groupSuggestions(cls).map(g => h('option', { value: g })));
+  const detach = h('input', { type: 'checkbox', 'data-testid': 'dup-detach' });
+  modal({ title: `Dupliquer « ${e.title} »`, body: h('div', { class: 'form' }, dlg,
+    h('div', { class: 'grid-3' }, field('Date', date), field('Début', start), field('Fin', end)),
+    field('Pour quel groupe ?', group, `Laissez vide pour vos ${cls.name}. Pour deux créneaux côte à côte au même moment, indiquez l’autre classe${sugg.length ? ` (ex. ${sugg[0]})` : ''}.`),
+    e.session ? h('label', { class: 'inline' }, detach, 'Copie indépendante de la fiche de séance (modifiable sans toucher à l’original)') : null),
+  actions: [{ label: 'Annuler' }, { label: 'Dupliquer', primary: true, testid: 'dup-save', onClick: async () => {
+    if (!date.value || !start.value || !end.value || end.value <= start.value) { toast('Horaire invalide.', { kind: 'error' }); return false; }
+    let sessionId = e.sessionId || null;
+    if (sessionId && detach.checked) sessionId = (await P.duplicateSession(sessionId)).id;
+    const keep = ['subject', 'levels', 'mode', 'title', 'org', 'domain', 'decloisonnement', 'horsHoraires', 'objective', 'sequenceId', 'deroule', 'materiel', 'lieu', 'fileIds', 'notes', 'competencyIds'];
+    const data = Object.fromEntries(keep.filter(k => o[k] !== undefined).map(k => [k, structuredClone(o[k])]));
+    const g = group.value.trim() === cls.name ? '' : group.value.trim();
+    await store.create('occurrence', { ...data, classId: cls.id, date: date.value, start: start.value, end: end.value, subject: data.subject || e.subject || '', levels: data.levels || e.levels || [],
+      mode: data.mode || e.mode || 'dirigé', title: data.title || (e.session ? '' : e.title), status: 'prévue', sessionId, group: g, slotId: null }, `Activité dupliquée le ${model.frShort(date.value)}`);
+    toast(g ? `Copie ajoutée pour ${g}, à côté.` : 'Activité dupliquée.');
+  } }] });
+}
+
 /**
  * Ouvre la fiche d'activité. e = entrée du cahier journal (créneau, séance datée…) ou null pour une nouvelle activité.
  */
@@ -58,6 +94,8 @@ export function activityDialog(cls, e, date) {
   const materiel = h('textarea', { rows: 2, placeholder: s?.materiel || '', 'data-testid': 'act-materiel' }, val('materiel'));
   const lieu = h('input', { list: 'dl-lieux', value: val('lieu'), placeholder: 'Classe', 'data-testid': 'act-lieu' });
   const notes = h('textarea', { rows: 2, 'data-testid': 'act-notes' }, val('notes'));
+  const group = h('input', { value: val('group'), list: 'dl-groupes', placeholder: `vide = ${cls.name}`, 'data-testid': 'act-group' });
+  const dlGroup = h('datalist', { id: 'dl-groupes' }, groupSuggestions(cls).map(g => h('option', { value: g })));
   const mode = h('select', {}, PL.MODES.map(([v, l]) => h('option', { value: v, selected: v === (e?.mode || 'dirigé') }, l)));
 
   // Pièces jointes
@@ -89,11 +127,12 @@ export function activityDialog(cls, e, date) {
 
   const sessSel = !e ? h('select', { 'data-testid': 'act-session' }, h('option', { value: '' }, '— aucune (activité décrite ici)'), P.ofClass('session', cls.id).map(x => h('option', { value: x.id }, `${P.sessionTitle(x)}${x.subject ? ' (' + x.subject + ')' : ''}`))) : null;
   const multi = (cls.levels || []).length > 1;
-  const body = h('div', { class: 'form act-form' }, dl, dlLieu,
+  const body = h('div', { class: 'form act-form' }, dl, dlLieu, dlGroup,
     sessSel ? field('Fiche de séance (facultatif)', sessSel) : null,
     h('div', { class: 'grid-3' }, field('Début', start), field('Fin', end), field('Durée (min)', dur)),
     h('div', { class: 'row wrap' }, radio('classe', 'Classe entière'), radio('groupes', 'Groupes'),
       cls.declo?.enabled || occ.decloisonnement ? h('label', { class: 'inline' }, declo, 'Décloisonnement') : null, h('label', { class: 'inline' }, hors, 'Hors horaires')),
+    field('Groupe ou classe concernée', group, 'Pour deux créneaux côte à côte (ex. vos CE2 B et les CE2 A en décloisonnement) : indiquez « CE2 A » sur l’activité de l’autre classe.'),
     multi ? h('div', { class: 'field' }, h('label', {}, 'Niveaux (aucun = toute la classe)'), levelChips(levels, cls.levels, (v) => { levels = v; })) : null,
     h('div', { class: 'grid-2' }, field('Domaine', domain), field('Discipline', subject)),
     field('Intitulé', title),
@@ -113,23 +152,23 @@ export function activityDialog(cls, e, date) {
       const data = { start: start.value, end: end.value, subject: subject.value, mode: mode.value, levels,
         org: body.querySelector('input[name=act-org]:checked')?.value || 'classe', domain: domain.value.trim(), decloisonnement: declo.checked, horsHoraires: hors.checked,
         title: title.value.trim(), objective: objective.value.trim(), sequenceId: seqSel.value || null, deroule: deroule.value.trim(), materiel: materiel.value.trim(),
-        lieu: lieu.value.trim(), fileIds: files, notes: notes.value.trim(), competencyIds: comps };
+        lieu: lieu.value.trim(), fileIds: files, notes: notes.value.trim(), competencyIds: comps, group: group.value.trim() === cls.name ? '' : group.value.trim() };
       if (e) await PL.patchEntry(e, cls, data, `Activité du ${model.frShort(e.date)} modifiée`);
       else { const sid = sessSel?.value || null; if (sid && !data.subject) data.subject = store.get(sid)?.subject || ''; await store.create('occurrence', { classId: cls.id, date, status: 'prévue', sessionId: sid, ...data }, `Activité ajoutée le ${model.frShort(date)}`); }
     } }] });
 }
 
 /** Détails saisis dans la fiche d'activité, affichés sur la carte du cahier journal. */
-export function activityDetails(e, shown) {
+export function activityDetails(e, shown, { detailed = false } = {}) {
   const o = e.occ || {};
   const out = [];
   const tags = [o.org === 'groupes' ? badge('groupes', 'info') : null, o.decloisonnement ? badge('décloisonnement', 'info') : null, o.horsHoraires ? badge('hors horaires', 'muted') : null,
     o.lieu && o.lieu !== 'Classe' ? badge(o.lieu, 'muted') : null, o.domain ? h('span', { class: 'muted small' }, o.domain) : null].filter(Boolean);
   if (tags.length) out.push(h('div', { class: 'row small act-tags' }, tags));
   const seq = o.sequenceId ? store.get(o.sequenceId) : null;
-  if (seq && !seq.deletedAt) out.push(h('p', { class: 'small' }, h('strong', {}, 'Séquence : '), h('a', { href: `#/sequence/${seq.id}` }, P.sequenceTitle(seq))));
-  if (o.objective && o.objective !== shown?.objective) out.push(h('p', { class: 'small' }, h('strong', {}, 'Objectif : '), o.objective));
-  if (o.deroule) out.push(h('details', { class: 'small act-deroule' }, h('summary', {}, 'Déroulement'), h('p', { class: 'pre' }, o.deroule)));
+  if (!detailed && seq && !seq.deletedAt) out.push(h('p', { class: 'small' }, h('strong', {}, 'Séquence : '), h('a', { href: `#/sequence/${seq.id}` }, P.sequenceTitle(seq))));
+  if (!detailed && o.objective && o.objective !== shown?.objective) out.push(h('p', { class: 'small' }, h('strong', {}, 'Objectif : '), o.objective));
+  if (!detailed && o.deroule) out.push(h('details', { class: 'small act-deroule' }, h('summary', {}, 'Déroulement'), h('p', { class: 'pre' }, o.deroule)));
   if (o.materiel) out.push(h('p', { class: 'small' }, h('strong', {}, 'Matériel : '), o.materiel));
   if (o.notes) out.push(h('p', { class: 'small' }, h('strong', {}, 'Notes : '), o.notes));
   const files = (o.fileIds || []).map(id => store.get(id)).filter(f => f && !f.deletedAt);

@@ -1174,3 +1174,10 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .print-root.bw .cj-card { border-left-color: #000 !important; }
 .print-lines p { border-bottom: 1px dotted #888; padding: 6px 0 2px; margin: 0; }
 .print-mini { font-weight: 700; margin: 6px 0 2px; font-size: .9em; }
+.side-row { display: grid; gap: 10px; align-items: start; }
+.side-head { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); margin: 0 0 4px 2px; }
+@media (max-width: 700px) { .side-row { grid-template-columns: 1fr !important; } }
+.cj-par { display: grid; gap: 6px; margin-bottom: 7px; break-inside: avoid; }
+.cj-par .cj-card { margin-bottom: 0; height: calc(100% - 18px); }
+.cj-group { font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--pn, #1f3b5c); margin: 0 0 2px 2px; }
+.more-menu .btn { white-space: normal; text-align: left; }

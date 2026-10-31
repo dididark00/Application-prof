@@ -249,6 +249,32 @@ await test('Diaporamas : ajouter un lien Canva relié à une séance, puis un di
   await page.locator('.modal').getByRole('button', { name: 'Annuler' }).click();
 });
 
+await test('Cahier journal : dupliquer une activité à côté pour les CE2 A, sans conflit, et masquer les CE2 A à l’impression', async () => {
+  const d = await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js');
+    for (let k = 0; k < 30; k++) { const x = model.addDays('2026-11-02', k); const p = PL.dayPlan(cls, x); if (p.school.ok && p.entries.some(e => e.kind !== 'event')) return x; } return null;`);
+  await go(`#/cahier?d=${d}`);
+  const n0 = await page.getByTestId('entry').count();
+  await page.getByTestId('entry-more').first().click(); await page.getByTestId('duplicate-activity').first().click(); await page.waitForTimeout(150);
+  await page.getByTestId('dup-group').fill('CE2 A'); await page.getByTestId('dup-save').click(); await page.waitForTimeout(400);
+  eq(await page.getByTestId('entry').count(), n0 + 1, 'copie ajoutée');
+  assert(await page.getByTestId('side-row').count() >= 1, 'affichées côte à côte');
+  eq(await page.getByTestId('conflicts').count(), 0, 'pas de conflit entre deux groupes');
+  const title = await S(`return store.all('occurrence').find(o => o.group === 'CE2 A')?.title ?? '';`);
+  await page.getByTestId('print-day').click(); await page.waitForTimeout(150);
+  await page.getByTestId('print-hide-group').check(); await page.getByTestId('print-day-go').click(); await page.waitForTimeout(200);
+  let t = await page.evaluate(() => window.__p || '');
+  assert(!t.includes('CE2 A'), 'CE2 A masqués');
+  await page.getByTestId('print-day').click(); await page.waitForTimeout(150); await page.getByTestId('print-day-go').click(); await page.waitForTimeout(200);
+  t = await page.evaluate(() => window.__p || '');
+  assert(t.includes('CE2 A'), 'CE2 A affichés si non masqués');
+  // Dupliquer à une autre date
+  await page.getByTestId('entry-more').first().click(); await page.getByTestId('duplicate-activity').first().click(); await page.waitForTimeout(150);
+  const other = await S(`return model.addDays(a, 7);`, d);
+  await page.getByTestId('dup-date').fill(other); await page.getByTestId('dup-save').click(); await page.waitForTimeout(300);
+  assert(await S(`return store.all('occurrence').some(o => o.date === a && !o.group && !o.slotId);`, other), 'copie à une autre date');
+  void title;
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));
