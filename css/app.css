@@ -1193,3 +1193,4 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .cj-ph-dur { width: 11%; white-space: nowrap; color: var(--c, #333); font-weight: 700; }
 .cj-ph-name { width: 22%; } .cj-ph-mod { font-size: .85em; color: #666; }
 .cj-line { margin: 1px 0; }
+.diapo-range { background: var(--surface-2); border-radius: 6px; }

@@ -235,14 +235,34 @@ await test('Diaporamas : ajouter un lien Canva relié à une séance, puis un di
   await page.getByTestId('diapo-add-link').click(); await page.waitForTimeout(150);
   await page.getByTestId('diapo-new-url').fill('https://www.canva.com/design/EXEMPLE/view');
   await page.getByTestId('diapo-new-title').fill('Canva test');
-  if (sid) await page.getByTestId('diapo-new-session').selectOption(sid);
+  await page.getByTestId('assoc-kind').selectOption('seance');
+  if (sid) await page.getByTestId('assoc-session').selectOption(sid);
   await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(400);
   const ss = await S(`return store.all('slideshow').find(x => x.slides.some(s => s.url === 'https://www.canva.com/design/EXEMPLE/view'));`);
   assert(ss, 'diaporama avec le lien'); if (sid) eq(ss.sessionId, sid, 'relié à la séance');
   assert(page.url().includes(`#/diaporamas/${ss.id}`), 'éditeur ouvert');
   await go('#/diaporamas'); await page.getByTestId('diapo-new').click(); await page.waitForTimeout(150);
   await page.getByTestId('diapo-new-title').fill('Rituels test'); await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(300);
-  assert(await S(`return store.all('slideshow').some(x => x.title === 'Rituels test');`), 'diaporama libre créé');
+  const rit = await S(`return store.all('slideshow').find(x => x.title === 'Rituels test');`);
+  assert(rit && rit.range && rit.range.kind === 'semaine', 'diaporama rattaché à la semaine par défaut');
+  await go('#/diaporamas'); await page.getByTestId('diapo-tab-semaine').click(); await page.waitForTimeout(200);
+  // Semaine affichée = semaine actuelle ; le diaporama de la semaine apparaît en tête des jours concernés.
+  if (await S(`return model.mondayOf(model.todayIso()) === a;`, rit.range.from)) assert(await page.getByTestId('diapo-range').count() >= 1, 'affiché sur les jours de la semaine');
+  // Mois et séquence entière
+  await page.getByTestId('diapo-add-link').click(); await page.getByTestId('diapo-new-url').fill('https://docs.google.com/presentation/d/EXEMPLE/edit');
+  await page.getByTestId('diapo-new-title').fill('Mois test'); await page.getByTestId('assoc-kind').selectOption('mois'); await page.getByTestId('assoc-month').fill('2026-12');
+  await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(300);
+  const mo = await S(`return store.all('slideshow').find(x => x.title === 'Mois test')?.range;`);
+  eq(`${mo.from} ${mo.to}`, '2026-12-01 2026-12-31', 'mois entier');
+  const qid = await S(`return store.all('sequence').find(q => !q.deletedAt && q.classId === store.getSettings().currentClassId)?.id;`);
+  if (qid) {
+    await go('#/diaporamas'); await page.getByTestId('diapo-add-link').click(); await page.getByTestId('diapo-new-url').fill('https://www.canva.com/design/SEQ/view');
+    await page.getByTestId('diapo-new-title').fill('Séquence test'); await page.getByTestId('assoc-kind').selectOption('sequence'); await page.getByTestId('assoc-sequence').selectOption(qid);
+    await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(300);
+    eq(await S(`return store.all('slideshow').find(x => x.title === 'Séquence test')?.sequenceId;`), qid, 'rattaché à la séquence');
+    await go('#/diaporamas'); await page.getByTestId('diapo-tab-tous').click(); await page.waitForTimeout(200);
+    assert((await page.getByTestId('diapo-all').innerText()).includes('Séquence :'), 'rattachement lisible dans « Tous »');
+  }
   await go('#/diaporamas'); await page.getByTestId('diapo-add-link').click(); await page.getByTestId('diapo-new-url').fill('pas une adresse');
   await page.getByTestId('diapo-new-save').click(); await page.waitForTimeout(150);
   assert((await page.locator('.modal .form-errors').innerText()).includes('Adresse invalide'), 'adresse refusée');
