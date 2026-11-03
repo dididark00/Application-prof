@@ -370,12 +370,19 @@ function printSvg(svg) {
 }
 
 async function saveSupport(o) {
-  const name = `${TOOLS.find(t => t[0] === state.tool)[1]}${state.title ? ' — ' + state.title : ''}`;
+  const first = String(o.texte || o.source || '').split('\n')[0].replace(/[[\]]/g, '').trim().slice(0, 40);
+  const suggested = `${TOOLS.find(t => t[0] === state.tool)[1]}${state.title ? ' — ' + state.title : first ? ' — ' + first : ''}`;
+  // Nom du fichier : on peut enregistrer plusieurs supports pour une même séance, chacun avec son nom.
+  const name = await new Promise((res) => { const inp = h('input', { value: suggested, 'data-testid': 'support-name' }); let done = false;
+    modal({ title: 'Enregistrer le support', body: h('div', { class: 'form' }, field('Nom du fichier', inp), h('p', { class: 'muted small' }, 'Vous pouvez enregistrer autant de supports que vous voulez pour une même séance : ils s’ajoutent à ceux déjà liés.')),
+      onClose: () => { if (!done) res(null); }, actions: [{ label: 'Annuler' }, { label: 'Continuer', primary: true, testid: 'support-name-ok', onClick: () => { done = true; res(inp.value.trim() || suggested); } }] }); });
+  if (!name) return;
   const blobs = [[name, DRAW[state.tool](o, false)]];
   if (WITH_CORRECTION.includes(state.tool)) blobs.push([`${name} (correction)`, DRAW[state.tool](o, true)]);
   const cls = model.currentClass();
   const sessions = cls ? P.ofClass('session', cls.id) : [];
-  const sel = sessions.length ? await pickMany({ title: 'Lier à une fiche de séance ? (facultatif : « Valider » sans choix pour seulement enregistrer)', single: true, items: sessions.map(s => ({ id: s.id, label: P.sessionTitle(s), detail: s.subject })), emptyText: '' }) : [];
+  const sel = sessions.length ? await pickMany({ title: 'Lier à une fiche de séance ? (facultatif : « Valider » sans choix pour seulement enregistrer)', single: true, items: sessions.map(s => ({ id: s.id, label: P.sessionTitle(s), detail: `${(s.fileIds || []).length} support(s) déjà lié(s)`, group: `${s.subject || 'Autre'} · ${s.sequenceId && store.get(s.sequenceId) ? P.sequenceTitle(store.get(s.sequenceId)) : 'hors séquence'}` }))
+      .sort((a, b) => a.group.localeCompare(b.group, 'fr', { numeric: true }) || a.label.localeCompare(b.label, 'fr', { numeric: true })), emptyText: '' }) : [];
   if (sel === null) return;
   const items = [];
   const ids = [];
@@ -403,7 +410,26 @@ export function animate(content) {
   const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey);
+  // Zoom : agrandir pour que les élèves voient bien au tableau (molette ou mode « Déplacer » pour se promener dans la page).
+  let zoom = 1; let moving = false;
+  const zLabel = h('span', { class: 'small', 'data-testid': 'zoom-label' }, 'Page entière');
+  const applyZoom = () => {
+    board.classList.toggle('zoomed', zoom > 1);
+    const svg = board.querySelector('svg');
+    if (svg) { svg.style.width = zoom > 1 ? `${zoom * 100}%` : ''; svg.style.height = zoom > 1 ? 'auto' : ''; svg.style.maxHeight = zoom > 1 ? 'none' : ''; svg.style.maxWidth = zoom > 1 ? 'none' : ''; }
+    zLabel.textContent = zoom > 1 ? `${Math.round(zoom * 100)} %` : 'Page entière';
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+  };
+  const setZoom = (z) => { zoom = Math.max(1, Math.min(6, Math.round(z * 4) / 4)); applyZoom(); };
+  const moveBtn = h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'zoom-move', title: 'Déplacer la page au doigt (au lieu d’écrire)', onclick: () => { moving = !moving; canvas.style.pointerEvents = moving ? 'none' : ''; moveBtn.classList.toggle('btn-primary', moving); moveBtn.textContent = moving ? '✋ Déplacer (actif)' : '✋ Déplacer'; } }, '✋ Déplacer');
+  canvas.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.25 : -0.25)); } else if (zoom > 1) { board.scrollBy(e.deltaX, e.deltaY); ctx?.clearRect(0, 0, canvas.width, canvas.height); } }, { passive: false });
+  document.addEventListener('keydown', function zk(e) { if (!document.body.contains(wrap)) { document.removeEventListener('keydown', zk); return; } if (e.key === '+' || e.key === '=') setZoom(zoom + 0.5); if (e.key === '-') setZoom(zoom - 0.5); if (e.key === '0') setZoom(1); });
   wrap.append(board, canvas, h('div', { class: 'animate-bar' },
+    h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Rétrécir', 'data-testid': 'zoom-out', onclick: () => setZoom(zoom - 0.5) }, 'A−'),
+    zLabel,
+    h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Agrandir', 'data-testid': 'zoom-in', onclick: () => setZoom(zoom + 0.5) }, 'A+'),
+    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'zoom-width', title: 'Largeur de l’écran', onclick: () => { const svg = board.querySelector('svg'); const r = svg?.getBoundingClientRect(); setZoom(r && zoom === 1 ? Math.max(1.5, board.clientWidth / r.width) : 1); } }, 'Pleine largeur'),
+    moveBtn,
     ['#d9534f', '#2f6f8f', '#222'].map(c => h('button', { type: 'button', class: 'swatch', style: { background: c }, 'aria-label': `Crayon ${c}`, onclick: () => { color = c; } })),
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => ctx.clearRect(0, 0, canvas.width, canvas.height) }, 'Effacer l’annotation'),
     h('button', { class: 'btn btn-small', type: 'button', onclick: () => (document.fullscreenElement ? document.exitFullscreen() : wrap.requestFullscreen?.()) }, 'Plein écran'),

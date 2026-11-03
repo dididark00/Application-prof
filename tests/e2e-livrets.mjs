@@ -316,6 +316,29 @@ await test('Programmes : tout importer pour la classe, relier les compétences a
   assert(/Déroulement/i.test(t), 'déroulement imprimé');
 });
 
+await test('Atelier : agrandir l’affichage au tableau, et plusieurs supports pour une même séance', async () => {
+  await go('#/atelier');
+  await page.getByRole('button', { name: 'Afficher en grand' }).click(); await page.waitForTimeout(300);
+  await page.getByTestId('zoom-in').click(); await page.getByTestId('zoom-in').click(); await page.waitForTimeout(100);
+  eq(await page.getByTestId('zoom-label').innerText(), '200 %', 'zoom 200 %');
+  const w = await page.evaluate(() => document.querySelector('.animate-board svg').getBoundingClientRect().width);
+  assert(w > 1280, `page agrandie (${w}px)`);
+  await page.getByTestId('zoom-out').click(); await page.getByTestId('zoom-out').click(); await page.waitForTimeout(100);
+  eq(await page.getByTestId('zoom-label').innerText(), 'Page entière', 'retour page entière');
+  await page.locator('.animate-bar').getByRole('button', { name: 'Fermer' }).click();
+  const sid = await S(`return store.all('session').find(x => !x.deletedAt && x.classId === store.getSettings().currentClassId)?.id;`);
+  if (!sid) return;
+  const n0 = await S(`return (store.get(a).fileIds || []).length;`, sid);
+  for (const nm of ['Support A', 'Support B']) {
+    await page.getByTestId('atelier-save').click(); await page.waitForTimeout(150);
+    await page.getByTestId('support-name').fill(nm); await page.getByTestId('support-name-ok').click(); await page.waitForTimeout(200);
+    await page.locator('.modal').last().locator('.pick-item', { has: page.locator(`input`) }).filter({ hasText: await S(`const P = await import('./js/pedago.js'); return P.sessionTitle(store.get(a));`, sid) }).first().locator('input').check();
+    await page.locator('.modal').last().getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(300);
+  }
+  const names = await S(`return (store.get(a).fileIds || []).map(id => store.get(id)?.name);`, sid);
+  assert(names.length >= n0 + 2 && names.some(x => x.startsWith('Support A')) && names.some(x => x.startsWith('Support B')), `deux supports liés : ${names}`);
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));
