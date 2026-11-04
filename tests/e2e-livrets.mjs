@@ -339,6 +339,22 @@ await test('Atelier : agrandir l’affichage au tableau, et plusieurs supports p
   assert(names.length >= n0 + 2 && names.some(x => x.startsWith('Support A')) && names.some(x => x.startsWith('Support B')), `deux supports liés : ${names}`);
 });
 
+await test('Bibliothèque de compétences : import d’un fichier Excel (niveau de la classe), réimport sans doublon, proposée dans le choix des compétences', async () => {
+  await go('#/referentiels');
+  const file = new URL('./fixtures/competences-exemple.xlsx', import.meta.url).pathname;
+  for (let k = 0; k < 2; k++) {
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('import-library').click()]);
+    await fc.setFiles(file); await page.waitForTimeout(600);
+    assert((await page.locator('.modal').innerText()).includes('5 compétence(s)'), 'fichier lu');
+    await page.getByTestId('lib-go').click(); await page.waitForTimeout(400);
+  }
+  const refs = await S(`return store.all('referential').filter(r => r.libraryKey).map(r => ({ name: r.name, n: r.items.length, status: r.status, nature: r.nature }));`);
+  eq(refs.length, 3, `3 disciplines CE2, sans doublon (${refs.map(r => r.name)})`);
+  assert(refs.every(r => r.status === 'validé' && /Reformulations/.test(r.nature)), 'validées et marquées reformulations');
+  eq(refs.find(r => r.name.startsWith('Mathématiques')).n, 2, '2 compétences de maths CE2');
+  assert(!(await S(`return JSON.stringify(store.all('referential'));`)).includes('Lire un texte long'), 'CM1 non importé');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

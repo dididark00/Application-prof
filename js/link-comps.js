@@ -10,7 +10,7 @@ import { pickCompetencies } from './pages/referentiels.js';
 const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, ' ');
 const STOP = new Set(['les', 'des', 'une', 'pour', 'avec', 'dans', 'sur', 'par', 'aux', 'du', 'de', 'la', 'le', 'et', 'en', 'un', 'au', 'son', 'ses', 'leur', 'leurs', 'exemple', 'seance', 'sequence', 'semaine', 'cycle', 'programme', 'partir', 'ainsi', 'entre', 'faire', 'etre', 'avoir']);
 const words = (t) => new Set(norm(t).split(/[^a-z0-9]+/).filter(w => w.length > 3 && !STOP.has(w)).map(w => w.replace(/s$/, '')));
-const ALIAS = { emc: 'enseignement moral civique', eps: 'education physique sportive eps', qlm: 'questionner monde', lvi: 'langues vivantes' };
+const ALIAS = { evar: 'vie affective relationnelle', emc: 'enseignement moral civique', eps: 'education physique sportive eps', qlm: 'questionner monde', lvi: 'langues vivantes' };
 const subjWords = (s) => { const n = norm(s).trim(); return words(`${n} ${ALIAS[n] || ''}`); };
 
 /** Une compétence relève-t-elle de la discipline ? (nom du référentiel, ex. « Arts plastiques et éducation musicale — CE1, CE2 ») */

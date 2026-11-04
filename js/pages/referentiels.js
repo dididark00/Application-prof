@@ -8,6 +8,7 @@ import { pageHeader, subTabs } from '../components.js';
 import { parseCsv, toCsv } from '../csv.js';
 import { pickMany } from '../forms.js';
 import * as PR from '../programmes.js';
+import { readXlsx } from '../xlsx.js';
 
 let rerenderRef = () => {};
 export function render({ params, rerender }) {
@@ -18,6 +19,7 @@ export function render({ params, rerender }) {
     pageHeader('Programmes et référentiels', { favKey: 'preparer/programmes', subtitle: 'Compétences officielles importées et vérifiées par vous, avec leur source et leur version.',
       actions: [
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-ref', onclick: () => newDialog() }, icon('plus', 16), 'Nouveau référentiel'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'import-library', onclick: () => importLibrary() }, icon('upload', 16), 'Importer une bibliothèque (Excel ou CSV)'),
         h('button', { class: 'btn', type: 'button', onclick: () => download('modele-referentiel.csv', toCsv([['Code', 'Domaine', 'Sous-domaine', 'Intitulé', 'Niveaux'], ['', '', '', '', 'CE1, CE2']]), 'text/csv;charset=utf-8') }, icon('download', 16), 'Modèle CSV'),
       ] }),
     subTabs(),
@@ -38,6 +40,62 @@ export function render({ params, rerender }) {
         h('a', { class: 'btn btn-small', href: `#/referentiels/${r.id}` }, 'Ouvrir')),
       h('p', { class: 'muted' }, `${(r.items || []).length} compétence(s) · ${(r.levels || []).join(', ') || 'tous niveaux'} · Source : ${r.source || '—'}${r.publishedAt ? ` · texte du ${model.frShort(r.publishedAt)}` : ''}`))))
       : emptyState('Aucun référentiel', 'Les fiches acceptent aussi les compétences en texte libre, comme dans vos modèles. Le référentiel permet en plus de relier séances, évaluations et bilans à des compétences identifiées.'));
+}
+
+// ───── Bibliothèque de compétences (fichier Excel ou CSV : id, niveau, discipline, domaine, competence…)
+const normH = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+const COLS = { id: ['id', 'identifiant', 'code'], niveau: ['niveau', 'niveaux', 'classe'], discipline: ['discipline', 'matiere'], domaine: ['domaine', 'sousdomaine'],
+  label: ['competence', 'intitule', 'libelle', 'competences'], source: ['sourceofficielle', 'source'], url: ['urlsource', 'lien', 'url'], nature: ['typelibelle', 'type'], annee: ['anneescolaire', 'annee'], statut: ['statut'] };
+/** Lignes du tableau → compétences (ligne d'en-têtes reconnue automatiquement). */
+export function libraryRows(rows) {
+  const hi = rows.findIndex(r => r.some(c => COLS.label.includes(normH(c))) && r.some(c => COLS.discipline.includes(normH(c))));
+  if (hi < 0) throw new Error('Colonnes « discipline » et « compétence » introuvables dans le fichier.');
+  const head = rows[hi].map(normH); const col = (k) => head.findIndex(x => COLS[k].includes(x));
+  const c = Object.fromEntries(Object.keys(COLS).map(k => [k, col(k)]));
+  return rows.slice(hi + 1).map(r => ({ id: c.id >= 0 ? String(r[c.id] || '').trim() : '', niveau: String(r[c.niveau] || '').trim().toUpperCase(), discipline: String(r[c.discipline] || '').trim(),
+    domaine: c.domaine >= 0 ? String(r[c.domaine] || '').trim() : '', label: String(r[c.label] || '').trim(), source: c.source >= 0 ? String(r[c.source] || '').trim() : '',
+    url: c.url >= 0 ? String(r[c.url] || '').trim() : '', nature: c.nature >= 0 ? String(r[c.nature] || '').trim() : '', annee: c.annee >= 0 ? String(r[c.annee] || '').trim() : '', statut: c.statut >= 0 ? String(r[c.statut] || '').trim() : '' }))
+    .filter(x => x.label && x.discipline && (!x.statut || !/inactif|archiv|retir/i.test(x.statut)));
+}
+async function importLibrary() {
+  const fs = await pickFiles({ accept: '.xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', multiple: false });
+  if (!fs.length) return;
+  let rows;
+  try {
+    if (/\.xlsx$/i.test(fs[0].name)) { const sheets = await readXlsx(fs[0]); const sh = sheets.find(s => { try { return libraryRows(s.rows).length; } catch { return false; } }); if (!sh) throw new Error('Aucune feuille avec des colonnes « discipline » et « compétence ».'); rows = libraryRows(sh.rows); }
+    else rows = libraryRows(parseCsv(await fs[0].text()));
+  } catch (e) { toast(e.message, { kind: 'error' }); return; }
+  if (!rows.length) { toast('Aucune compétence trouvée dans ce fichier.', { kind: 'error' }); return; }
+  const cls = model.currentClass(); const mine = (cls?.levels || []).map(l => l.toUpperCase());
+  const levels = [...new Set(rows.map(r => r.niveau).filter(Boolean))].sort((a, b) => model.NIVEAUX.indexOf(a) - model.NIVEAUX.indexOf(b));
+  const boxes = levels.map(l => h('label', { class: 'chip' }, h('input', { type: 'checkbox', value: l, checked: !mine.length || mine.includes(l), 'data-testid': 'lib-level' }), `${l} (${rows.filter(r => r.niveau === l).length})`));
+  const validate = h('input', { type: 'checkbox', checked: true, 'data-testid': 'lib-validate' });
+  const reform = rows.some(r => /reformul/i.test(r.nature));
+  const annee = rows.find(r => r.annee)?.annee || '';
+  modal({ title: `Importer « ${fs[0].name} »`, body: h('div', { class: 'form' },
+    h('p', {}, `${rows.length} compétence(s), ${new Set(rows.map(r => r.discipline)).size} discipline(s).`),
+    h('div', { class: 'field' }, h('label', {}, 'Niveaux à importer'), h('div', { class: 'chips' }, boxes)),
+    h('label', { class: 'inline' }, validate, 'Utilisables tout de suite (validées)'),
+    reform ? h('p', { class: 'muted small' }, 'Les intitulés sont marqués « reformulation pédagogique » : ils sont présentés comme tels, jamais comme une citation des programmes officiels.') : null,
+    h('p', { class: 'muted small' }, 'Un référentiel est créé par discipline. Réimporter le même fichier met à jour les intitulés sans casser les liens déjà faits (identifiants stables).')),
+  actions: [{ label: 'Annuler' }, { label: 'Importer', primary: true, testid: 'lib-go', onClick: async () => {
+    const chosen = boxes.map(b => b.querySelector('input')).filter(i => i.checked).map(i => i.value);
+    if (!chosen.length) { toast('Choisissez au moins un niveau.', { kind: 'error' }); return false; }
+    const sel = rows.filter(r => chosen.includes(r.niveau));
+    const byDisc = new Map(); for (const r of sel) { if (!byDisc.has(r.discipline)) byDisc.set(r.discipline, []); byDisc.get(r.discipline).push(r); }
+    const lvKey = chosen.join(','); const ops = []; let created = 0, updated = 0;
+    for (const [disc, list] of byDisc) {
+      const key = `bibliotheque|${normH(disc)}|${lvKey}`;
+      const items = list.map((r, i) => ({ id: r.id || `${key}#${i}`, code: '', domain: r.domaine, subdomain: '', label: r.label, levels: r.niveau ? [r.niveau] : chosen, page: null, nature: r.nature || '', sourceUrl: r.url || '' }));
+      const sources = [...new Set(list.map(r => r.source).filter(Boolean))];
+      const data = { name: `${disc} — ${chosen.join(', ')} (bibliothèque${annee ? ' ' + annee : ''})`, version: annee || '1', source: `${fs[0].name}${sources.length ? ' — d’après : ' + sources.join(' ; ') : ''}`, levels: chosen, libraryKey: key,
+        nature: reform ? 'Reformulations pédagogiques (bibliothèque personnelle) — la source officielle prime' : '', items, status: validate.checked ? 'validé' : 'à vérifier', ...(validate.checked ? { validatedAt: new Date().toISOString() } : {}), previousVersionId: null };
+      const ex = store.all('referential').find(x => x.libraryKey === key);
+      if (ex) { ops.push({ id: ex.id, patch: data }); updated++; } else { ops.push({ create: { type: 'referential', data } }); created++; }
+    }
+    await store.batch(ops, `Bibliothèque de compétences importée (${sel.length})`);
+    toast(`${sel.length} compétences : ${created} référentiel(s) créé(s)${updated ? `, ${updated} mis à jour` : ''}.`, { timeout: 8000 });
+  } }] });
 }
 
 function newDialog(base = null, pre = null) {
@@ -144,7 +202,7 @@ function detail(id) {
   const items = (r.items || []).slice().sort((a, b) => (a.code || '').localeCompare(b.code || '', 'fr', { numeric: true }));
   return h('div', { class: 'page' },
     h('p', {}, h('a', { href: '#/referentiels', class: 'back' }, '← Référentiels')),
-    pageHeader(`${r.name}`, { subtitle: `Version ${r.version} · ${r.status} · source : ${r.source}${r.publishedAt ? ` · texte du ${model.frDate(r.publishedAt)}` : ''}`,
+    pageHeader(`${r.name}`, { subtitle: `Version ${r.version} · ${r.status} · source : ${r.source}${r.publishedAt ? ` · texte du ${model.frDate(r.publishedAt)}` : ''}${r.nature ? ` · ${r.nature}` : ''}`,
       actions: [
         !locked ? h('button', { class: 'btn', type: 'button', 'data-testid': 'ref-import', onclick: () => importDialog(r) }, icon('upload', 16), 'Importer des lignes') : null,
         !locked ? h('button', { class: 'btn', type: 'button', onclick: () => itemDialog(r) }, icon('plus', 16), 'Ajouter') : null,

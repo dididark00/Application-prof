@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (191) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 204 entrées.
+Légende : ✅ Réalisé (192) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 205 entrées.
 
 ## Étape 1 — Socle
 
@@ -232,3 +232,4 @@ Légende : ✅ Réalisé (191) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §6 Planifier | Diaporamas et liens rattachés au choix : une séance (liste rangée par séquence), toute une séquence, un jour, une semaine, plusieurs semaines, un mois ou des dates libres ; rattachement modifiable et affiché en clair | Diaporamas › « Rattacher à… » ; affichés dans la préparation de la semaine et la projection du jour. |
 | ✅ | §7 Atelier | Affichage en grand : agrandir / rétrécir (A+ / A−, pleine largeur, molette, touches + et −) et mode « Déplacer » au doigt pour que les élèves voient bien au tableau |  |
 | ✅ | §7 Atelier | Enregistrer plusieurs supports pour une même séance : nom de chaque fichier, séances rangées par séquence |  |
+| ✅ | §6 Planifier | Importer une bibliothèque de compétences (Excel .xlsx ou CSV : id, niveau, discipline, domaine, compétence) : un référentiel par discipline pour les niveaux choisis, réimport sans doublon (identifiants stables), reformulations signalées comme telles | Programmes et référentiels › « Importer une bibliothèque ». Lecture Excel intégrée, sans service extérieur. |

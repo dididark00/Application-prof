@@ -250,6 +250,7 @@ export const ROADMAP = [
   R(5, '§6 Planifier', 'Diaporamas et liens rattachés au choix : une séance (liste rangée par séquence), toute une séquence, un jour, une semaine, plusieurs semaines, un mois ou des dates libres ; rattachement modifiable et affiché en clair', 'fait', 'Diaporamas › « Rattacher à… » ; affichés dans la préparation de la semaine et la projection du jour.'),
   R(5, '§7 Atelier', 'Affichage en grand : agrandir / rétrécir (A+ / A−, pleine largeur, molette, touches + et −) et mode « Déplacer » au doigt pour que les élèves voient bien au tableau', 'fait'),
   R(5, '§7 Atelier', 'Enregistrer plusieurs supports pour une même séance : nom de chaque fichier, séances rangées par séquence', 'fait'),
+  R(5, '§6 Planifier', 'Importer une bibliothèque de compétences (Excel .xlsx ou CSV : id, niveau, discipline, domaine, compétence) : un référentiel par discipline pour les niveaux choisis, réimport sans doublon (identifiants stables), reformulations signalées comme telles', 'fait', 'Programmes et référentiels › « Importer une bibliothèque ». Lecture Excel intégrée, sans service extérieur.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
