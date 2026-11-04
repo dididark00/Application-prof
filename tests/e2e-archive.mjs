@@ -16,6 +16,7 @@ const eq = (a, b, m) => { if (a !== b) throw new Error(`${m} — attendu ${JSON.
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 900 }, bypassCSP: true, acceptDownloads: true });
+await ctx.addInitScript(() => { try { if (!localStorage.getItem('classeur.cahier.layout')) localStorage.setItem('classeur.cahier.layout', 'liste'); } catch { /* */ } }); // cahier en liste complète (les deux panneaux sont testés à part)
 page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));

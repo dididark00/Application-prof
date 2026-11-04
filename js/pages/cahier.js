@@ -65,10 +65,8 @@ function dayView(cls, date, nav) {
       actions: [
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => activityDialog(cls, null, date) }, icon('plus', 16), 'Activité'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDayAsk(cls, date, plan) }, icon('print', 16), 'Imprimer'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'clear-journal', onclick: () => clearDialog(cls, date) }, 'Vider…')] }),
-    subTabs(), nav, detailToggle(),
+        journalMore(cls, date)] }),
+    subTabs(), nav, h('div', { class: 'row wrap cj-tools' }, detailToggle(), layoutToggle(), progressOf(cls, plan)),
     prepareBanner(cls, date),
     !plan.school.ok ? h('p', { class: 'banner' }, plan.school.reason) : null,
     plan.school.ok && !plan.myDay ? h('p', { class: 'banner info' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
@@ -76,12 +74,87 @@ function dayView(cls, date, nav) {
       h('ul', {}, plan.warnings.map(w => h('li', {}, w.message, ' ',
         [w.a, w.b].filter(x => x.kind !== 'event' && x.status === 'prévue').map(x => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'propose-postpone', onclick: () => postponeDialog(cls, x) }, `Reporter « ${x.title} »`))))),
       h('p', { class: 'muted small' }, 'Rien n’est déplacé automatiquement : choisissez ce que vous reportez.')) : null,
-    plan.entries.length ? (multi ? parallel(cls, plan, inConflict) : PL.otherGroups(cls, plan.entries).length ? sideBySide(cls, plan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, plan.entries.map(e => entryCard(cls, e, inConflict))))
+    plan.entries.length && split() ? splitView(cls, date, plan, inConflict)
+    : plan.entries.length ? (multi ? parallel(cls, plan, inConflict) : PL.otherGroups(cls, plan.entries).length ? sideBySide(cls, plan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, plan.entries.map(e => entryCard(cls, e, inConflict))))
       : emptyState(plan.school.ok ? 'Aucun créneau ce jour' : 'Pas de classe', plan.school.ok ? 'Créez l’emploi du temps (Planifier › Emploi du temps) ou ajoutez une activité ponctuelle.' : ''),
     (hwGiven.length || hwDue.length || lessons.length) ? h('section', { class: 'card' }, h('h2', {}, 'Devoirs et leçons du jour'),
       hwDue.length ? h('p', {}, h('strong', {}, 'À faire pour aujourd’hui : '), hwDue.map(x => x.title).join(' ; ')) : null,
       hwGiven.length ? h('p', {}, h('strong', {}, 'Donnés aujourd’hui : '), hwGiven.map(x => `${x.title} (pour le ${model.frShort(x.dueDate)})`).join(' ; ')) : null,
       lessons.length ? h('p', {}, h('strong', {}, 'Leçons distribuées : '), lessons.map(l => `${l.subject} n° ${l.number} ${l.title}`).join(' ; ')) : null) : null);
+}
+
+// ───────── Deux panneaux : la journée à gauche, l'activité choisie à droite (écran large)
+const LAYOUT_KEY = 'classeur.cahier.layout';
+const layoutPref = () => { try { return localStorage.getItem(LAYOUT_KEY) === 'liste' ? 'liste' : 'panneaux'; } catch { return 'panneaux'; } };
+const split = () => layoutPref() === 'panneaux' && (typeof window === 'undefined' || window.innerWidth >= 1000);
+let selected = { date: null, key: null };
+
+function layoutToggle() {
+  const on = layoutPref();
+  return h('div', { class: 'seg seg-inline cj-layout', role: 'group', 'aria-label': 'Disposition' }, [['panneaux', 'Deux panneaux'], ['liste', 'Liste complète']].map(([v, l]) =>
+    h('button', { type: 'button', class: on === v ? 'on' : '', 'data-testid': `layout-${v}`, onclick: () => { try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* préférence non conservée */ } rerender(); } }, l)));
+}
+
+const countable = (cls, e) => e.kind !== 'event' && e.status !== 'reportée' && !PL.groupOf(e, cls);
+function progressOf(cls, plan) {
+  const list = plan.entries.filter(e => countable(cls, e));
+  if (!list.length) return null;
+  const done = list.filter(e => e.status === 'faite' || e.status === 'partielle').length;
+  return h('div', { class: 'cj-progress', 'data-testid': 'day-progress' },
+    h('span', {}, `${done} faite${done > 1 ? 's' : ''} sur ${list.length} ♡`),
+    h('span', { class: 'cj-bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': list.length, 'aria-valuenow': done, 'aria-label': 'Activités faites' }, h('span', { style: { width: `${Math.round(done / list.length * 100)}%` } })));
+}
+
+function journalMore(cls, date) {
+  return h('details', { class: 'more' }, h('summary', { class: 'btn', 'data-testid': 'journal-more' }, 'Plus ▾'),
+    h('div', { class: 'more-menu more-right', onclick: (ev) => { if (ev.target.closest('button')) ev.currentTarget.parentElement.open = false; } },
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'prefill-week', onclick: () => prefillDialog(cls, date) }, 'Préparer la semaine'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'export-journal', onclick: () => exportDialog(cls, date) }, icon('download', 16), 'Exporter…'),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'clear-journal', onclick: () => clearDialog(cls, date) }, 'Vider…')));
+}
+
+function pickSelected(cls, date, plan) {
+  const ok = plan.entries.filter(e => e.kind !== 'event');
+  if (selected.date === date) { const k = plan.entries.find(e => e.key === selected.key) || plan.entries.find(e => e.start === selected.start && e.title === selected.title); if (k) return k; }
+  const now = new Date(); const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const today = date === model.todayIso();
+  const mine = ok.filter(e => !PL.groupOf(e, cls));
+  return (today && mine.find(e => e.start <= hm && hm < e.end)) || mine.find(e => e.status === 'prévue') || mine[0] || ok[0] || plan.entries[0];
+}
+
+function splitView(cls, date, plan, inConflict) {
+  const cur = pickSelected(cls, date, plan);
+  const clusters = [];
+  for (const e of plan.entries) { const c = clusters.at(-1); if (c && e.start < c.end) { c.items.push(e); if (e.end > c.end) c.end = e.end; } else clusters.push({ start: e.start, end: e.end, items: [e] }); }
+  const toMin = (t) => { const [a, b] = (t || '0:0').split(':').map(Number); return a * 60 + b; };
+  const rows = [];
+  clusters.forEach((c, i) => {
+    const prev = clusters[i - 1];
+    if (prev && !prev.items[0].allDay && toMin(c.start) - toMin(prev.end) >= 10) rows.push(h('div', { class: 'tl-break' }, h('span', {}), `pause · ${toMin(c.start) - toMin(prev.end)} min`, h('span', {})));
+    rows.push(h('div', { class: 'cj-row' }, h('span', { class: 'cj-time' }, c.items[0].allDay ? 'Journée' : c.start),
+      h('div', { class: 'cj-cards', style: { gridTemplateColumns: `repeat(${c.items.length}, minmax(0, 1fr))` } }, c.items.map(e => tlCard(cls, e, e === cur, inConflict)))));
+  });
+  return h('div', { class: 'cj-split', 'data-testid': 'day-split' },
+    h('section', { class: 'cj-timeline', 'aria-label': 'La journée' }, rows),
+    h('aside', { class: 'cj-detail', 'aria-label': 'Activité sélectionnée', 'data-testid': 'day-entries' }, cur ? entryCard(cls, cur, inConflict) : null));
+}
+
+function tlCard(cls, e, on, inConflict) {
+  const done = e.status === 'faite' || e.status === 'partielle';
+  const grp = PL.groupOf(e, cls);
+  const obj = (e.status === 'faite' && e.occ?.snapshot ? e.occ.snapshot : e.session)?.objective || e.occ?.objective || '';
+  const select = () => { selected = { date: e.date, key: e.key, start: e.start, title: e.title }; rerender(); };
+  const check = e.kind !== 'event' && e.status !== 'reportée' && e.status !== 'annulée'
+    ? h('button', { type: 'button', class: `cj-check ${done ? 'on' : ''}`, 'data-testid': 'tl-check', 'aria-pressed': String(done), 'aria-label': done ? `« ${e.title} » faite : décocher` : `Marquer « ${e.title} » faite`,
+      onclick: (ev) => { ev.stopPropagation(); PL.setStatus(e, cls, done ? 'prévue' : 'faite'); } }, done ? '♡' : '') : null;
+  const card = h('div', { class: `cj-card status-${e.status} ${on ? 'on' : ''} ${grp ? 'other' : ''} ${inConflict.has(e.key) ? 'conflict' : ''}`, 'data-testid': 'tl-card' },
+    h('button', { type: 'button', class: 'cj-pick', 'aria-current': on ? 'true' : null, 'aria-label': `${e.start}–${e.end} ${e.title} : afficher le détail`, onclick: select },
+      h('span', { class: 'cj-meta' }, e.kind === 'event' ? 'Événement' : (e.subject || 'Activité'), grp ? h('span', { class: 'cj-grp' }, grp) : null, e.status !== 'prévue' && e.status !== 'faite' ? h('span', { class: 'cj-st' }, e.status) : null),
+      h('span', { class: 'cj-title' }, e.title),
+      obj ? h('span', { class: 'cj-obj' }, obj) : null),
+    check);
+  card.style.setProperty('--c', e.kind === 'event' ? '#7a5c8f' : model.subjectColor(e.subject));
+  return card;
 }
 
 /** Multiniveau : colonnes parallèles par niveau ; une activité de toute la classe occupe toute la largeur. */

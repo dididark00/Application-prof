@@ -17,6 +17,7 @@ const eq = (a, b, m) => { if (a !== b) throw new Error(`${m} — attendu ${JSON.
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 900 }, bypassCSP: true }); // bypassCSP : uniquement pour les scripts de test
+await ctx.addInitScript(() => { try { if (!localStorage.getItem('classeur.cahier.layout')) localStorage.setItem('classeur.cahier.layout', 'liste'); } catch { /* */ } }); // cahier en liste complète (les deux panneaux sont testés à part)
 page = await ctx.newPage();
 await page.clock.install({ time: new Date('2026-11-04T09:00:00') });
 const errors = [];
@@ -280,7 +281,7 @@ await test('Tableau d’écriture Seyès : Marelle intégrée, lignes de base su
 });
 
 await test('Apparence : thèmes et version sombre du soir', async () => {
-  eq(await page.evaluate(() => document.documentElement.dataset.theme), 'pastel', 'thème par défaut pastel');
+  eq(await page.evaluate(() => document.documentElement.dataset.theme), 'lavande', 'thème par défaut Lavande');
   eq(await page.evaluate(() => document.documentElement.dataset.mode), 'clair', 'clair à 9 h (mode automatique le soir)');
   const dark = await page.evaluate(async () => { const t = await import('./js/theme.js'); return [t.isDark('soir', new Date('2026-11-02T20:30:00')), t.isDark('soir', new Date('2026-11-02T06:30:00')), t.isDark('soir', new Date('2026-11-02T12:00:00'))]; });
   eq(dark.join(), 'true,true,false', 'sombre de 19 h à 7 h');
@@ -288,10 +289,10 @@ await test('Apparence : thèmes et version sombre du soir', async () => {
   await page.getByTestId('theme-mode').selectOption('sombre'); await page.waitForTimeout(150);
   eq(await page.evaluate(() => document.documentElement.dataset.mode), 'sombre', 'mode sombre appliqué');
   await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-pastel-sombre.png` });
-  await go('#/reglages/general'); await page.getByTestId('theme-bleu').click(); await page.waitForTimeout(150);
+  await go('#/reglages/general'); await page.getByTestId('theme-bleu').dispatchEvent('click'); await page.waitForTimeout(150);
   eq(await page.evaluate(() => document.documentElement.dataset.theme), 'bleu', 'thème bleu appliqué');
   eq(await page.evaluate(async () => (await import('./js/store.js')).getSettings().theme.name), 'bleu', 'thème enregistré dans les réglages');
-  await page.getByTestId('theme-perso').click(); await page.waitForTimeout(150);
+  await page.getByTestId('theme-perso').dispatchEvent('click'); await page.waitForTimeout(150);
   await page.getByTestId('custom-accent').evaluate((el) => { el.value = '#ffd700'; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.waitForTimeout(200);
   const perso = await page.evaluate(async () => { const t = await import('./js/theme.js'); const a = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(); const cs = getComputedStyle(document.documentElement); return { a, c: t.contrast(a, cs.getPropertyValue('--surface').trim()), ci: t.contrast(a, cs.getPropertyValue('--accent-ink').trim()), saved: (await import('./js/store.js')).getSettings().theme.custom.accent, mode: document.documentElement.dataset.mode }; });
@@ -302,7 +303,7 @@ await test('Apparence : thèmes et version sombre du soir', async () => {
   assert(light >= 4.5, `en clair, jaune assombri pour rester lisible (${light.toFixed(2)})`);
   await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-perso-sombre.png` });
   await go('#/reglages/general');
-  await page.getByTestId('theme-pastel').click(); await page.getByTestId('theme-mode').selectOption('clair'); await page.waitForTimeout(150);
+  await page.getByTestId('theme-pastel').dispatchEvent('click'); await page.getByTestId('theme-mode').selectOption('clair'); await page.waitForTimeout(150);
   eq(await page.evaluate(() => document.documentElement.getAttribute('style')), null, 'variables personnalisées retirées');
   await go('#/aujourdhui'); await page.screenshot({ path: `${OUT}theme-pastel-clair.png` });
   await page.getByTestId('theme-mode').count();

@@ -20,6 +20,7 @@ function eq(a, b, msg) { if (a !== b) throw new Error(`${msg} — attendu ${JSON
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ acceptDownloads: true, locale: 'fr-FR', viewport: { width: 1280, height: 860 } });
+await ctx.addInitScript(() => { try { if (!localStorage.getItem('classeur.cahier.layout')) localStorage.setItem('classeur.cahier.layout', 'liste'); } catch { /* */ } }); // cahier en liste complète (les deux panneaux sont testés à part)
 const page = await ctx.newPage();
 await page.clock.install({ time: NOW });
 const errors = [];

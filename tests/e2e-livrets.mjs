@@ -15,6 +15,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
 const eq = (a, b, m) => { if (a !== b) throw new Error(`${m} — attendu ${JSON.stringify(b)}, obtenu ${JSON.stringify(a)}`); };
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 900 }, bypassCSP: true });
+await ctx.addInitScript(() => { try { if (!localStorage.getItem('classeur.cahier.layout')) localStorage.setItem('classeur.cahier.layout', 'liste'); } catch { /* */ } }); // cahier en liste complète (les deux panneaux sont testés à part)
 page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
@@ -293,6 +294,49 @@ await test('Cahier journal : dupliquer une activité à côté pour les CE2 A, s
   await page.getByTestId('dup-date').fill(other); await page.getByTestId('dup-save').click(); await page.waitForTimeout(300);
   assert(await S(`return store.all('occurrence').some(o => o.date === a && !o.group && !o.slotId);`, other), 'copie à une autre date');
   void title;
+});
+
+await test('Cahier journal en deux panneaux : la journée à gauche, le détail à droite, ♡ pour cocher, progression', async () => {
+  const d = await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js');
+    for (let k = 0; k < 30; k++) { const x = model.addDays('2026-11-09', k); const p = PL.dayPlan(cls, x); if (p.school.ok && p.entries.filter(e => e.kind !== 'event' && e.status === 'prévue').length >= 2) return x; } return null;`);
+  assert(d, 'jour avec au moins deux activités');
+  await go(`#/cahier?d=${d}`);
+  await page.getByTestId('layout-panneaux').click(); await page.waitForTimeout(250);
+  assert(await page.getByTestId('day-split').count() === 1, 'deux panneaux');
+  const n = await page.getByTestId('tl-card').count();
+  assert(n >= 2, 'cartes de la journée');
+  eq(await page.getByTestId('entry').count(), 1, 'une seule activité détaillée à droite');
+  const second = page.getByTestId('tl-card').nth(1);
+  const title2 = (await second.locator('.cj-title').innerText()).trim();
+  await second.locator('.cj-pick').click(); await page.waitForTimeout(200);
+  assert((await page.getByTestId('entry').innerText()).includes(title2), 'le détail suit la sélection');
+  const before = await page.getByTestId('day-progress').innerText();
+  await page.getByTestId('tl-card').nth(1).getByTestId('tl-check').click(); await page.waitForTimeout(400);
+  const after = await page.getByTestId('day-progress').innerText();
+  assert(before !== after && /^\d+ faites? sur \d+/.test(after), `progression mise à jour (${before} → ${after})`);
+  assert((await page.getByTestId('entry').innerText()).includes(title2), 'la sélection reste après avoir coché');
+  eq(await page.getByTestId('tl-card').nth(1).getByTestId('tl-check').getAttribute('aria-pressed'), 'true', 'cochée');
+  await page.getByTestId('journal-more').click();
+  assert(await page.getByTestId('export-journal').isVisible(), 'Exporter dans « Plus »');
+  await page.keyboard.press('Escape');
+  await page.getByTestId('layout-liste').click(); await page.waitForTimeout(250);
+  eq(await page.getByTestId('day-split').count(), 0, 'retour à la liste complète');
+});
+
+await test('Fiche de séance par étapes : sommaire avec état, barre des durées, prête pour une visite', async () => {
+  const id = await S(`return store.all('session').find(s => !s.deletedAt && (s.phases || []).some(p => Number(p.duration) > 0))?.id;`);
+  await go(`#/seance/${id}`);
+  assert(await page.getByTestId('session-steps').isVisible(), 'sommaire des étapes');
+  assert(await page.getByTestId('phase-bar').isVisible(), 'barre des durées');
+  assert(/0\/10/.test(await page.getByTestId('visit-ready').innerText()), 'checklist de visite à 0/10');
+  await page.getByTestId('step-phases').click(); await page.waitForTimeout(500);
+  assert(await page.locator('#etape-phases').isVisible(), 'aller au déroulement');
+  await page.getByTestId('visit-open').click(); await page.waitForTimeout(400);
+  eq(await S(`return store.get(a).mode;`, id), 'visite', 'mode Visite ouvert');
+  await page.locator('#etape-visite input[type=checkbox]').first().check(); await page.waitForTimeout(600);
+  await go('#/'); await go(`#/seance/${id}`);
+  assert(/1\/10/.test(await page.getByTestId('visit-ready').innerText()), 'compte mis à jour');
+  await page.getByTestId('mode-quotidien').click(); await page.waitForTimeout(300);
 });
 
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {

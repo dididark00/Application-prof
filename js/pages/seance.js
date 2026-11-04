@@ -83,7 +83,7 @@ function detail(id) {
   const multi = (cls.levels || []).length > 1;
   const save = (patch, label, quiet = true) => store.update(s.id, patch, label, { quiet });
 
-  const ident = h('section', { class: 'card' }, h('h2', {}, 'Identification'),
+  const ident = h('section', { class: 'card', id: 'etape-ident' }, h('h2', {}, 'Identification'),
     h('div', { class: 'grid-3' },
       bound({ label: 'Séquence', type: 'select', value: s.sequenceId || '', testid: 'f-sequence', options: [['', '— hors séquence —'], ...P.ofClass('sequence', cls.id).map(x => [x.id, P.sequenceTitle(x)])],
         onSave: async (v) => { await save({ sequenceId: v || null, order: v ? (P.sessionsOfSequence(v).at(-1)?.order ?? 0) + 1 : 0 }, 'Séquence de la séance', false); } }),
@@ -103,10 +103,10 @@ function detail(id) {
       occ.length ? h('ul', { class: 'plain', 'data-testid': 'session-dates' }, occ.map(o => h('li', {}, h('a', { href: `#/cahier?d=${o.date}` }, `${model.frDate(o.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${o.start || ''}`), ' ', badge(o.status, PL.OCC_STATUS[o.status]))))
         : h('p', { class: 'muted small' }, 'Pas encore programmée.')));
 
-  const objectifs = h('section', { class: 'card' }, h('h2', {}, 'Objectifs et compétences'), sectionFields(s.id, P.SESSION_SECTIONS[0].fields), competencyBlock(s.id, { levels: s.levels?.length ? s.levels : cls.levels }));
-  const materiel = h('section', { class: 'card' }, h('h2', {}, 'Préparation matérielle'), sectionFields(s.id, P.SESSION_SECTIONS[1].fields), copiesBlock(s, cls), filesBlock(s.id, { title: 'Supports liés (fichiers, diaporamas, liens)' }), manualRefsBlock(s.id));
+  const objectifs = h('section', { class: 'card', id: 'etape-objectifs' }, h('h2', {}, 'Objectifs et compétences'), sectionFields(s.id, P.SESSION_SECTIONS[0].fields), competencyBlock(s.id, { levels: s.levels?.length ? s.levels : cls.levels }));
+  const materiel = h('section', { class: 'card', id: 'etape-materiel' }, h('h2', {}, 'Préparation matérielle'), sectionFields(s.id, P.SESSION_SECTIONS[1].fields), copiesBlock(s, cls), filesBlock(s.id, { title: 'Supports liés (fichiers, diaporamas, liens)' }), manualRefsBlock(s.id));
 
-  const variants = multi ? h('section', { class: 'card' }, h('h2', {}, 'Multiniveau : objectifs, consignes et supports par niveau'),
+  const variants = multi ? h('section', { class: 'card', id: 'etape-niveaux' }, h('h2', {}, 'Multiniveau : objectifs, consignes et supports par niveau'),
     h('p', { class: 'muted small' }, 'Pour une séance commune à plusieurs niveaux, précisez ce qui diffère.'),
     h('div', { class: 'grid-2' }, (s.levels?.length ? s.levels : cls.levels).map(l => {
       const v = (s.variants || []).find(x => x.level === l) || { level: l };
@@ -119,22 +119,23 @@ function detail(id) {
 
   const adaptations = adaptationsBlock(s, cls);
 
-  const phases = h('section', { class: 'card' },
+  const phases = h('section', { class: 'card', id: 'etape-phases' },
     h('div', { class: 'card-head' }, h('h2', {}, `Déroulement — ${model.durationLabel(P.sessionDuration({ phases: s.phases })) || 'durées à compléter'}`),
       visit ? null : h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: ui.showAll, onchange: (e) => { ui.showAll = e.target.checked; rerender(); } }), 'Toutes les rubriques')),
+    phaseBar(s),
     (s.phases || []).map((ph, i) => phaseCard(s, ph, i, full)),
     h('div', { class: 'row' }, h('span', { class: 'muted' }, 'Ajouter une phase :'), Object.entries(P.PHASE_KINDS).map(([k, d]) =>
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => save({ phases: [...(store.get(s.id).phases || []), { id: store.uid(), kind: k, title: '', duration: null }] }, 'Phase ajoutée', false) }, d.label))));
 
-  const instit = h('section', { class: 'card' }, h('h2', {}, P.SESSION_SECTIONS[2].title), sectionFields(s.id, P.SESSION_SECTIONS[2].fields));
+  const instit = h('section', { class: 'card', id: 'etape-instit' }, h('h2', {}, P.SESSION_SECTIONS[2].title), sectionFields(s.id, P.SESSION_SECTIONS[2].fields));
   const reuse = occ.filter(o => o.after && Object.values(o.after).some(Boolean));
-  const after = h('section', { class: 'card' }, h('h2', {}, 'Après la séance'),
+  const after = h('section', { class: 'card', id: 'etape-apres' }, h('h2', {}, 'Après la séance'),
     h('p', { class: 'muted small' }, 'Le bilan se saisit pour chaque date dans le cahier journal : il ne modifie pas cette fiche, qui reste réutilisable.'),
     reuse.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table' }, h('thead', {}, h('tr', {}, h('th', {}, 'Date'), P.AFTER_FIELDS.map(f => h('th', {}, f.label)))),
       h('tbody', {}, reuse.map(o => h('tr', {}, h('td', {}, h('a', { href: `#/cahier?d=${o.date}` }, model.frShort(o.date))), P.AFTER_FIELDS.map(f => h('td', {}, o.after[f.key] || ''))))))) : h('p', { class: 'muted' }, 'Aucun bilan saisi pour l’instant.'),
     bound({ label: 'Notes pour la prochaine utilisation de la fiche', value: s.reuseNotes, onSave: (v) => save({ reuseNotes: v }, 'Notes de réutilisation') }));
 
-  const checklist = visit ? h('section', { class: 'card' }, h('h2', {}, 'Checklist avant visite / INSPE'),
+  const checklist = visit ? h('section', { class: 'card', id: 'etape-visite' }, h('h2', {}, 'Checklist avant visite / INSPE'),
     h('div', { class: 'checklist' }, P.VISIT_CHECKLIST.map(([k, l]) => bound({ type: 'checkbox', label: l, value: s.checklist?.[k], onSave: (v) => save({ checklist: { ...(store.get(s.id).checklist || {}), [k]: v } }, `Checklist : ${l}`) })))) : null;
 
   const links = linksSection(s);
@@ -156,7 +157,47 @@ function detail(id) {
         } }, icon('trash', 16))] }),
     s.copiedFrom && store.get(s.copiedFrom) ? h('p', { class: 'muted small' }, 'Copie de ', h('a', { href: `#/seance/${s.copiedFrom}` }, P.sessionTitle(store.get(s.copiedFrom))), ' : les deux fiches évoluent séparément.') : null,
     visit ? h('p', { class: 'muted small' }, 'Mode visite : toutes les rubriques sont affichées et imprimées. Ce modèle reprend votre fiche personnelle ; il n’est pas un format imposé par l’inspection.') : null,
-    ident, objectifs, materiel, variants, adaptations, phases, instit, after, checklist, links);
+    h('div', { class: 'fs-layout' }, stepsNav(s, { multi, visit, reuse, save }),
+      h('div', { class: 'fs-main' }, ident, objectifs, materiel, variants, adaptations, phases, instit, after, checklist, links)));
+}
+
+// ───────── Fiche par étapes (design I) : sommaire avec l'état de chaque étape, prête pour une visite x/10
+const filled = (v) => Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== '';
+function stepsNav(s, { multi, visit, reuse, save }) {
+  const any = (fields) => fields.some(f => filled(s[f.key]));
+  const steps = [
+    ['ident', 'Identification', filled(s.title) && filled(s.subject)],
+    ['objectifs', 'Objectifs', filled(s.objective) || filled(s.competencyIds)],
+    ['materiel', 'Matériel', any(P.SESSION_SECTIONS[1].fields) || filled(s.fileIds) || filled(s.copies)],
+    multi ? ['niveaux', 'Multiniveau', filled(s.variants)] : null,
+    ['diff', 'Différenciation', filled(s.adaptations)],
+    ['phases', 'Déroulement', filled(s.phases) && s.phases.every(ph => Number(ph.duration) > 0)],
+    ['instit', 'Institutionnalisation', any(P.SESSION_SECTIONS[2].fields)],
+    ['apres', 'Après la séance', reuse.length > 0 || filled(s.reuseNotes)],
+  ].filter(Boolean);
+  const done = steps.filter(x => x[2]).length;
+  const ck = P.VISIT_CHECKLIST.filter(([k]) => s.checklist?.[k]).length;
+  const go = (k) => document.getElementById(`etape-${k}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return h('nav', { class: 'fs-steps', 'aria-label': 'Étapes de la fiche', 'data-testid': 'session-steps' },
+    h('div', { class: 'fs-steps-head' }, h('strong', {}, 'Étapes'), h('span', { class: 'muted small' }, `${done}/${steps.length} remplies`)),
+    h('ol', {}, steps.map(([k, l, ok], i) => h('li', {}, h('button', { type: 'button', class: `fs-step ${ok ? 'ok' : ''}`, 'data-testid': `step-${k}`, onclick: () => go(k) },
+      h('span', { class: 'fs-num', 'aria-hidden': 'true' }, ok ? '♡' : String(i + 1)), h('span', {}, l), h('span', { class: 'sr-only' }, ok ? ' (remplie)' : ' (à compléter)'))))),
+    h('div', { class: 'fs-visit', 'data-testid': 'visit-ready' },
+      h('span', {}, 'Prête pour une visite'), h('strong', {}, `${ck}/${P.VISIT_CHECKLIST.length}`),
+      h('span', { class: 'cj-bar' }, h('span', { style: { width: `${Math.round(ck / P.VISIT_CHECKLIST.length * 100)}%` } })),
+      visit ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => go('visite') }, 'Voir la checklist')
+        : h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'visit-open', title: 'Passe la fiche en mode Visite : toutes les rubriques et la checklist', onclick: () => save({ mode: 'visite' }, 'Mode Visite', false) }, 'Ouvrir la checklist')));
+}
+
+/** Barre des durées : une bande colorée par phase, proportionnelle à sa durée. */
+const PHASE_TONES = { rappel: 'var(--p-ciel, #d7e8fa)', recherche: 'var(--p-peche, #fbdccb)', institution: 'var(--p-lavande, #e3dbfa)', entrainement: 'var(--p-menthe, #d6f0e3)', bilan: 'var(--p-vanille, #fbebb5)', libre: 'var(--p-rose, #f8d6e2)' };
+function phaseBar(s) {
+  const list = (s.phases || []).map((ph, i) => ({ ph, i, d: Number(ph.duration) || 0 }));
+  const total = list.reduce((a, x) => a + x.d, 0);
+  if (!list.length || !total) return null;
+  return h('div', { class: 'fs-phasebar', 'data-testid': 'phase-bar', role: 'img', 'aria-label': `Durées : ${list.map(x => `phase ${x.i + 1} ${x.d} min`).join(', ')}` },
+    list.filter(x => x.d).map(x => h('span', { style: { flexGrow: String(x.d), background: PHASE_TONES[x.ph.kind] || PHASE_TONES.libre }, title: `${x.ph.title || P.PHASE_KINDS[x.ph.kind]?.label || 'Phase'} · ${x.d} min` },
+      h('b', {}, `P${x.i + 1}`), `\u00a0· ${x.d} min`)));
 }
 
 /** Différenciation par élèves (ou groupes) : les aides enregistrées sont proposées, jamais appliquées d'office. */
@@ -167,7 +208,7 @@ function adaptationsBlock(s, cls) {
   const name = (id) => { const st = store.get(id); return st ? st.firstName : '?'; };
   const save = (next, label, quiet = true) => store.update(s.id, { adaptations: next }, label, { quiet });
   const F = [['objective', 'Objectif adapté'], ['consigne', 'Consigne'], ['support', 'Support'], ['quantite', 'Quantité'], ['modalite', 'Modalité de réponse'], ['temps', 'Temps']];
-  return h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Différenciation par élèves ou groupes'),
+  return h('section', { class: 'card', id: 'etape-diff' }, h('div', { class: 'card-head' }, h('h2', {}, 'Différenciation par élèves ou groupes'),
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'add-adaptation', onclick: async () => {
         const items = [...groups.map(g => ({ id: `g:${g.id}`, label: g.name, group: 'Groupes' })), ...students.map(({ student: x }) => ({ id: x.id, label: `${x.firstName} ${x.lastName}`, group: 'Élèves' }))];
         const sel = await pickMany({ title: 'Pour quels élèves ou groupes ?', items });
@@ -196,7 +237,7 @@ function phaseCard(s, ph, i, full) {
   const fields = def.fields.filter(f => full || essential.includes(f.key) || ph[f.key]);
   const hidden = def.fields.length - fields.length;
   const move = (dir) => { const arr = store.get(s.id).phases.slice(); const j = i + dir; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; return store.update(s.id, { phases: arr }, 'Phase déplacée'); };
-  return h('div', { class: 'phase', 'data-testid': 'phase' },
+  const card = h('div', { class: 'phase', 'data-testid': 'phase' },
     h('div', { class: 'phase-head' },
       h('strong', {}, `Phase ${i + 1} — `),
       bound({ type: 'select', value: ph.kind, options: Object.entries(P.PHASE_KINDS).map(([k, d]) => [k, d.label]), onSave: (v) => update({ kind: v }, 'Type de phase', false) }),
@@ -206,6 +247,8 @@ function phaseCard(s, ph, i, full) {
     h('div', { class: 'phase-grid' }, fields.map(f => bound({ ...f, value: ph[f.key], testid: `ph-${f.key}`, onSave: (v) => update({ [f.key]: v }, `${def.label} : ${f.label}`) }))),
     /eps|éducation physique/i.test(s.subject || '') || diagramsOfPhase(s.id, ph.id).length ? phaseDiagrams(s, ph) : null,
     hidden ? h('p', { class: 'muted small' }, `${hidden} rubrique(s) vide(s) masquée(s) — cochez « Toutes les rubriques » ou passez en mode Visite.`) : null);
+  card.style.setProperty('--tone', PHASE_TONES[ph.kind] || PHASE_TONES.libre);
+  return card;
 }
 
 function copiesBlock(s, cls) {

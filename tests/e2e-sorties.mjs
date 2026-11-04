@@ -15,6 +15,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
 const eq = (a, b, m) => { if (a !== b) throw new Error(`${m} — attendu ${JSON.stringify(b)}, obtenu ${JSON.stringify(a)}`); };
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1280, height: 900 }, bypassCSP: true });
+await ctx.addInitScript(() => { try { if (!localStorage.getItem('classeur.cahier.layout')) localStorage.setItem('classeur.cahier.layout', 'liste'); } catch { /* */ } }); // cahier en liste complète (les deux panneaux sont testés à part)
 page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
@@ -197,7 +198,7 @@ await test('Vider une semaine du cahier journal (faites gardées), annulable', a
   await S(`const cls = store.get(store.getSettings().currentClassId); await store.create('occurrence', { classId: cls.id, date: '2026-11-03', start: '14:00', end: '14:30', subject: 'EPS', title: 'Faite (exemple)', status: 'faite', mode: 'dirigé', levels: [] }, 'x');`);
   const before = await cnt(); assert(before.length >= 2, 'des séances cette semaine');
   await go('#/cahier?d=2026-11-03&v=semaine');
-  await page.getByTestId('clear-journal').click();
+  if (await page.getByTestId('journal-more').count()) await page.getByTestId('journal-more').click(); await page.getByTestId('clear-journal').click();
   assert((await page.getByTestId('clear-info').innerText()).includes('élément(s)'), 'aperçu du nombre');
   await page.getByTestId('clear-go').click(); await page.waitForTimeout(400);
   const after = await cnt();
