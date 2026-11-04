@@ -11,6 +11,38 @@ import { taskCard, taskDialog, weekTasksCalendar } from './agenda.js';
 let weekOffset = 0;
 const nextSchoolDays = (cls, from, n) => { const out = []; let d = from; for (let k = 0; out.length < n && k < 20; k++, d = model.addDays(d, 1)) if (PL.isSchoolDay(cls, d).ok && PL.isMyDay(cls, d)) out.push(d); return out; };
 
+const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+/** Avant / pendant / après la classe : ce qu'il faut préparer, la journée à cocher, ce qu'il reste à clore. */
+function moments(cls, today) {
+  const plan = PL.dayPlan(cls, today);
+  const entries = plan.entries.filter(e => e.kind !== 'event' && e.status !== 'reportée');
+  const now = nowHM();
+  const mats = PL.materials(cls, [today]).filter(r => r.kind !== 'copie' || r.status === 'à faire');
+  const done = entries.filter(e => e.status === 'faite' || e.status === 'partielle').length;
+  const past = entries.filter(e => e.end <= now && e.status === 'prévue');
+  const unsigned = store.all('carnet').filter(x => (!x.classId || x.classId === cls.id) && x.written && !x.signed).length;
+  const col = (title, cls2, count, body) => h('section', { class: `moment ${cls2}`, 'aria-label': title }, h('div', { class: 'moment-head' }, h('h2', {}, title), h('span', { class: 'moment-count' }, count)), h('div', { class: 'moment-body' }, body));
+  const check = (e) => {
+    const isDone = e.status === 'faite' || e.status === 'partielle';
+    const cur = e.start <= now && now < e.end;
+    return h('div', { class: `moment-row${cur ? ' current' : ''}${isDone ? ' done' : ''}${e.status === 'annulée' ? ' cancelled' : ''}`, 'data-testid': 'moment-row' },
+      h('span', { class: 'moment-time' }, e.start),
+      h('span', { class: 'moment-bar', style: { background: model.subjectColor(e.subject) } }),
+      h('a', { class: 'moment-title', href: `#/cahier?d=${today}` }, h('strong', {}, e.title), h('small', {}, cur ? `${e.subject || ''} · en ce moment` : e.status === 'annulée' ? 'annulée' : e.subject || '')),
+      e.status === 'annulée' ? null : h('button', { type: 'button', class: `moment-check${isDone ? ' on' : ''}`, 'aria-label': isDone ? `« ${e.title} » faite : décocher` : `Marquer « ${e.title} » faite`, 'data-testid': 'moment-check',
+        onclick: () => PL.setStatus(e, cls, isDone ? 'prévue' : 'faite') }, isDone ? '♡' : ''));
+  };
+  if (!plan.school.ok) return h('p', { class: 'muted moment-off' }, plan.school.reason);
+  return h('div', { class: 'moments', 'data-testid': 'moments' },
+    col('Avant', 'm-avant', `${mats.length}`, mats.length ? mats.slice(0, 6).map(r => h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-time' }, r.entry.start), h('span', { class: 'moment-title' }, h('strong', {}, r.label), h('small', {}, r.kind === 'copie' ? `${r.count} ex.` : r.entry.title))))
+      : h('p', { class: 'muted small' }, 'Rien à préparer pour aujourd’hui.')),
+    col('Pendant', 'm-pendant', `${done} / ${entries.length}`, entries.length ? entries.map(check) : h('p', { class: 'muted small' }, 'Aucune activité au cahier journal.')),
+    col('Après', 'm-apres', `${past.length + unsigned}`, [
+      h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, past.length ? `${past.length} séance(s) à cocher` : 'Séances à jour ♡'), h('small', {}, 'faite, reportée ou annulée'))),
+      h('a', { class: 'moment-row', href: '#/messages' }, h('span', { class: 'moment-title' }, h('strong', {}, unsigned ? `${unsigned} mot(s) à faire signer` : 'Carnet à jour'), h('small', {}, 'carnet de liaison'))),
+      h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan du jour'), h('small', {}, 'deux lignes au cahier journal')))]));
+}
+
 export function espace({ cls, planCard, rerender }) {
   const s = store.getSettings();
   const today = model.todayIso();
@@ -41,5 +73,6 @@ export function espace({ cls, planCard, rerender }) {
     planCard);
   return h('div', { class: 'espace' },
     h('div', { class: 'dash-banner', 'data-testid': 'espace-banner' }, h('span', {}, (s.dashTitle || 'Mon espace enseignante').toUpperCase())),
+    cls ? moments(cls, today) : null,
     h('div', { class: 'espace-grid' }, left, right));
 }

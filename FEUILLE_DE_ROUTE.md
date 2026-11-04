@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (194) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 207 entrées.
+Légende : ✅ Réalisé (195) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 208 entrées.
 
 ## Étape 1 — Socle
 
@@ -235,3 +235,4 @@ Légende : ✅ Réalisé (194) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §6 Planifier | Importer une bibliothèque de compétences (Excel .xlsx ou CSV : id, niveau, discipline, domaine, compétence) : un référentiel par discipline pour les niveaux choisis, réimport sans doublon (identifiants stables), reformulations signalées comme telles | Programmes et référentiels › « Importer une bibliothèque ». Lecture Excel intégrée, sans service extérieur. |
 | ✅ | §10 Suivi | Livret pour les familles : notes (/10, /20 ou /100) et niveaux par discipline proposés d’après les évaluations puis modifiables, détail des compétences, moyenne indicative, appréciations, absences, légende et cadre de signatures ; options d’affichage au moment de générer | Livrets et bilans › « Reprendre les notes des évaluations » puis « Générer les livrets de la classe ». |
 | ✅ | §6 Planifier | Générateur EPS (gratuit, hors connexion) : 6 familles et 26 activités, banque de situations concrètes ; selon cycle, espace, matériel et effectif ; séquence ou séance isolée ; échauffement, situations, variantes, consignes orales, installation, règles, sécurité, adaptations, observation ; équipes tirées de la liste ; schéma de terrain modifiable ; compétences proposées ; enregistrement en séquence, fiches, schémas et progression ; brouillon conservé | Préparer › Générateur EPS. Banque à enrichir avec l’enseignante. |
+| ✅ | §20 Apparence | Nouveau design « Lavande » (proposition I validée) : pastels, relief doux, boutons pilules, mode nuit violet ; accueil organisé en Avant / Pendant / Après la classe avec la journée à cocher | Thème par défaut ; les autres thèmes restent au choix dans Réglages › Apparence. |

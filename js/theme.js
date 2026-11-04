@@ -3,6 +3,7 @@
 import * as store from './store.js';
 
 export const THEMES = [
+  ['lavande', 'Lavande (nouveau design)', ['#fffdf9', '#6a4fc4', '#e3dbfa']],
   ['pastel', 'Pastel doux', ['#fdf8f4', '#a64862', '#efe6f6']],
   ['bleu', 'Bleu frais', ['#f3f7fb', '#2b5f9e', '#e2edf8']],
   ['ecole', 'Coloré école', ['#fafafa', '#b04c14', '#fff1c9']],
@@ -48,12 +49,20 @@ export const MODES = [
   ['sombre', 'Toujours sombre'],
 ];
 const KEY = 'classeur-theme';
-const DEFAULT = { name: 'pastel', mode: 'soir', custom: null };
+const DEFAULT = { name: 'lavande', mode: 'soir', custom: null };
 
 function cached() { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } }
+// Nouveau design (novembre 2026) : le thème « Pastel doux » passe une fois au thème « Lavande » ; on peut revenir en arrière dans Réglages › Apparence.
+const MIGRATED = 'classeur-design-lavande';
 export function current() {
   let s = null; try { s = store.getSettings().theme; } catch { /* stockage pas encore prêt */ }
-  return { ...DEFAULT, ...(cached() || {}), ...(s || {}) };
+  const t = { ...DEFAULT, ...(cached() || {}), ...(s || {}) };
+  let done = false; try { done = localStorage.getItem(MIGRATED) === '1'; } catch { /* */ }
+  if (!done && t.name === 'pastel') {
+    t.name = 'lavande';
+    try { localStorage.setItem(MIGRATED, '1'); if (s) store.setSettings({ theme: { ...s, name: 'lavande' } }); } catch { /* */ }
+  } else if (!done) { try { localStorage.setItem(MIGRATED, '1'); } catch { /* */ } }
+  return t;
 }
 export function isDark(mode, now = new Date()) {
   if (mode === 'sombre') return true;
