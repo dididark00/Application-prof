@@ -112,7 +112,7 @@ await test('Livrets : évaluations reliées à la période, exclusion, ajout, li
   await page.getByTestId('livret-eval-add').selectOption(data.c); await page.waitForTimeout(300);
   const ids = await page.evaluate(async () => { const st = await import('./js/store.js'); const m = await import('./js/model.js'); const L = await import('./js/pages/livrets.js'); const cls = st.get(st.getSettings().currentClassId); const y = st.get(cls.yearId); const per = m.periodOfDate(y, m.todayIso()) || m.periodsOf(y)[0]; return L.livretEvals(cls, per).map(e => e.title); });
   assert(ids.includes('Éval A test') && !ids.includes('Éval B test') && ids.includes('Éval C ancienne'), `sélection ${ids.join(', ')}`);
-  await page.getByTestId('livrets-generate').click(); await page.waitForTimeout(300);
+  await page.getByTestId('livrets-generate').click(); await page.waitForTimeout(200); await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
   const txt = await page.evaluate(() => window.__p || '');
   assert(txt.includes('Éval A test item') && !txt.includes('Éval B test item') && txt.includes('Éval C ancienne'), 'livret généré avec les évaluations choisies');
   assert((await page.evaluate(() => window.__n)) >= 2, 'un livret par élève');
@@ -125,7 +125,7 @@ await test('Maternelle : carnet de suivi des apprentissages avec réussites et p
   if (!ok) return;
   await go('#/livrets');
   assert((await page.locator('.page h1').innerText()).toLowerCase().includes('carnets de suivi'), 'titre maternelle');
-  await page.getByTestId('livrets-generate').click(); await page.waitForTimeout(300);
+  await page.getByTestId('livrets-generate').click(); await page.waitForTimeout(200); await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
   const txt = await page.evaluate(() => window.__p || '');
   assert(txt.includes('Carnet de suivi des apprentissages') && txt.includes('Écrit son prénom seul'), 'réussites dans le carnet');
   await S(`const cls = store.all('class').find(c => c.name === 'CE2 (démo)'); await store.setSettings({ currentYearId: cls.yearId, currentClassId: cls.id });`);
@@ -353,6 +353,27 @@ await test('Bibliothèque de compétences : import d’un fichier Excel (niveau 
   assert(refs.every(r => r.status === 'validé' && /Reformulations/.test(r.nature)), 'validées et marquées reformulations');
   eq(refs.find(r => r.name.startsWith('Mathématiques')).n, 2, '2 compétences de maths CE2');
   assert(!(await S(`return JSON.stringify(store.all('referential'));`)).includes('Lire un texte long'), 'CM1 non importé');
+});
+
+await test('Livret : notes et niveaux repris des évaluations, modifiables, livret prêt pour les parents', async () => {
+  await S(`const cls = store.get(store.getSettings().currentClassId); const year = store.get(cls.yearId); const per = model.periodOfDate(year, model.todayIso()) || model.periodsOf(year)[0];
+    const st = model.studentsOfClass(cls.id)[0].student;
+    await store.create('evaluation', { classId: cls.id, title: 'Éval notée test', subject: 'Français', date: per.start, items: [{ id: 'q1', label: 'Dictée notée', maxPoints: '10' }], results: { [st.id]: { items: { q1: { level: 'A', points: 8 } } } } });`);
+  await go('#/livrets');
+  await page.getByTestId('livrets-fill-marks').click(); await page.waitForTimeout(500);
+  const m = await S(`const cls = store.get(store.getSettings().currentClassId); const st = model.studentsOfClass(cls.id)[0].student; return store.all('report').find(r => r.studentId === st.id && r.marks?.['Français'])?.marks['Français'];`);
+  eq(m?.note, '16', 'note sur 20 calculée (8/10)');
+  eq(m?.level, 'A', 'niveau proposé');
+  const first = page.getByTestId('report-card').first();
+  const note = first.getByTestId('mark-note').first(); await note.fill('15,5'); await note.dispatchEvent('change'); await page.waitForTimeout(300);
+  await first.getByRole('button', { name: /Imprimer le bilan/ }).click(); await page.waitForTimeout(150);
+  await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
+  const t = await page.evaluate(() => window.__p || '');
+  for (const x of ['Livret scolaire', '/ 20', 'Dictée notée', 'Les responsables légaux', 'Niveaux :']) assert(t.includes(x), `livret : ${x}`);
+  await page.getByTestId('livrets-generate').click(); await page.waitForTimeout(150);
+  await page.getByTestId('gen-notes').uncheck(); await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
+  assert(!(await page.evaluate(() => window.__p || '')).includes('/ 20'), 'notes masquées sur demande');
+  await S(`const c = store.get(store.getSettings().currentClassId); await store.update(c.id, { livretOptions: { ...(c.livretOptions || {}), notes: true } });`);
 });
 
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });

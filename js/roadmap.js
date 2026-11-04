@@ -251,6 +251,7 @@ export const ROADMAP = [
   R(5, '§7 Atelier', 'Affichage en grand : agrandir / rétrécir (A+ / A−, pleine largeur, molette, touches + et −) et mode « Déplacer » au doigt pour que les élèves voient bien au tableau', 'fait'),
   R(5, '§7 Atelier', 'Enregistrer plusieurs supports pour une même séance : nom de chaque fichier, séances rangées par séquence', 'fait'),
   R(5, '§6 Planifier', 'Importer une bibliothèque de compétences (Excel .xlsx ou CSV : id, niveau, discipline, domaine, compétence) : un référentiel par discipline pour les niveaux choisis, réimport sans doublon (identifiants stables), reformulations signalées comme telles', 'fait', 'Programmes et référentiels › « Importer une bibliothèque ». Lecture Excel intégrée, sans service extérieur.'),
+  R(5, '§10 Suivi', 'Livret pour les familles : notes (/10, /20 ou /100) et niveaux par discipline proposés d’après les évaluations puis modifiables, détail des compétences, moyenne indicative, appréciations, absences, légende et cadre de signatures ; options d’affichage au moment de générer', 'fait', 'Livrets et bilans › « Reprendre les notes des évaluations » puis « Générer les livrets de la classe ».'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

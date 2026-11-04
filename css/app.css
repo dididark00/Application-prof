@@ -1196,3 +1196,20 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .diapo-range { background: var(--surface-2); border-radius: 6px; }
 .animate-board.zoomed { display: block; overflow: auto; }
 .animate-board.zoomed svg { display: block; margin: 0 auto; }
+.mark-row { gap: 8px; margin: 4px 0 2px; } .mark-row .money-input { width: 5em; }
+.livret-head { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 10px; align-items: center; border-bottom: 3px solid var(--pb, #1f4e79); padding-bottom: 8px; margin-bottom: 8px; }
+.livret-title { text-align: center; } .livret-title h1 { margin: 0; font-size: 1.5em; color: var(--pn, #1f3b5c); text-transform: uppercase; }
+.livret-student { text-align: right; } .livret-school, .livret-student { font-size: .92em; }
+.livret-legend { font-size: .8em; color: #444; margin: 2px 0 8px; }
+.livret-sub { break-inside: avoid; page-break-inside: avoid; border: 1px solid #b9c6d4; border-radius: 6px; margin: 0 0 8px; overflow: hidden; }
+.livret-sub-head { display: flex; gap: 10px; align-items: center; background: #dbe7f4; padding: 5px 9px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.livret-sub-name { font-weight: 700; color: var(--pn, #1f3b5c); flex: 1; text-transform: uppercase; font-size: .92em; letter-spacing: .02em; }
+.livret-level { font-weight: 700; border-radius: 10px; padding: 1px 8px; background: #fff; border: 1px solid #8aa; font-size: .85em; }
+.livret-level.lv-NA { color: #a33; border-color: #d99; } .livret-level.lv-ECA { color: #a66a00; border-color: #e3c27a; } .livret-level.lv-A { color: #2f6f3f; border-color: #8c8; } .livret-level.lv-D { color: #1f4e79; border-color: #8ab; }
+.livret-note { font-weight: 700; font-size: 1.05em; }
+.livret-items { margin: 0; } .livret-items td { border: 0; border-top: 1px solid #e3e8ee; font-size: .88em; padding: 3px 9px; }
+.livret-cell { width: 12%; text-align: center; font-weight: 700; }
+.livret-ev { font-size: .8em; color: #777; }
+.livret-app { margin: 0; padding: 6px 9px; }
+.livret-avg { text-align: right; margin: 2px 0 8px; }
+.livret-sign td { width: 33%; vertical-align: top; } .livret-sign-label { font-size: .8em; color: #444; } .livret-sign-box { height: 22mm; }

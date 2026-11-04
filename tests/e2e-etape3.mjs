@@ -116,6 +116,7 @@ await test('§17 Projection et impressions familles : aucune donnée sensible', 
   await go('#/livrets');
   await page.evaluate(() => { window.print = () => {}; });
   await page.locator('[data-testid=report-card]', { hasText: 'Lou' }).getByRole('button', { name: /Imprimer le bilan/ }).click();
+  await page.getByTestId('gen-go').click(); await page.waitForTimeout(200);
   const printed = await page.locator('#print-root').innerText();
   assert(!printed.includes('OBS-PRIVEE') && !printed.includes('SECRET'), 'bilan famille contient des données privées');
   await page.evaluate(() => { document.body.classList.remove('printing'); document.getElementById('print-root').replaceChildren(); });
