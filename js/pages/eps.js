@@ -19,7 +19,7 @@ export function render({ params, query, rerender }) {
   const all = store.all('epsdiagram').sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
   return h('div', { class: 'page' },
     pageHeader('Schémas EPS', { favKey: 'preparer/eps', subtitle: 'Mise en place, évolutions, parcours et jeux collectifs, reliés aux séances',
-      actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-diagram', onclick: () => newDiagram({ sessionId: query?.session || null, phaseId: query?.phase || null }) }, icon('plus', 16), 'Nouveau schéma')] }),
+      actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-diagram', onclick: () => newDiagram({ sessionId: query?.session || null, phaseId: query?.phase || null }) }, icon('plus', 16), 'Nouveau schéma'), h('a', { class: 'btn', href: '#/eps-generateur', 'data-testid': 'go-eps-gen' }, 'Générateur EPS (séquences)')] }),
     subTabs(),
     all.length ? h('div', { class: 'grid-3' }, all.map(d => { const s = d.sessionId ? store.get(d.sessionId) : null; return h('a', { class: 'card link-card eps-card', href: `#/eps/${d.id}`, 'data-testid': 'diagram-card' },
       h('div', { class: 'eps-thumb' }, E.render(d, { legend: false })), h('strong', {}, d.title), h('span', { class: 'muted small' }, s ? P.sessionTitle(s) : 'non relié à une séance')); }))

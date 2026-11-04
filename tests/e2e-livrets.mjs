@@ -376,6 +376,30 @@ await test('Livret : notes et niveaux repris des évaluations, modifiables, livr
   await S(`const c = store.get(store.getSettings().currentClassId); await store.update(c.id, { livretOptions: { ...(c.livretOptions || {}), notes: true } });`);
 });
 
+await test('Générateur EPS : proposition selon matériel et espace, modifiable, brouillon conservé, enregistrement (séquence, fiches, schémas, progression)', async () => {
+  await go('#/eps-generateur');
+  await page.getByTestId('gen-fam').selectOption('collectifs'); await page.getByTestId('gen-sub').selectOption('traditionnels');
+  await page.getByTestId('gen-sessions').fill('3'); await page.getByTestId('gen-sessions').dispatchEvent('input');
+  await page.getByTestId('gen-propose').click(); await page.waitForTimeout(400);
+  eq(await page.getByTestId('gen-session').count(), 3, '3 séances proposées');
+  const t = page.getByTestId('gen-title').first(); await t.fill('Séance modifiée (test)'); await page.waitForTimeout(400);
+  await page.reload(); await page.waitForFunction(() => window.__classeurReady === true); await page.waitForTimeout(400);
+  await page.evaluate(() => { window.print = () => { window.__p = document.getElementById('print-root').textContent; }; });
+  eq(await page.getByTestId('gen-title').first().inputValue(), 'Séance modifiée (test)', 'brouillon retrouvé après rechargement');
+  await page.getByTestId('gen-swap').first().selectOption({ index: 1 }); await page.waitForTimeout(200);
+  // Sans plots ni chasubles en salle : le béret et la balle au capitaine ne sont plus proposés
+  const pid = await S(`const c = store.get(store.getSettings().currentClassId); return model.periodsOf(store.get(c.yearId))[1]?.id || model.periodsOf(store.get(c.yearId))[0].id;`);
+  await page.getByTestId('gen-period').selectOption(pid);
+  await page.getByTestId('gen-save').click(); await page.waitForTimeout(1200);
+  const r = await S(`const seq = store.all('sequence').find(s => s.generatedBy === 'eps-gen'); const P = await import('./js/pedago.js'); const ses = P.sessionsOfSequence(seq.id);
+    return { title: ses[0].title, n: ses.length, phases: ses[0].phases.length, diag: store.all('epsdiagram').filter(d => ses.some(x => x.id === d.sessionId)).length,
+      prog: store.all('progression').find(p => p.subject === 'EPS' && p.periodId === a)?.rows.filter(rw => rw.sequenceId === seq.id).length };`, pid);
+  eq(r.title, 'Séance modifiée (test)', 'modification enregistrée'); eq(r.n, 3, '3 fiches'); assert(r.phases >= 3, 'phases détaillées'); eq(r.diag, 3, 'un schéma par séance'); eq(r.prog, 3, '3 semaines de progression');
+  assert(page.url().includes('#/sequence/'), 'séquence ouverte');
+  const none = await page.evaluate(async () => { const G = await import('./js/eps-gen.js'); return G.generate({ fam: 'collectifs', sub: 'traditionnels', cycle: 2, space: 'cour', have: {}, effectif: 24, sessions: 2 }).error || ''; });
+  assert(none.includes('Aucune situation'), 'sans matériel : message clair');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

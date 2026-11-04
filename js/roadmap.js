@@ -252,6 +252,7 @@ export const ROADMAP = [
   R(5, '§7 Atelier', 'Enregistrer plusieurs supports pour une même séance : nom de chaque fichier, séances rangées par séquence', 'fait'),
   R(5, '§6 Planifier', 'Importer une bibliothèque de compétences (Excel .xlsx ou CSV : id, niveau, discipline, domaine, compétence) : un référentiel par discipline pour les niveaux choisis, réimport sans doublon (identifiants stables), reformulations signalées comme telles', 'fait', 'Programmes et référentiels › « Importer une bibliothèque ». Lecture Excel intégrée, sans service extérieur.'),
   R(5, '§10 Suivi', 'Livret pour les familles : notes (/10, /20 ou /100) et niveaux par discipline proposés d’après les évaluations puis modifiables, détail des compétences, moyenne indicative, appréciations, absences, légende et cadre de signatures ; options d’affichage au moment de générer', 'fait', 'Livrets et bilans › « Reprendre les notes des évaluations » puis « Générer les livrets de la classe ».'),
+  R(5, '§6 Planifier', 'Générateur EPS (gratuit, hors connexion) : 6 familles et 26 activités, banque de situations concrètes ; selon cycle, espace, matériel et effectif ; séquence ou séance isolée ; échauffement, situations, variantes, consignes orales, installation, règles, sécurité, adaptations, observation ; équipes tirées de la liste ; schéma de terrain modifiable ; compétences proposées ; enregistrement en séquence, fiches, schémas et progression ; brouillon conservé', 'fait', 'Préparer › Générateur EPS. Banque à enrichir avec l’enseignante.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -289,6 +290,7 @@ export const RUBRIQUES = [
     { id: 'exercices', titre: 'Générateurs d’exercices', route: 'exercices' },
     { id: 'importer', titre: 'Importer un tableau (CSV)', route: 'importer' },
     { id: 'jeux', titre: 'Jeux et anglais', route: 'jeux' },
+    { id: 'eps-generateur', titre: 'Générateur EPS', route: 'eps-generateur' },
     { id: 'eps', titre: 'Schémas EPS', route: 'eps' },
     { id: 'etiquettes', titre: 'Étiquettes et affichages', route: 'etiquettes' },
   ]},

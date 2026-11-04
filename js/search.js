@@ -12,6 +12,7 @@ export const ACTIONS = [
   ['Noter un comportement, un oubli, des félicitations', 'noter carnet comportement oubli travail felicitations retard mot', '#/messages?new=1'],
   ['Ajouter une activité au cahier journal', 'activite cahier journal seance ajouter nouvelle', '#/cahier?new=1'],
   ['Répartir mes élèves chez les collègues', 'repartir repartition collegues absence eleves classes', '#/repartition?new=1'],
+  ['Générer une séquence ou une séance d’EPS', 'eps sport generer generateur sequence seance jeux collectifs athletisme gym danse opposition', '#/eps-generateur'],
   ['Faire l’appel', 'appel absent presence', '#/appel'],
   ['Préparer la semaine (cahier journal)', 'preparer semaine prerempli cahier', '#/cahier?v=semaine&prep=1'],
   ['Nouvelle sortie ou cycle (natation…)', 'sortie natation piscine cycle judo musee', '#/sorties?new=1'],

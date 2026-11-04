@@ -68,6 +68,7 @@ import * as pAvancement from './pages/avancement.js';
 import * as pSorties from './pages/sorties.js';
 import * as pMissions from './pages/missions.js';
 import * as pRepart from './pages/repartition.js';
+import * as pEpsGen from './pages/eps-gen.js';
 import * as pMethodes from './pages/methodes.js';
 import * as pRadar from './pages/radar.js';
 import * as Tuto from './tuto.js';
@@ -137,6 +138,7 @@ const ROUTES = {
   sorties: pSorties, sortie: pSorties,
   missions: pMissions,
   repartition: pRepart,
+  'eps-generateur': pEpsGen,
   methodes: pMethodes,
   radar: pRadar,
   enclasse: pEnClasse,

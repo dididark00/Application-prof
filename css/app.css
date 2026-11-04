@@ -1213,3 +1213,9 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .livret-app { margin: 0; padding: 6px 9px; }
 .livret-avg { text-align: right; margin: 2px 0 8px; }
 .livret-sign td { width: 33%; vertical-align: top; } .livret-sign-label { font-size: .8em; color: #444; } .livret-sign-box { height: 22mm; }
+.eps-mat { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 14px; margin-top: 8px; }
+.eps-mat-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .9rem; }
+.eps-mat-item input { width: 4.5em; }
+.eps-session > summary { cursor: pointer; }
+.eps-phase { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.eps-diag svg { width: 100%; height: auto; border-radius: 8px; }
