@@ -1,3 +1,11 @@
+/* ───────── Polices du design Lavande (licence SIL OFL 1.1, fichiers dans fonts/, sans connexion) */
+@font-face { font-family: "DM Sans"; src: url("../fonts/DMSans-Regular.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("../fonts/DMSans-Italic.woff") format("woff"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("../fonts/DMSans-Medium.woff") format("woff"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "DM Sans"; src: url("../fonts/DMSans-Bold.woff") format("woff"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Bricolage Grotesque"; src: url("../fonts/BricolageGrotesque-SemiBold.woff") format("woff"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Bricolage Grotesque"; src: url("../fonts/BricolageGrotesque-ExtraBold.woff") format("woff"); font-weight: 800; font-style: normal; font-display: swap; }
+
 /* ── Thèmes : <html data-theme="pastel|bleu|ecole|vert" data-mode="clair|sombre">.
    Les feuilles imprimées, l'écran de projection et les diapositives restent sur fond blanc. */
 :root {
@@ -1235,6 +1243,7 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 [data-theme="lavande"] body { font-family: "DM Sans", "Inter", var(--font); background: radial-gradient(60% 40% at 100% 0%, #efe9fd 0%, rgba(239,233,253,0) 70%), radial-gradient(55% 40% at 0% 100%, #e9f6ef 0%, rgba(233,246,239,0) 70%), var(--bg); background-attachment: fixed; }
 [data-mode="sombre"][data-theme="lavande"] body { background: var(--bg); }
 [data-theme="lavande"] h1, [data-theme="lavande"] h2 { font-family: "Bricolage Grotesque", "DM Sans", var(--font); letter-spacing: -.025em; }
+[data-theme="lavande"] h2 { font-weight: 600; }
 [data-theme="lavande"] h1 { font-weight: 800; font-size: 2.1rem; }
 [data-theme="lavande"] .card { border: 0; border-radius: 22px; box-shadow: var(--shadow); }
 [data-theme="lavande"] .btn { border-radius: 999px; min-height: 42px; padding: 8px 16px; border-color: transparent; box-shadow: 0 2px 6px rgba(60, 40, 110, .08); }

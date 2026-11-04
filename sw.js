@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-d8f5cd31953b';
+const CACHE = 'classeur-730cf614c52f';
 const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = [
   "./",
@@ -37,11 +37,19 @@ const ASSETS = [
   "data/programmes/st2026c3.json",
   "fonts/Andika-Bold.woff2",
   "fonts/Andika-Regular.woff2",
+  "fonts/BricolageGrotesque-ExtraBold.woff",
+  "fonts/BricolageGrotesque-SemiBold.woff",
+  "fonts/DMSans-Bold.woff",
+  "fonts/DMSans-Italic.woff",
+  "fonts/DMSans-Medium.woff",
+  "fonts/DMSans-Regular.woff",
   "fonts/Marelle-Regular.ttf",
   "fonts/Marelle2-Regular.ttf",
   "fonts/MarelleBaton-Regular.ttf",
   "fonts/MarelleBaton2-Regular.ttf",
   "fonts/OFL-Andika.txt",
+  "fonts/OFL-BricolageGrotesque.txt",
+  "fonts/OFL-DMSans.txt",
   "fonts/OFL-OpenDyslexic.txt",
   "fonts/OFL.txt",
   "fonts/OpenDyslexic-Regular.woff2",
