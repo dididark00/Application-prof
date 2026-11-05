@@ -1,4 +1,5 @@
 import * as store from './store.js';
+import { watchTables } from './table-cards.js';
 import * as model from './model.js';
 import { h, toast } from './ui.js';
 import { parseHash, navigate, setRenderer } from './router.js';
@@ -196,6 +197,7 @@ export async function autoPurgeTrash(now = Date.now()) {
 async function start() {
   Theme.init();
   setRenderer(render);
+  watchTables(document.getElementById('main'));
   try {
     await store.init();
   } catch (e) {

@@ -234,7 +234,7 @@ function timeTable(cls, slots) {
   const total = Object.values(wm).reduce((t, x) => t + x.total, 0);
   return h('section', { class: 'card' }, h('h2', {}, 'Temps hebdomadaire par discipline'),
     h('p', { class: 'muted small' }, 'Calculé depuis les créneaux affichés. La référence horaire est à saisir vous-même depuis le texte officiel en vigueur (ex. « 10h », « 1h30 ») : l’application n’en préremplit aucune.'),
-    h('div', { class: 'table-wrap' }, h('table', { class: 'table', 'data-testid': 'time-table' },
+    h('div', { class: 'table-wrap' }, h('table', { class: 'table no-cards', 'data-testid': 'time-table' },
       h('thead', {}, h('tr', {}, h('th', {}, 'Discipline'), levels.map(l => [h('th', {}, `${l} prévu`), h('th', {}, `${l} référence`), h('th', {}, 'Écart')]))),
       h('tbody', {}, subjects.map(sub => h('tr', {}, h('td', {}, h('span', { class: 'dot', style: { background: model.subjectColor(sub) } }), sub),
         levels.map(l => {

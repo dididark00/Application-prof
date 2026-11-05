@@ -401,6 +401,25 @@ await test('Menu regroupé : Préparer en 4 groupes (menu, onglets, « Plus »),
   eq(await page.locator('[data-testid=more-sections] .more-list a').count(), n, 'aucune page perdue');
 });
 
+await test('Tableaux sur téléphone : une carte par ligne avec le nom des colonnes (élèves, cantine), cases toujours cliquables', async () => {
+  const m = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR' });
+  const p2 = await m.newPage();
+  await p2.goto(BASE); await p2.waitForTimeout(600);
+  await p2.evaluate(async () => (await import('./js/demo.js')).loadDemo()); await p2.waitForTimeout(600);
+  await p2.evaluate(() => { location.hash = '#/eleves'; }); await p2.waitForTimeout(800);
+  const t = p2.locator('#main table.table').first();
+  eq(await t.getAttribute('data-cards'), '1', 'tableau des élèves en cartes');
+  assert((await t.locator('td[data-label="Prénom"]').count()) > 0, 'étiquette de colonne');
+  eq(await p2.evaluate(() => document.documentElement.scrollWidth), 390, 'pas de défilement horizontal');
+  await p2.evaluate(() => { location.hash = '#/services?t=semaine'; }); await p2.waitForTimeout(800);
+  const box = p2.getByTestId('svc-check').first(); const was = await box.isChecked();
+  await box.click(); await p2.waitForTimeout(300);
+  eq(await box.isChecked(), !was, 'case cochée sur téléphone');
+  await box.click(); await p2.waitForTimeout(300);
+  assert(await p2.getByTestId('svc-all-day').first().isVisible(), '« tous » par jour visible sur téléphone');
+  await m.close();
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

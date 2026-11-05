@@ -98,7 +98,7 @@ function weekPlan(cls) {
       onclick: async () => { await setMany(pairs, !on, on ? labelOff : labelOn); toast(on ? labelOff : labelOn); } }, on ? 'aucun' : 'tous');
   };
   return h('div', { class: 'stack' },
-    h('p', { class: 'card notice' }, 'C’est ici que l’on inscrit les élèves : cochez, pour chaque service, les jours habituels de chaque élève. « tous » coche toute la ligne (l’élève tous les jours) ou toute la colonne (toute la classe ce jour-là) ; s’il est déjà tout coché, il devient « aucun » pour tout décocher. Les changements ponctuels (un jour sans cantine, une sortie…) se notent ensuite dans la vue « Jour », sans toucher à la semaine type.'),
+    h('p', { class: 'card notice' }, 'Cochez les jours habituels de chaque élève. « tous » remplit la ligne de l’élève ou la colonne du jour, puis devient « aucun ». Les changements ponctuels se notent dans la vue « Jour ».'),
     h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'svc-edit-list', onclick: editServices }, 'Modifier la liste des services…')),
     V.services().map(svc => {
       const everything = ids.flatMap(sid => days.map(d => [sid, svc, d]));
