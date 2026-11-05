@@ -256,6 +256,7 @@ export const ROADMAP = [
   R(5, '§20 Apparence', 'Nouveau design « Lavande » (proposition I validée) : pastels, relief doux, boutons pilules, mode nuit violet ; accueil organisé en Avant / Pendant / Après la classe avec la journée à cocher', 'fait', 'Thème par défaut ; les autres thèmes restent au choix dans Réglages › Apparence.'),
   R(5, '§20 Apparence', 'Cahier journal en deux panneaux (journée à gauche, activité choisie à droite, ♡ pour cocher, « x faites sur n », Exporter / Vider / Préparer regroupés dans « Plus ») et fiche de séance par étapes (sommaire avec l’état de chaque étape, barre des durées des phases, « Prête pour une visite x/10 »)', 'fait', 'Disposition au choix : « Deux panneaux » ou « Liste complète » ; sur téléphone, liste.'),
   R(5, '§20 Apparence', 'Polices du design Lavande intégrées à l’application : DM Sans (texte) et Bricolage Grotesque (titres), fonctionnent sans connexion', 'fait', 'Licence libre SIL OFL 1.1 (fichiers et licences dans fonts/) ; réduites aux caractères latins et français.'),
+  R(5, '§11 Vie de classe', 'Cantine et services, semaine type : « tous » coche réellement toute la ligne de l’élève (corrigé : rien ne s’affichait), « tous » par jour pour toute la classe, « Toute la classe, tous les jours » ; chacun redevient « aucun » pour tout décocher', 'fait', 'Un seul enregistrement, annulable.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

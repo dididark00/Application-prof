@@ -79,17 +79,44 @@ function weekPlan(cls) {
     cur[sid] = { ...(cur[sid] || {}), [svc]: [...set].sort() };
     await store.update(p.id, { plans: cur }, `Semaine type : ${svc}`, { quiet: true });
   };
+  /** Plusieurs cases d'un coup : un seul enregistrement, et la page est redessinée (les cases se cochent à l'écran). */
+  const setMany = async (pairs, on, label) => {
+    const p = await V.ensurePlan(cls.id);
+    const cur = structuredClone(store.get(p.id).plans || {});
+    for (const [sid, svc, d] of pairs) {
+      const set = new Set(cur[sid]?.[svc] || []); on ? set.add(d) : set.delete(d);
+      cur[sid] = { ...(cur[sid] || {}), [svc]: [...set].sort() };
+    }
+    await store.update(p.id, { plans: cur }, label);
+  };
+  const ids = students.map(({ student: s }) => s.id);
+  const has = (sid, svc) => plan?.plans?.[sid]?.[svc] || [];
+  const full = (pairs) => pairs.length && pairs.every(([sid, svc, d]) => has(sid, svc).includes(d));
+  const allBtn = (pairs, labelOn, labelOff, testid, aria) => {
+    const on = full(pairs);
+    return h('button', { class: 'btn btn-link small', type: 'button', 'data-testid': testid, 'aria-label': aria ? `${aria} : ${on ? 'tout décocher' : 'tout cocher'}` : null,
+      onclick: async () => { await setMany(pairs, !on, on ? labelOff : labelOn); toast(on ? labelOff : labelOn); } }, on ? 'aucun' : 'tous');
+  };
   return h('div', { class: 'stack' },
-    h('p', { class: 'card notice' }, 'C’est ici que l’on inscrit les élèves : cochez, pour chaque service, les jours habituels de chaque élève (ou « tous »). Les changements ponctuels (un jour sans cantine, une sortie…) se notent ensuite dans la vue « Jour », sans toucher à la semaine type. Liste des services (cantine, étude, garderie…) modifiable dans Réglages › Documents et confidentialité.'),
-    V.services().map(svc => h('section', { class: 'card' }, h('h2', {}, svc),
-      h('div', { class: 'table-wrap' }, h('table', { class: 'table svc-grid' },
-        h('thead', {}, h('tr', {}, h('th', {}, 'Élève'), days.map(d => h('th', {}, model.JOURS[d].slice(0, 3))), h('th', {}, ''))),
-        h('tbody', {}, students.map(({ student: s }) => {
-          const has = plan?.plans?.[s.id]?.[svc] || [];
-          return h('tr', {}, h('td', {}, `${s.firstName} ${s.lastName}`),
-            days.map(d => h('td', {}, h('input', { type: 'checkbox', checked: has.includes(d), 'aria-label': `${s.firstName} ${svc} ${model.JOURS[d]}`, 'data-testid': 'svc-check', onchange: (e) => toggle(s.id, svc, d, e.target.checked) }))),
-            h('td', {}, h('button', { class: 'btn btn-link small', type: 'button', onclick: async () => { for (const d of days) await toggle(s.id, svc, d, true); toast(`${s.firstName} : ${svc} tous les jours`); } }, 'tous')));
-        })))))));
+    h('p', { class: 'card notice' }, 'C’est ici que l’on inscrit les élèves : cochez, pour chaque service, les jours habituels de chaque élève. « tous » coche toute la ligne (l’élève tous les jours) ou toute la colonne (toute la classe ce jour-là) ; s’il est déjà tout coché, il devient « aucun » pour tout décocher. Les changements ponctuels (un jour sans cantine, une sortie…) se notent ensuite dans la vue « Jour », sans toucher à la semaine type. Liste des services (cantine, étude, garderie…) modifiable dans Réglages › Documents et confidentialité.'),
+    V.services().map(svc => {
+      const everything = ids.flatMap(sid => days.map(d => [sid, svc, d]));
+      return h('section', { class: 'card' },
+        h('div', { class: 'card-head' }, h('h2', {}, svc), students.length ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'svc-all-class',
+          onclick: async () => { const on = full(everything); await setMany(everything, !on, on ? `${svc} : plus personne` : `${svc} : toute la classe, tous les jours`); toast(on ? `${svc} : toutes les cases décochées` : `${svc} : toute la classe inscrite tous les jours`); } },
+          full(everything) ? 'Tout décocher' : 'Toute la classe, tous les jours') : null),
+        h('div', { class: 'table-wrap' }, h('table', { class: 'table svc-grid' },
+          h('thead', {},
+            h('tr', {}, h('th', {}, 'Élève'), days.map(d => h('th', {}, model.JOURS[d].slice(0, 3))), h('th', {}, '')),
+            students.length ? h('tr', { class: 'svc-allrow' }, h('th', { class: 'muted small' }, 'Toute la classe'),
+              days.map(d => h('th', {}, allBtn(ids.map(sid => [sid, svc, d]), `${svc} : toute la classe le ${model.JOURS[d].toLowerCase()}`, `${svc} : personne le ${model.JOURS[d].toLowerCase()}`, 'svc-all-day', `${svc}, ${model.JOURS[d]}, toute la classe`))), h('th', {})) : null),
+          h('tbody', {}, students.map(({ student: s }) => {
+            const hs = has(s.id, svc);
+            return h('tr', {}, h('td', {}, `${s.firstName} ${s.lastName}`),
+              days.map(d => h('td', {}, h('input', { type: 'checkbox', checked: hs.includes(d), 'aria-label': `${s.firstName} ${svc} ${model.JOURS[d]}`, 'data-testid': 'svc-check', onchange: (e) => toggle(s.id, svc, d, e.target.checked) }))),
+              h('td', {}, allBtn(days.map(d => [s.id, svc, d]), `${s.firstName} : ${svc} tous les jours`, `${s.firstName} : plus de ${svc}`, 'svc-all-student', `${s.firstName}, ${svc}, tous les jours`)));
+          })))));
+    }));
 }
 
 function departures(cls, date) {

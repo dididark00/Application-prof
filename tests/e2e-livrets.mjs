@@ -339,6 +339,29 @@ await test('Fiche de séance par étapes : sommaire avec état, barre des durée
   await page.getByTestId('mode-quotidien').click(); await page.waitForTimeout(300);
 });
 
+await test('Cantine et services : « tous » coche la ligne de l’élève, la colonne du jour et toute la classe, et redevient « aucun »', async () => {
+  await go('#/services?t=semaine'); await page.waitForTimeout(200);
+  const card = page.locator('section.card').filter({ has: page.getByTestId('svc-all-class') }).first();
+  const boxes = card.getByTestId('svc-check');
+  const nDays = await card.getByTestId('svc-all-day').count();
+  if ((await card.getByTestId('svc-all-student').first().innerText()).trim() === 'aucun') { await card.getByTestId('svc-all-student').first().click(); await page.waitForTimeout(400); }
+  eq((await card.getByTestId('svc-all-student').first().innerText()).trim(), 'tous', 'bouton « tous »');
+  await card.getByTestId('svc-all-student').first().click(); await page.waitForTimeout(400);
+  for (let i = 0; i < nDays; i++) assert(await boxes.nth(i).isChecked(), `élève coché jour ${i + 1}`);
+  eq((await card.getByTestId('svc-all-student').first().innerText()).trim(), 'aucun', 'devient « aucun »');
+  await card.getByTestId('svc-all-student').first().click(); await page.waitForTimeout(400);
+  assert(!(await boxes.first().isChecked()), 'ligne décochée');
+  if ((await card.getByTestId('svc-all-day').first().innerText()).trim() === 'aucun') { await card.getByTestId('svc-all-day').first().click(); await page.waitForTimeout(400); }
+  await card.getByTestId('svc-all-day').first().click(); await page.waitForTimeout(400);
+  const n = await boxes.count();
+  for (let i = 0; i < n; i += nDays) assert(await boxes.nth(i).isChecked(), 'colonne du premier jour cochée');
+  if ((await card.getByTestId('svc-all-class').innerText()).includes('décocher')) { await card.getByTestId('svc-all-class').click(); await page.waitForTimeout(400); }
+  await card.getByTestId('svc-all-class').click(); await page.waitForTimeout(400);
+  for (let i = 0; i < n; i++) assert(await boxes.nth(i).isChecked(), 'toute la classe cochée');
+  await card.getByTestId('svc-all-class').click(); await page.waitForTimeout(400);
+  for (let i = 0; i < n; i++) assert(!(await boxes.nth(i).isChecked()), 'tout décoché');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);
