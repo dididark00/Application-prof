@@ -360,6 +360,12 @@ await test('Cantine et services : « tous » coche la ligne de l’élève, la c
   for (let i = 0; i < n; i++) assert(await boxes.nth(i).isChecked(), 'toute la classe cochée');
   await card.getByTestId('svc-all-class').click(); await page.waitForTimeout(400);
   for (let i = 0; i < n; i++) assert(!(await boxes.nth(i).isChecked()), 'tout décoché');
+  const before = await page.getByTestId('svc-all-class').count();
+  await page.getByTestId('svc-edit-list').click();
+  const ta = page.getByTestId('svc-list'); await ta.fill((await ta.inputValue()) + '\nAtelier du soir (test)');
+  await page.getByTestId('svc-list-save').click(); await page.waitForTimeout(400);
+  eq(await page.getByTestId('svc-all-class').count(), before + 1, 'service ajouté depuis la page');
+  assert(await page.getByRole('heading', { name: 'Atelier du soir (test)' }).isVisible(), 'nouveau service affiché');
 });
 
 await test('Dates tapées au clavier : l’année se tape en entier (pas de saut après 2 chiffres)', async () => {
@@ -373,6 +379,26 @@ await test('Dates tapées au clavier : l’année se tape en entier (pas de saut
   const hash = await page.evaluate(() => location.hash);
   assert(hash.includes(`d=${typed}`), `jour atteint en tapant la date complète (${hash})`);
   assert(!/d=0/.test(hash), 'jamais d’année partielle');
+});
+
+await test('Menu regroupé : Préparer en 4 groupes (menu, onglets, « Plus »), toutes les pages toujours accessibles', async () => {
+  await go('#/sequences');
+  const groups = page.getByTestId('subtabs-groups').locator('a');
+  eq(JSON.stringify(await groups.allInnerTexts()), JSON.stringify(['Mon année', 'Séquences et séances', 'Mes ressources', 'Créer']), 'groupes de Préparer');
+  const pages = await page.locator('.subtabs-wrap > nav.subtabs:not(.subtabs-groups) a').allInnerTexts();
+  eq(JSON.stringify(pages), JSON.stringify(['Séquences', 'Fiches de séance', 'Leçons']), 'pages du groupe affiché');
+  await groups.filter({ hasText: 'Créer' }).click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => location.hash)).startsWith('#/atelier'), 'le groupe ouvre sa première page');
+  const side = page.locator('#sidebar');
+  assert(await side.getByRole('link', { name: 'Générateur EPS' }).isVisible(), 'groupe courant ouvert dans le menu');
+  assert(!(await side.getByRole('link', { name: 'Manuels' }).count()), 'les autres groupes sont repliés');
+  await side.getByRole('button', { name: /Mes ressources/ }).click(); await page.waitForTimeout(200);
+  await side.getByRole('link', { name: 'Manuels' }).click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => location.hash)).startsWith('#/manuels'), 'page atteinte depuis un groupe déplié');
+  await go('#/plus');
+  assert((await page.locator('.more-grp').allInnerTexts()).map(x => x.toLowerCase()).includes('mon année'), 'groupes dans « Plus »');
+  const n = await S(`const R = await import('./js/router.js'); return R.visibleRubriques().flatMap(r => r.sous).length;`);
+  eq(await page.locator('[data-testid=more-sections] .more-list a').count(), n, 'aucune page perdue');
 });
 
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {

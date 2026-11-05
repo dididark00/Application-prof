@@ -98,7 +98,8 @@ function weekPlan(cls) {
       onclick: async () => { await setMany(pairs, !on, on ? labelOff : labelOn); toast(on ? labelOff : labelOn); } }, on ? 'aucun' : 'tous');
   };
   return h('div', { class: 'stack' },
-    h('p', { class: 'card notice' }, 'C’est ici que l’on inscrit les élèves : cochez, pour chaque service, les jours habituels de chaque élève. « tous » coche toute la ligne (l’élève tous les jours) ou toute la colonne (toute la classe ce jour-là) ; s’il est déjà tout coché, il devient « aucun » pour tout décocher. Les changements ponctuels (un jour sans cantine, une sortie…) se notent ensuite dans la vue « Jour », sans toucher à la semaine type. Liste des services (cantine, étude, garderie…) modifiable dans Réglages › Documents et confidentialité.'),
+    h('p', { class: 'card notice' }, 'C’est ici que l’on inscrit les élèves : cochez, pour chaque service, les jours habituels de chaque élève. « tous » coche toute la ligne (l’élève tous les jours) ou toute la colonne (toute la classe ce jour-là) ; s’il est déjà tout coché, il devient « aucun » pour tout décocher. Les changements ponctuels (un jour sans cantine, une sortie…) se notent ensuite dans la vue « Jour », sans toucher à la semaine type.'),
+    h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'svc-edit-list', onclick: editServices }, 'Modifier la liste des services…')),
     V.services().map(svc => {
       const everything = ids.flatMap(sid => days.map(d => [sid, svc, d]));
       return h('section', { class: 'card' },
@@ -148,4 +149,15 @@ function departureException(cls, date, r) {
     else await store.create('serviceexc', { classId: cls.id, date, studentId: r.s.id, service: '__départ', present: true, note: note.value.trim() }, 'Exception de sortie');
   } });
   modal({ title: `Sortie de ${r.s.firstName} le ${model.frShort(date)}`, body: h('div', { class: 'form' }, field('Consigne pour ce jour', note)), actions });
+}
+
+/** Liste des services (cantine, étude, garderie…), modifiable ici même (aussi dans Réglages › Documents et confidentialité). */
+function editServices() {
+  const ta = h('textarea', { rows: 6, 'data-testid': 'svc-list', 'aria-label': 'Services, un par ligne' }, V.services().join('\n'));
+  modal({ title: 'Liste des services', body: h('div', { class: 'stack' }, h('p', { class: 'muted small' }, 'Un service par ligne (ex. Cantine, Étude, Garderie du soir). Retirer un service ne supprime pas les inscriptions déjà notées : elles réapparaissent si vous le remettez avec le même nom.'), ta),
+    actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, testid: 'svc-list-save', onClick: async () => {
+      const list = [...new Set(ta.value.split('\n').map(x => x.trim()).filter(Boolean))];
+      if (!list.length) { toast('Gardez au moins un service.'); return false; }
+      await store.setSettings({ services: list }); toast('Liste des services enregistrée');
+    } }] });
 }

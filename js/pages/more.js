@@ -1,7 +1,7 @@
 // Menu « Plus » du téléphone : toutes les rubriques et réglages, avec filtre et raccourcis.
 import { h, icon } from '../ui.js';
 import { pageHeader } from '../components.js';
-import { visibleRubriques, subHref } from '../router.js';
+import { visibleRubriques, subHref, groupsOf } from '../router.js';
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 let filterText = '';
@@ -22,7 +22,8 @@ export function render() {
     list.replaceChildren(...sections.map(({ r, sous }) => {
       const d = h('details', { class: 'card more-group', open: q ? true : opened[r.id] !== false, 'data-testid': 'more-group', ontoggle: (e) => { if (!q) saveOpen(r.id, e.target.open); } },
         h('summary', {}, h('h2', {}, icon(r.icone, 18), ' ', r.titre, h('span', { class: 'muted small' }, ` (${sous.length})`))),
-        h('ul', { class: 'more-list' }, sous.map(s => h('li', {}, h('a', { href: subHref(r, s) }, s.titre, s.route ? null : h('span', { class: 'later-tag' }, `ét. ${s.etape}`))))));
+        groupsOf({ ...r, sous }).map(g => [g.name ? h('h3', { class: 'more-grp' }, g.name) : null,
+          h('ul', { class: 'more-list' }, g.sous.map(s => h('li', {}, h('a', { href: subHref(r, s) }, s.titre, s.route ? null : h('span', { class: 'later-tag' }, `ét. ${s.etape}`)))))]));
       return d;
     }), sections.length ? '' : h('p', { class: 'muted' }, 'Aucune page ne correspond. Essayez la recherche dans vos données : ', h('a', { href: `#/recherche?q=${encodeURIComponent(filterText)}` }, 'Rechercher')));
   };

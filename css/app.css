@@ -1359,3 +1359,19 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
   .fs-steps ol { flex-direction: row; flex-wrap: wrap; }
   .fs-step { width: auto; }
 }
+
+/* ───────── Rubriques chargées regroupées (Préparer, Ma classe, Organisation) */
+.nav-grp { display: flex; flex-direction: column; }
+.nav-grp-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; margin: 6px 0 0; padding: 6px 10px; border: 0; background: none; font: inherit; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); text-align: left; cursor: pointer; border-radius: 0 6px 6px 0; min-height: 32px; }
+button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
+.nav-grp-head.here { color: var(--accent); cursor: default; }
+.nav-grp-n { font-weight: 600; letter-spacing: 0; text-transform: none; }
+.nav-grp-links .nav-sub { padding-left: 16px; }
+.subtabs-wrap { display: flex; flex-direction: column; gap: 6px; }
+.subtabs-groups { border-bottom: 0; gap: 6px; }
+.subtabs-groups a { border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+.subtabs-groups a.active { background: var(--nav-active); border-color: var(--accent); color: var(--accent); }
+.more-grp { margin: 10px 0 2px; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.subtabs-groups a { font-size: 1rem; font-weight: 700; }
+.subtabs-wrap > .subtabs:not(.subtabs-groups) { margin-left: 14px; padding-left: 10px; border-left: 3px solid var(--accent); border-bottom: 0; }
+.subtabs-wrap > .subtabs:not(.subtabs-groups) a { font-size: .88rem; }

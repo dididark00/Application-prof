@@ -40,6 +40,13 @@ export function visibleRubriques() {
   return RUBRIQUES.filter(r => !isHidden(r.id)).map(r => ({ ...r, sous: r.sous.filter(s => !isHidden(r.id, s.id)) }));
 }
 
+/** Sous-pages d'une rubrique regroupées (ordre de première apparition) ; `name` vaut null si la rubrique n'a pas de groupes. */
+export function groupsOf(rub) {
+  const out = [];
+  for (const s of rub.sous) { const name = s.groupe || null; let g = out.find(x => x.name === name); if (!g) out.push(g = { name, sous: [] }); g.sous.push(s); }
+  return out;
+}
+
 /** Toutes les pages (pour favoris et recherche). */
 export function allPages() {
   const out = [];

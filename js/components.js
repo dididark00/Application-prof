@@ -1,7 +1,7 @@
 import * as store from './store.js';
 import * as model from './model.js';
 import { h, icon, toast } from './ui.js';
-import { visibleRubriques, subHref, currentLocation } from './router.js';
+import { visibleRubriques, subHref, currentLocation, groupsOf } from './router.js';
 
 /** En-tête de page avec étoile de favori et actions. */
 export function pageHeader(title, { subtitle, favKey, actions = [] } = {}) {
@@ -27,8 +27,15 @@ export function subTabs() {
   const loc = currentLocation();
   const rub = visibleRubriques().find(r => r.id === loc.rub);
   if (!rub || rub.sous.length < 2) return null;
-  return h('nav', { class: 'subtabs', 'aria-label': rub.titre },
-    rub.sous.map(s => h('a', { href: subHref(rub, s), class: `${loc.sub === s.id ? 'active' : ''} ${s.route ? '' : 'later'}`, 'aria-current': loc.sub === s.id ? 'page' : null }, s.titre)));
+  const tab = (s) => h('a', { href: subHref(rub, s), class: `${loc.sub === s.id ? 'active' : ''} ${s.route ? '' : 'later'}`, 'aria-current': loc.sub === s.id ? 'page' : null }, s.titre);
+  const groups = groupsOf(rub);
+  if (groups.length < 2) return h('nav', { class: 'subtabs', 'aria-label': rub.titre }, rub.sous.map(tab));
+  // Rubrique chargée : les groupes en premier niveau, puis les pages du groupe affiché.
+  const cur = groups.find(g => g.sous.some(s => s.id === loc.sub)) || groups[0];
+  return h('div', { class: 'subtabs-wrap' },
+    h('nav', { class: 'subtabs subtabs-groups', 'aria-label': `${rub.titre} : groupes`, 'data-testid': 'subtabs-groups' },
+      groups.map(g => h('a', { href: subHref(rub, g.sous.find(s => s.route) || g.sous[0]), class: g === cur ? 'active' : '', 'aria-current': g === cur ? 'true' : null }, g.name))),
+    cur.sous.length > 1 ? h('nav', { class: 'subtabs', 'aria-label': cur.name }, cur.sous.map(tab)) : null);
 }
 
 /** Rappel quand aucune classe n'est configurée. */

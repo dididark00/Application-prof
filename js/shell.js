@@ -3,7 +3,7 @@ import * as store from './store.js';
 import * as model from './model.js';
 import { h, icon, toast } from './ui.js';
 import * as T from './timer.js';
-import { visibleRubriques, subHref, currentLocation, parseHash, allPages, navigate } from './router.js';
+import { visibleRubriques, subHref, currentLocation, parseHash, allPages, navigate, groupsOf } from './router.js';
 
 let opts = {};
 
@@ -19,6 +19,10 @@ export function refreshChrome() {
 }
 
 function hasDemo() { return store.all('class').some(c => c.demo) || store.all('student').some(s => s.demo); }
+
+const NAV_OPEN_KEY = 'classeur.navGroups';
+function navOpen() { try { return JSON.parse(localStorage.getItem(NAV_OPEN_KEY) || '{}'); } catch { return {}; } }
+function setNavOpen(key, v) { try { const o = navOpen(); o[key] = v; localStorage.setItem(NAV_OPEN_KEY, JSON.stringify(o)); } catch { /* préférence non conservée */ } }
 
 function renderSidebar() {
   const s = store.getSettings();
@@ -36,9 +40,19 @@ function renderSidebar() {
       const first = r.sous[0];
       return h('div', { class: `nav-rub ${open ? 'open' : ''}` },
         h('a', { class: `nav-main ${open ? 'active' : ''}`, href: first ? subHref(r, first) : '#/' , 'aria-current': open ? 'true' : null }, icon(r.icone), r.titre),
-        open ? h('div', { class: 'nav-subs' }, r.sous.map(sub =>
-          h('a', { class: `nav-sub ${loc.sub === sub.id ? 'active' : ''} ${sub.route ? '' : 'later'}`, href: subHref(r, sub) },
-            sub.titre, sub.route ? null : h('span', { class: 'later-tag', title: `Prévu à l’étape ${sub.etape}` }, `ét. ${sub.etape}`)))) : null);
+        open ? h('div', { class: 'nav-subs' }, groupsOf(r).map(g => {
+          const links = g.sous.map(sub => h('a', { class: `nav-sub ${loc.sub === sub.id ? 'active' : ''} ${sub.route ? '' : 'later'}`, href: subHref(r, sub), 'aria-current': loc.sub === sub.id ? 'page' : null },
+            sub.titre, sub.route ? null : h('span', { class: 'later-tag', title: `Prévu à l’étape ${sub.etape}` }, `ét. ${sub.etape}`)));
+          if (!g.name) return links;
+          const here = g.sous.some(x => x.id === loc.sub);
+          const key = `${r.id}|${g.name}`;
+          const isOpen = here || navOpen()[key] === true;
+          return h('div', { class: `nav-grp ${isOpen ? 'open' : ''}`, 'data-testid': 'nav-grp' },
+            here ? h('p', { class: 'nav-grp-head here' }, h('span', {}, g.name))
+              : h('button', { type: 'button', class: 'nav-grp-head', 'aria-expanded': String(isOpen), onclick: () => { setNavOpen(key, !isOpen); renderSidebar(); } },
+                h('span', {}, g.name), h('span', { class: 'nav-grp-n', 'aria-hidden': 'true' }, isOpen ? '▾' : `${g.sous.length} ▸`)),
+            isOpen ? h('div', { class: 'nav-grp-links' }, links) : null);
+        })) : null);
     })),
     h('div', { class: 'nav-bottom' },
       h('a', { class: `nav-main ${route.name === 'reglages' ? 'active' : ''}`, href: '#/reglages' }, icon('settings'), 'Réglages'),
