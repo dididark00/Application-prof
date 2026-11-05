@@ -257,6 +257,7 @@ export const ROADMAP = [
   R(5, '§20 Apparence', 'Cahier journal en deux panneaux (journée à gauche, activité choisie à droite, ♡ pour cocher, « x faites sur n », Exporter / Vider / Préparer regroupés dans « Plus ») et fiche de séance par étapes (sommaire avec l’état de chaque étape, barre des durées des phases, « Prête pour une visite x/10 »)', 'fait', 'Disposition au choix : « Deux panneaux » ou « Liste complète » ; sur téléphone, liste.'),
   R(5, '§20 Apparence', 'Polices du design Lavande intégrées à l’application : DM Sans (texte) et Bricolage Grotesque (titres), fonctionnent sans connexion', 'fait', 'Licence libre SIL OFL 1.1 (fichiers et licences dans fonts/) ; réduites aux caractères latins et français.'),
   R(5, '§11 Vie de classe', 'Cantine et services, semaine type : « tous » coche réellement toute la ligne de l’élève (corrigé : rien ne s’affichait), « tous » par jour pour toute la classe, « Toute la classe, tous les jours » ; chacun redevient « aucun » pour tout décocher', 'fait', 'Un seul enregistrement, annulable.'),
+  R(5, '§2 Ergonomie', 'Dates tapées au clavier : l’année se tape en entier (avant, la page changeait dès le 2e chiffre et le champ se fermait) ; la date est prise en compte à Entrée, en quittant le champ ou après une courte pause ; le calendrier reste immédiat', 'fait', 'Pour tous les champs de date de l’application.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

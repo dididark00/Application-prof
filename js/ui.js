@@ -1,12 +1,47 @@
 // Petits outils d'interface, sans framework. Le texte est toujours inséré via
 // textContent : aucune donnée saisie n'est interprétée comme du HTML.
 
+/**
+ * Pendant qu'on tape une année dans un champ date, le navigateur signale déjà « 0002 », « 0020 », « 0202 »…
+ * Ces valeurs partielles sont ignorées : rien n'est enregistré ni redessiné avant l'année complète.
+ */
+export function partialDate(el) {
+  return !!el && /^(date|month|datetime-local)$/.test(el.type) && !!el.value && Number(el.value.slice(0, 4)) < 1900;
+}
+
+const DATE_IDLE_MS = 1200;
+/**
+ * Champ date en cours de saisie au clavier : on attend que la date soit finie (sortie du champ, Entrée,
+ * ou une courte pause) avant d'agir, sinon la page se redessinerait au milieu de la frappe.
+ * Hors saisie (sélecteur de date fermé, champ non actif), l'action est immédiate.
+ */
+function dateSafe(el, fn) {
+  let timer = null, last = null;
+  const fire = () => { clearTimeout(timer); timer = null; if (!last || partialDate(el)) return; const ev = last; last = null; fn(ev); };
+  if (!el.dataset.dateSafe) {
+    el.dataset.dateSafe = '1';
+    el.addEventListener('blur', () => el.dispatchEvent(new CustomEvent('datesafe-flush')));
+    el.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') el.dispatchEvent(new CustomEvent('datesafe-flush'));
+      else el._typedAt = Date.now();
+    });
+  }
+  el.addEventListener('datesafe-flush', fire);
+  return (ev) => {
+    if (partialDate(el)) return;
+    const typing = /^(date|month|datetime-local)$/.test(el.type) && Date.now() - (el._typedAt || 0) < DATE_IDLE_MS;
+    if (!typing) { fn(ev); return; }
+    last = ev; clearTimeout(timer); timer = setTimeout(fire, DATE_IDLE_MS);
+  };
+}
+
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
     if (v == null || v === false) continue;
     if (k === 'class') el.className = v;
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if ((k === 'onchange' || k === 'oninput') && tag === 'input' && typeof v === 'function') el.addEventListener(k.slice(2), dateSafe(el, v));
     else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
     else if (k === 'dataset') Object.assign(el.dataset, v);
     else if (k === 'value') el.value = v;

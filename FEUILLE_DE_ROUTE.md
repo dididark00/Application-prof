@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (198) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 211 entrées.
+Légende : ✅ Réalisé (199) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 212 entrées.
 
 ## Étape 1 — Socle
 
@@ -239,3 +239,4 @@ Légende : ✅ Réalisé (198) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §20 Apparence | Cahier journal en deux panneaux (journée à gauche, activité choisie à droite, ♡ pour cocher, « x faites sur n », Exporter / Vider / Préparer regroupés dans « Plus ») et fiche de séance par étapes (sommaire avec l’état de chaque étape, barre des durées des phases, « Prête pour une visite x/10 ») | Disposition au choix : « Deux panneaux » ou « Liste complète » ; sur téléphone, liste. |
 | ✅ | §20 Apparence | Polices du design Lavande intégrées à l’application : DM Sans (texte) et Bricolage Grotesque (titres), fonctionnent sans connexion | Licence libre SIL OFL 1.1 (fichiers et licences dans fonts/) ; réduites aux caractères latins et français. |
 | ✅ | §11 Vie de classe | Cantine et services, semaine type : « tous » coche réellement toute la ligne de l’élève (corrigé : rien ne s’affichait), « tous » par jour pour toute la classe, « Toute la classe, tous les jours » ; chacun redevient « aucun » pour tout décocher | Un seul enregistrement, annulable. |
+| ✅ | §2 Ergonomie | Dates tapées au clavier : l’année se tape en entier (avant, la page changeait dès le 2e chiffre et le champ se fermait) ; la date est prise en compte à Entrée, en quittant le champ ou après une courte pause ; le calendrier reste immédiat | Pour tous les champs de date de l’application. |

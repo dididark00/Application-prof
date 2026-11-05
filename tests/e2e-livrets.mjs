@@ -362,6 +362,19 @@ await test('Cantine et services : « tous » coche la ligne de l’élève, la c
   for (let i = 0; i < n; i++) assert(!(await boxes.nth(i).isChecked()), 'tout décoché');
 });
 
+await test('Dates tapées au clavier : l’année se tape en entier (pas de saut après 2 chiffres)', async () => {
+  await go('#/cahier?d=2026-11-05');
+  const inp = page.getByTestId('day-date');
+  await inp.focus(); await page.keyboard.press('Control+a').catch(() => {});
+  for (const k of '10112026') { await page.keyboard.press(k); await page.waitForTimeout(60); }
+  const typed = await inp.inputValue();
+  assert(/^2026-(10-11|11-10)$/.test(typed), `année tapée en entier sans perdre le champ (${typed})`);
+  await inp.press('Enter'); await page.waitForTimeout(400);
+  const hash = await page.evaluate(() => location.hash);
+  assert(hash.includes(`d=${typed}`), `jour atteint en tapant la date complète (${hash})`);
+  assert(!/d=0/.test(hash), 'jamais d’année partielle');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

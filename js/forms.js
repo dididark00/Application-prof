@@ -1,6 +1,6 @@
 // Champs à enregistrement automatique (à la sortie du champ) et sélecteurs réutilisables.
 import * as store from './store.js';
-import { h, modal, field, icon, toast } from './ui.js';
+import { h, modal, field, icon, toast, partialDate } from './ui.js';
 
 function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = `${Math.min(ta.scrollHeight + 2, 600)}px`; }
 
@@ -28,7 +28,7 @@ export function bound({ label, value, onSave, type = 'textarea', placeholder = '
     return h('label', { class: 'chip' }, input, label);
   } else {
     input = h('input', { type, value: value ?? '', placeholder, 'data-testid': testid, min: type === 'number' ? 0 : null });
-    input.addEventListener('change', () => save(type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value));
+    input.addEventListener('change', () => partialDate(input) || save(type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value));
   }
   return label ? field(label, input, hint) : input;
 }
