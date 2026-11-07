@@ -58,7 +58,11 @@ await test('Le fichier de synchronisation est chiffré (aucun nom d’élève li
   assert(fileA.name.startsWith('classeur-ordinateur-ecole-') && fileA.name.endsWith('.classeur'), `nom : ${fileA.name}`);
   const head = JSON.parse(fileA.text);
   eq(head.format, 'classeur-synchro', 'format'); eq(head.counts.records, nA.records, 'nombre d’éléments');
-  for (const n of ['Lou', 'Nino', 'CE2 (démo)']) assert(!fileA.text.includes(n), `« ${n} » ne doit pas apparaître en clair`);
+  // Partie lisible (tout sauf les octets chiffrés, qui peuvent contenir « Lou » par pur hasard en base64).
+  const readable = JSON.stringify({ ...head, payload: undefined, iv: undefined, kdf: { ...head.kdf, salt: undefined } });
+  for (const n of ['Lou', 'Nino', 'CE2 (démo)']) assert(!readable.includes(n), `« ${n} » ne doit pas apparaître en clair`);
+  assert(/^[A-Za-z0-9+/=]+$/.test(head.payload) && head.payload.length > 100, 'contenu chiffré (base64 opaque)');
+  assert(!atob(head.payload.slice(0, 4000)).includes('firstName'), 'aucun champ lisible dans le contenu chiffré');
   const err = await S(B, `try { await SY.readFile(new File([a], 'x.classeur'), 'mauvais-mot-de-passe'); return 'lu'; } catch (e) { return e.message; }`, fileA.text);
   assert(err.includes('Mot de passe de synchronisation incorrect'), err);
 });

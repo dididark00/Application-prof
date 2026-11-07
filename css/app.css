@@ -448,7 +448,15 @@ details.after summary { cursor: pointer; font-weight: 600; font-size: .9rem; mar
 .week { display: grid; gap: 10px; overflow-x: auto; }
 .week-day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .week-title { font-weight: 700; text-decoration: none; text-transform: capitalize; }
-.week-entry { display: flex; flex-direction: column; text-decoration: none; color: var(--ink); border-left: 4px solid #777; padding: 4px 8px; background: var(--surface-2); border-radius: 4px; font-size: .9rem; }
+.week-entry { --c: #777; display: flex; flex-direction: column; gap: 1px; text-decoration: none; color: var(--ink); border-left: 6px solid var(--c); padding: 6px 10px; background: color-mix(in srgb, var(--c) 22%, var(--surface)); border-radius: 6px 12px 12px 6px; font-size: .9rem; }
+.week-entry:hover { background: color-mix(in srgb, var(--c) 34%, var(--surface)); }
+.week-entry .week-meta { font-size: .78rem; color: var(--ink-2); }
+.week-entry .week-meta b { color: var(--ink); }
+.week-entry .week-t { font-weight: 600; }
+:root[data-mode="sombre"] .week-entry { background: color-mix(in srgb, var(--c) 30%, var(--surface)); }
+.subject-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; list-style: none; margin: 0; padding: 0; font-size: .85rem; color: var(--ink-2); }
+.subject-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.subject-legend .dot { width: 12px; height: 12px; border-radius: 4px; background: var(--c); }
 .week-entry.status-reportée, .week-entry.status-annulée { opacity: .55; text-decoration: line-through; }
 .today-list { list-style: none; padding: 0; margin: 0; }
 .today-list li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
@@ -1408,3 +1416,13 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 @media (max-width: 640px) { table[data-cards] td:first-child:has(> .avatar:only-child) { flex: 0 0 auto; } }
 .nav-grp-n { flex: none; white-space: nowrap; } .nav-grp-head > span:first-child { min-width: 0; }
 [data-theme="lavande"] .tip-card { border: 0; border-radius: 20px; padding: 14px 18px; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), color-mix(in srgb, var(--accent) 16%, var(--surface))); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
+
+/* ───────── Glisser-déposer dans la journée */
+.cj-card.can-drag { cursor: grab; user-select: none; }
+.cj-card.can-drag .cj-pick { cursor: grab; }
+.cj-card.dragging { opacity: .35; }
+.cj-ghost { position: fixed; z-index: 1000; pointer-events: none; cursor: grabbing; transform: rotate(-1.5deg); box-shadow: 0 18px 40px rgba(60, 40, 110, .3) !important; opacity: .95; }
+.cj-card.drop-on { outline: 3px dashed var(--accent); outline-offset: 2px; }
+.tl-break.drop-on, .cj-time.drop-on { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 10px; }
+.cj-time { border-radius: 10px; }
+.btn.on { border-color: var(--accent); color: var(--accent); }

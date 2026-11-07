@@ -56,6 +56,8 @@ function dayView(cls, date, nav) {
   const wk = per ? model.weeksOfPeriod(per).find(w => date >= w.monday && date <= model.addDays(w.monday, 6)) : null;
   const multi = (cls.levels || []).length > 1;
   const inConflict = new Set(plan.warnings.flatMap(w => [w.a.key, w.b.key]));
+  // Annulées / reportées : masquées à l'écran si on le souhaite (jamais à l'impression ni dans les exports).
+  const vplan = offHidden() ? { ...plan, entries: plan.entries.filter(e => !isOff(e)) } : plan;
   const hwGiven = store.all('homework').filter(x => x.classId === cls.id && x.givenDate === date);
   const hwDue = store.all('homework').filter(x => x.classId === cls.id && x.dueDate === date);
   const lessons = store.all('lesson').filter(l => l.classId === cls.id && (l.distributions || []).some(d => d.date === date));
@@ -66,7 +68,7 @@ function dayView(cls, date, nav) {
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'add-activity', onclick: () => activityDialog(cls, null, date) }, icon('plus', 16), 'Activité'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-day', onclick: () => printDayAsk(cls, date, plan) }, icon('print', 16), 'Imprimer'),
         journalMore(cls, date)] }),
-    subTabs(), nav, h('div', { class: 'row wrap cj-tools' }, detailToggle(), layoutToggle(), progressOf(cls, plan)),
+    subTabs(), nav, h('div', { class: 'row wrap cj-tools' }, detailToggle(), layoutToggle(), offToggle(plan), progressOf(cls, plan)),
     prepareBanner(cls, date),
     !plan.school.ok ? h('p', { class: 'banner' }, plan.school.reason) : null,
     plan.school.ok && !plan.myDay ? h('p', { class: 'banner info' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
@@ -74,13 +76,120 @@ function dayView(cls, date, nav) {
       h('ul', {}, plan.warnings.map(w => h('li', {}, w.message, ' ',
         [w.a, w.b].filter(x => x.kind !== 'event' && x.status === 'prévue').map(x => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'propose-postpone', onclick: () => postponeDialog(cls, x) }, `Reporter « ${x.title} »`))))),
       h('p', { class: 'muted small' }, 'Rien n’est déplacé automatiquement : choisissez ce que vous reportez.')) : null,
-    plan.entries.length && split() ? splitView(cls, date, plan, inConflict)
-    : plan.entries.length ? (multi ? parallel(cls, plan, inConflict) : PL.otherGroups(cls, plan.entries).length ? sideBySide(cls, plan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, plan.entries.map(e => entryCard(cls, e, inConflict))))
+    vplan.entries.length && split() ? splitView(cls, date, vplan, inConflict)
+    : vplan.entries.length ? (multi ? parallel(cls, vplan, inConflict) : PL.otherGroups(cls, vplan.entries).length ? sideBySide(cls, vplan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, vplan.entries.map(e => entryCard(cls, e, inConflict))))
+    : plan.entries.length ? h('p', { class: 'muted' }, 'Toutes les activités du jour sont annulées ou reportées (masquées).')
       : emptyState(plan.school.ok ? 'Aucun créneau ce jour' : 'Pas de classe', plan.school.ok ? 'Créez l’emploi du temps (Planifier › Emploi du temps) ou ajoutez une activité ponctuelle.' : ''),
     (hwGiven.length || hwDue.length || lessons.length) ? h('section', { class: 'card' }, h('h2', {}, 'Devoirs et leçons du jour'),
       hwDue.length ? h('p', {}, h('strong', {}, 'À faire pour aujourd’hui : '), hwDue.map(x => x.title).join(' ; ')) : null,
       hwGiven.length ? h('p', {}, h('strong', {}, 'Donnés aujourd’hui : '), hwGiven.map(x => `${x.title} (pour le ${model.frShort(x.dueDate)})`).join(' ; ')) : null,
       lessons.length ? h('p', {}, h('strong', {}, 'Leçons distribuées : '), lessons.map(l => `${l.subject} n° ${l.number} ${l.title}`).join(' ; ')) : null) : null);
+}
+
+// ───────── Annulées / reportées : masquer ou revoir
+const OFF_KEY = 'classeur.cahier.off';
+const isOff = (e) => e.status === 'annulée' || e.status === 'reportée';
+const offHidden = () => { try { return localStorage.getItem(OFF_KEY) !== 'voir'; } catch { return true; } };
+function offToggle(plan) {
+  const n = plan.entries.filter(isOff).length;
+  if (!n) return null;
+  const hid = offHidden();
+  return h('button', { type: 'button', class: `btn btn-small ${hid ? '' : 'on'}`, 'data-testid': 'toggle-off', 'aria-pressed': String(!hid),
+    onclick: () => { try { localStorage.setItem(OFF_KEY, hid ? 'voir' : 'masquer'); } catch { /* préférence non conservée */ } rerender(); } },
+    hid ? `Voir les annulées / reportées (${n})` : `Masquer les annulées / reportées (${n})`);
+}
+
+/** Semaine : légende des matières (couleurs) et bouton annulées / reportées. */
+function weekTools(cls, days) {
+  const all = days.flatMap(d => PL.dayPlan(cls, d).entries);
+  const subjects = [...new Set(all.filter(e => e.kind !== 'event' && e.subject).map(e => e.subject))].sort((a, b) => a.localeCompare(b, 'fr'));
+  return h('div', { class: 'row wrap cj-tools' },
+    subjects.length ? h('ul', { class: 'subject-legend', 'aria-label': 'Couleurs des matières', 'data-testid': 'subject-legend' }, subjects.map(sj => {
+      const li = h('li', {}, h('span', { class: 'dot', 'aria-hidden': 'true' }), sj); li.style.setProperty('--c', model.subjectColor(sj)); return li;
+    })) : null,
+    offToggle({ entries: all }));
+}
+
+// ───────── Glisser-déposer dans la journée (souris, stylet ou doigt appuyé)
+const toMinutes = (t) => { const [a, b] = (t || '0:0').split(':').map(Number); return a * 60 + b; };
+const toHM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const movable = (e) => !e.allDay && e.status !== 'faite' && e.status !== 'partielle';
+
+/** Déplace une activité en gardant sa durée. */
+async function moveTo(cls, e, start, label) {
+  const d = toMinutes(e.end) - toMinutes(e.start);
+  const s = toMinutes(start);
+  if (s + d > 24 * 60) return toast('Impossible : l’activité finirait après minuit.');
+  await PL.patchEntry(e, cls, { start: toHM(s), end: toHM(s + d) }, label);
+  selected = { date: e.date, key: null, start: toHM(s), title: e.title };
+  toast(`« ${e.title} » : ${toHM(s)}–${toHM(s + d)} (la flèche Annuler défait le déplacement)`);
+}
+/** Échange les créneaux de deux activités (chacune prend l'horaire de l'autre). */
+async function swap(cls, a, b) {
+  const [as, ae, bs, be] = [a.start, a.end, b.start, b.end];
+  await PL.patchEntry(a, cls, { start: bs, end: be }, `Échange : « ${a.title} » ↔ « ${b.title} »`);
+  // b peut avoir changé de clé si a était un créneau matérialisé : on relit le plan
+  const nb = PL.dayPlan(cls, a.date).entries.find(x => x.key === b.key) || b;
+  await PL.patchEntry(nb, cls, { start: as, end: ae }, `Échange : « ${a.title} » ↔ « ${b.title} »`);
+  selected = { date: a.date, key: null, start: bs, title: a.title };
+  toast(`Échangées : « ${a.title} » ${bs}–${be} · « ${b.title} » ${as}–${ae}`);
+}
+
+function draggable(card, cls, e, all) {
+  if (!movable(e)) return;
+  card.classList.add('can-drag');
+  card.title = 'Rester appuyé et glisser : sur une activité pour échanger, sur une pause ou une heure pour déplacer';
+  let start = null, ghost = null, target = null, timer = null, armed = false;
+  const clear = () => { document.querySelectorAll('.drop-on').forEach(x => x.classList.remove('drop-on')); };
+  const findTarget = (x, y) => {
+    ghost && (ghost.style.visibility = 'hidden');
+    const el = document.elementFromPoint(x, y);
+    ghost && (ghost.style.visibility = '');
+    const c = el?.closest('.cj-card'); if (c && c !== card && c.dataset.key) return { el: c, kind: 'swap', key: c.dataset.key };
+    const br = el?.closest('.tl-break'); if (br) return { el: br, kind: 'time', time: br.dataset.start, label: `pause de ${br.dataset.start}` };
+    const row = el?.closest('.cj-row'); if (row && row.dataset.start) return { el: row.querySelector('.cj-time'), kind: 'time', time: row.dataset.start, label: row.dataset.start };
+    return null;
+  };
+  const begin = (ev) => {
+    armed = true; card.setPointerCapture?.(ev.pointerId);
+    const r = card.getBoundingClientRect();
+    ghost = card.cloneNode(true); ghost.classList.add('cj-ghost'); ghost.removeAttribute('data-testid');
+    ghost.querySelectorAll('[data-testid]').forEach(x => x.removeAttribute('data-testid'));
+    Object.assign(ghost.style, { width: `${r.width}px`, left: `${r.left}px`, top: `${r.top}px` });
+    ghost.dataset.dx = String(ev.clientX - r.left); ghost.dataset.dy = String(ev.clientY - r.top);
+    document.body.append(ghost); card.classList.add('dragging');
+  };
+  card.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0 || ev.target.closest('.cj-check')) return;
+    start = { x: ev.clientX, y: ev.clientY, id: ev.pointerId };
+    // Doigt : il faut rester appuyé un instant (sinon on fait défiler la page). Souris : il suffit de bouger.
+    if (ev.pointerType === 'touch') timer = setTimeout(() => begin(ev), 350);
+  });
+  card.addEventListener('pointermove', (ev) => {
+    if (!start) return;
+    if (!armed) {
+      if (ev.pointerType === 'touch') { if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 8) { clearTimeout(timer); start = null; } return; }
+      if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 6) return;
+      begin(ev);
+    }
+    ev.preventDefault();
+    ghost.style.left = `${ev.clientX - Number(ghost.dataset.dx)}px`; ghost.style.top = `${ev.clientY - Number(ghost.dataset.dy)}px`;
+    clear(); target = findTarget(ev.clientX, ev.clientY); target?.el.classList.add('drop-on');
+  });
+  const end = async (ev, cancel = false) => {
+    clearTimeout(timer);
+    if (!armed) { start = null; return; }
+    armed = false; start = null; ghost?.remove(); ghost = null; card.classList.remove('dragging'); clear();
+    // Le clic qui suit un glisser ne doit pas sélectionner la carte.
+    card.addEventListener('click', (x) => { x.stopPropagation(); x.preventDefault(); }, { capture: true, once: true });
+    const t = target; target = null;
+    if (cancel || !t) return;
+    if (t.kind === 'swap') { const other = all.find(x => x.key === t.key); if (other && movable(other)) await swap(cls, e, other); else toast('Cette activité ne se déplace pas (déjà faite ou sur toute la journée).'); }
+    else if (t.time && t.time !== e.start) await moveTo(cls, e, t.time, `« ${e.title} » déplacée à ${t.time}`);
+  };
+  card.addEventListener('pointerup', (ev) => end(ev));
+  card.addEventListener('pointercancel', (ev) => end(ev, true));
+  card.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && armed) end(ev, true); });
 }
 
 // ───────── Deux panneaux : la journée à gauche, l'activité choisie à droite (écran large)
@@ -130,9 +239,9 @@ function splitView(cls, date, plan, inConflict) {
   const rows = [];
   clusters.forEach((c, i) => {
     const prev = clusters[i - 1];
-    if (prev && !prev.items[0].allDay && toMin(c.start) - toMin(prev.end) >= 10) rows.push(h('div', { class: 'tl-break' }, h('span', {}), `pause · ${toMin(c.start) - toMin(prev.end)} min`, h('span', {})));
-    rows.push(h('div', { class: 'cj-row' }, h('span', { class: 'cj-time' }, c.items[0].allDay ? 'Journée' : c.start),
-      h('div', { class: 'cj-cards', style: { gridTemplateColumns: `repeat(${c.items.length}, minmax(0, 1fr))` } }, c.items.map(e => tlCard(cls, e, e === cur, inConflict)))));
+    if (prev && !prev.items[0].allDay && toMin(c.start) - toMin(prev.end) >= 10) rows.push(h('div', { class: 'tl-break', 'data-start': prev.end, 'data-testid': 'tl-break' }, h('span', {}), `pause · ${toMin(c.start) - toMin(prev.end)} min`, h('span', {})));
+    rows.push(h('div', { class: 'cj-row', 'data-start': c.items[0].allDay ? '' : c.start }, h('span', { class: 'cj-time' }, c.items[0].allDay ? 'Journée' : c.start),
+      h('div', { class: 'cj-cards', style: { gridTemplateColumns: `repeat(${c.items.length}, minmax(0, 1fr))` } }, c.items.map(e => { const k = tlCard(cls, e, e === cur, inConflict); draggable(k, cls, e, plan.entries); return k; }))));
   });
   return h('div', { class: 'cj-split', 'data-testid': 'day-split' },
     h('section', { class: 'cj-timeline', 'aria-label': 'La journée' }, rows),
@@ -147,7 +256,7 @@ function tlCard(cls, e, on, inConflict) {
   const check = e.kind !== 'event' && e.status !== 'reportée' && e.status !== 'annulée'
     ? h('button', { type: 'button', class: `cj-check ${done ? 'on' : ''}`, 'data-testid': 'tl-check', 'aria-pressed': String(done), 'aria-label': done ? `« ${e.title} » faite : décocher` : `Marquer « ${e.title} » faite`,
       onclick: (ev) => { ev.stopPropagation(); PL.setStatus(e, cls, done ? 'prévue' : 'faite'); } }, done ? '♡' : '') : null;
-  const card = h('div', { class: `cj-card status-${e.status} ${on ? 'on' : ''} ${grp ? 'other' : ''} ${inConflict.has(e.key) ? 'conflict' : ''}`, 'data-testid': 'tl-card' },
+  const card = h('div', { class: `cj-card status-${e.status} ${on ? 'on' : ''} ${grp ? 'other' : ''} ${inConflict.has(e.key) ? 'conflict' : ''}`, 'data-testid': 'tl-card', 'data-key': e.key },
     h('button', { type: 'button', class: 'cj-pick', 'aria-current': on ? 'true' : null, 'aria-label': `${e.start}–${e.end} ${e.title} : afficher le détail`, onclick: select },
       h('span', { class: 'cj-meta' }, e.kind === 'event' ? 'Événement' : (e.subject || 'Activité'), grp ? h('span', { class: 'cj-grp' }, grp) : null, e.status !== 'prévue' && e.status !== 'faite' ? h('span', { class: 'cj-st' }, e.status) : null),
       h('span', { class: 'cj-title' }, e.title),
@@ -348,14 +457,19 @@ function weekView(cls, date, nav) {
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-dossier', onclick: () => printDocument(printWeekDossier(cls, monday)) }, icon('print', 16), 'Dossier de la semaine'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'clear-journal', onclick: () => clearDialog(cls, monday, 'semaine') }, 'Vider…')] }),
     subTabs(), nav,
+    weekTools(cls, days),
     prepareBanner(cls, monday),
     h('div', { class: 'week', style: { gridTemplateColumns: `repeat(${days.length}, minmax(160px, 1fr))` }, 'data-testid': 'week' }, days.map(d => {
       const p = PL.dayPlan(cls, d);
       return h('div', { class: 'week-day' }, h('a', { class: 'week-title', href: `#/cahier?d=${d}` }, model.frDate(d, { weekday: 'long', day: 'numeric' })),
         !p.myDay && p.school.ok ? h('p', { class: 'muted small' }, `jour de ${cls.binome?.name || 'la binôme'}`) : null,
         p.warnings.length ? badge(`${p.warnings.length} conflit(s)`, 'warn') : null,
-        p.school.ok || p.entries.length ? p.entries.map(e => h('a', { class: `week-entry status-${e.status}`, href: `#/cahier?d=${d}`, style: { borderLeftColor: model.subjectColor(e.subject) } },
-          h('span', { class: 'small muted' }, `${e.start} ${e.subject || ''}`), h('span', {}, e.title), e.status !== 'prévue' ? badge(e.status, PL.OCC_STATUS[e.status]) : null)) : h('p', { class: 'muted small' }, p.school.reason));
+        p.school.ok || p.entries.length ? p.entries.filter(e => !(offHidden() && isOff(e))).map(e => {
+          const a = h('a', { class: `week-entry status-${e.status} ${e.kind === 'event' ? 'is-event' : ''}`, href: `#/cahier?d=${d}`, 'data-testid': 'week-entry' },
+            h('span', { class: 'week-meta' }, h('b', {}, e.allDay ? 'Journée' : e.start), e.kind === 'event' ? ' Événement' : e.subject ? ` ${e.subject}` : ''), h('span', { class: 'week-t' }, e.title), e.status !== 'prévue' ? badge(e.status, PL.OCC_STATUS[e.status]) : null);
+          a.style.setProperty('--c', e.kind === 'event' ? '#7a5c8f' : model.subjectColor(e.subject));
+          return a;
+        }) : h('p', { class: 'muted small' }, p.school.reason));
     })),
     h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Matériel et photocopies de la semaine'),
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => printDocument(printMaterials(cls, days, `Matériel et photocopies — semaine du ${model.frDate(monday)}`)) }, icon('print', 14), 'Imprimer')),

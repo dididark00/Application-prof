@@ -420,6 +420,56 @@ await test('Tableaux sur téléphone : une carte par ligne avec le nom des colon
   await m.close();
 });
 
+await test('Cahier journal : glisser une activité (échanger, déplacer sur une heure) et masquer / revoir les annulées et reportées', async () => {
+  const d = await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js');
+    for (let k = 0; k < 40; k++) { const x = model.addDays('2026-11-16', k); const p = PL.dayPlan(cls, x); if (p.school.ok && p.entries.filter(e => e.kind !== 'event' && !e.allDay && e.status === 'prévue').length >= 3) return x; } return null;`);
+  assert(d, 'jour avec 3 activités');
+  await go(`#/cahier?d=${d}`);
+  await page.getByTestId('layout-panneaux').click(); await page.waitForTimeout(300);
+  const info = async () => page.evaluate(() => [...document.querySelectorAll('[data-testid=tl-card]')].map(c => ({ t: c.querySelector('.cj-title').textContent, time: c.closest('.cj-row').dataset.start })));
+  const before = await info();
+  const drag = async (from, to) => {
+    const a = await from.boundingBox(), b = await to.boundingBox();
+    await page.mouse.move(a.x + 20, a.y + a.height / 2); await page.mouse.down();
+    await page.mouse.move(a.x + 40, a.y + a.height / 2 + 10, { steps: 4 });
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 10 });
+    await page.mouse.up(); await page.waitForTimeout(600);
+  };
+  // échanger la 1re et la 3e
+  await drag(page.getByTestId('tl-card').nth(0), page.getByTestId('tl-card').nth(2));
+  const after = await info();
+  const t0 = after.find(x => x.t === before[0].t), t2 = after.find(x => x.t === before[2].t);
+  eq(t0.time, before[2].time, 'la 1re a pris l’horaire de la 3e');
+  eq(t2.time, before[0].time, 'la 3e a pris l’horaire de la 1re');
+  // déplacer la 2e sur l'heure de la (nouvelle) première ligne : côte à côte
+  const second = page.getByTestId('tl-card').filter({ hasText: before[1].t }).first();
+  const firstTime = page.locator('.cj-row .cj-time').first();
+  const target = await firstTime.innerText();
+  await drag(second, firstTime);
+  const moved = (await info()).find(x => x.t === before[1].t);
+  eq(moved.time, target, 'déplacée à l’heure choisie');
+  // un clic simple sélectionne toujours
+  await page.getByTestId('tl-card').nth(1).locator('.cj-pick').click(); await page.waitForTimeout(200);
+  assert(await page.getByTestId('entry').count() === 1, 'détail toujours affiché');
+  // annuler une activité puis la masquer / revoir
+  await page.getByTestId('entry').getByTestId('entry-more').click().catch(() => {});
+  await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js'); const e = PL.dayPlan(cls, a).entries.find(x => x.kind !== 'event' && x.status === 'prévue'); await PL.setStatus(e, cls, 'annulée'); return true;`, d);
+  await go('#/'); await go(`#/cahier?d=${d}`);
+  const n1 = await page.getByTestId('tl-card').count();
+  const btn = page.getByTestId('toggle-off');
+  assert((await btn.innerText()).includes('Voir'), 'masquées par défaut');
+  await btn.click(); await page.waitForTimeout(300);
+  eq(await page.getByTestId('tl-card').count(), n1 + 1, 'annulée réaffichée');
+  await page.getByTestId('toggle-off').click(); await page.waitForTimeout(300);
+  eq(await page.getByTestId('tl-card').count(), n1, 'annulée de nouveau masquée');
+  await page.getByTestId('view-semaine').click(); await page.waitForTimeout(400);
+  assert(await page.getByTestId('subject-legend').isVisible(), 'légende des matières en vue semaine');
+  const colors = await page.$$eval('[data-testid=week-entry]', els => [...new Set(els.map(e => e.style.getPropertyValue('--c')))]);
+  assert(colors.length >= 2, `couleurs par matière en vue semaine (${colors.join(', ')})`);
+  await page.getByTestId('view-jour').click(); await page.waitForTimeout(300);
+  await page.getByTestId('layout-liste').click();
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);
