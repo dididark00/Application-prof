@@ -269,6 +269,7 @@ export const ROADMAP = [
   R(5, '§2 Navigation', 'Aujourd’hui regroupé : Ma journée, Organiser, En classe', 'fait', ''),
   R(5, '§14 Exports', 'Dossier remplaçant en un clic : fiche d’accueil (horaires, routines, fonctionnement, sécurité, où trouver — textes gardés), contacts utiles, liste de la classe, emploi du temps, cahier journal des jours choisis, fiches de séance ; élèves à besoins particuliers seulement si on le coche, pour cette impression', 'fait', 'Organisation › Équipe et école › Dossiers remplaçant et visite.'),
   R(5, '§14 Exports', 'Dossier de visite (tuteur, inspection) : fiche de la séance observée, fiche de séquence, progression avec la séquence surlignée, cahier journal du jour ; bouton « Dossier de visite » sur chaque fiche de séance', 'fait', ''),
+  R(5, '§12 Organisation', 'Sécurité et obligations : exercices incendie et PPMS (risques majeurs, attentat-intrusion) notés avec date, heure, durée et observations, ou prévus dans l’agenda ; nombres attendus modifiables (note de la DSDEN) ; registre imprimable ; conseils d’école comptés depuis Réunions, lien 108 h et APC ; rappels sur l’accueil (incendie en retard) et en fin de période', 'fait', 'Par défaut : 2 incendie (le premier dans le mois de la rentrée), 1 PPMS de chaque type, 3 conseils d’école.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -346,6 +347,7 @@ export const RUBRIQUES = [
   { id: 'organisation', titre: 'Organisation', icone: 'briefcase', sous: [
     { id: 'reception', groupe: 'Équipe et école', titre: 'Boîte de réception', route: 'reception' },
     { id: 'reunions', groupe: 'Équipe et école', titre: 'Réunions et notes', route: 'reunions' },
+    { id: 'securite', groupe: 'Administratif', titre: 'Sécurité et obligations', route: 'securite' },
     { id: 'heures', groupe: 'Administratif', titre: '108 h et APC', route: 'heures' },
     { id: 'transmissions', groupe: 'Équipe et école', titre: 'Transmissions binôme', route: 'transmissions' },
     { id: 'dossiers', groupe: 'Équipe et école', titre: 'Dossiers remplaçant et visite', route: 'dossiers' },

@@ -2,6 +2,7 @@
 // à faire aujourd'hui, important, matériel à préparer, notes ; à droite la semaine et le plan du jour.
 // Tout vient des données déjà saisies (tâches, agenda, cahier journal) : rien n'est ressaisi.
 import * as store from '../store.js';
+import { safetyStatus } from './securite.js';
 import * as model from '../model.js';
 import * as PL from '../planning.js';
 import { h, icon, badge } from '../ui.js';
@@ -43,6 +44,7 @@ function moments(cls, today) {
         h('small', {}, earlier ? `dont ${earlier} des jours précédents · faite ou décaler la séquence` : 'faite, reportée ou annulée'))),
       (() => { const dow = new Date(`${today}T12:00:00`).getDay(); return dow === 5 || dow === 6 || dow === 0 ? h('a', { class: 'moment-row', href: '#/bilan-semaine', 'data-testid': 'moment-bilan' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan de la semaine'), h('small', {}, '10 minutes : clore, regarder le rythme, préparer la suite'))) : null; })(),
       (() => { const per = model.periodOfDate(store.get(cls.yearId), today); return per && model.addDays(per.end, -13) <= today ? h('a', { class: 'moment-row', href: '#/fin-periode', 'data-testid': 'moment-finperiode' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Fin de période'), h('small', {}, `jusqu’au ${model.frShort(per.end)} : évaluations, livrets, suite`))) : null; })(),
+      (() => { const late = safetyStatus(store.get(cls.yearId)).filter(x => x.late); return late.length ? h('a', { class: 'moment-row', href: '#/securite', 'data-testid': 'moment-securite' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Exercice incendie à faire'), h('small', {}, 'le premier se fait dans le mois qui suit la rentrée'))) : null; })(),
       h('a', { class: 'moment-row', href: '#/messages' }, h('span', { class: 'moment-title' }, h('strong', {}, unsigned ? `${unsigned} mot(s) à faire signer` : 'Carnet à jour'), h('small', {}, 'carnet de liaison'))),
       h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan du jour'), h('small', {}, 'deux lignes au cahier journal')))]));
 }

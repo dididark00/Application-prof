@@ -10,6 +10,7 @@ import { h, badge, icon } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { shiftDialog } from './cahier.js';
 import { livretEvals } from './livrets.js';
+import { safetyStatus } from './securite.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 const step = (state, title, body, action) => h('li', { class: `bl-step ${state}`, 'data-testid': 'bl-step', 'data-state': state },
@@ -126,6 +127,7 @@ function renderPeriod(cls, rerender) {
     step(n && r.withApp.length === n ? 'ok' : 'todo', `Appréciations du livret : ${r.withApp.length}/${n}`, r.finalized.length ? `${r.finalized.length} livret(s) marqué(s) finalisé(s)` : null,
       link('#/livrets', r.withApp.length === n ? 'Générer les livrets' : 'Écrire les appréciations', 'bl-livrets')),
     step(r.unsigned.length ? 'todo' : 'ok', r.unsigned.length ? `${plural(r.unsigned.length, 'mot')} du carnet pas encore signé${r.unsigned.length > 1 ? 's' : ''}` : 'Carnet de liaison à jour', null, r.unsigned.length ? link('#/messages', 'Carnet') : null),
+    (() => { const ss = safetyStatus(store.get(cls.yearId)); const miss = ss.filter(x => !x.ok && !x.planned.length); return step(miss.length ? 'todo' : 'ok', miss.length ? `Sécurité : ${miss.map(x => x.label.replace('Exercice ', '').replace('d’évacuation ', '')).join(', ')} à prévoir` : 'Exercices de sécurité faits ou prévus', null, link('#/securite', 'Sécurité')); })(),
     r.next ? step(r.nextSeqs.length ? 'ok' : 'todo', r.nextSeqs.length ? `Période ${pi + 2} : ${plural(r.nextSeqs.length, 'séquence')} déjà prévue${r.nextSeqs.length > 1 ? 's' : ''}` : `Période ${pi + 2} : aucune séquence encore rattachée`,
       'Programmations, progressions et séquences de la période suivante.', link('#/progressions', 'Préparer la suite')) : null];
   const todo = steps.filter(x => x?.dataset.state === 'todo').length;

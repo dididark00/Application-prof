@@ -1493,3 +1493,4 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .bl-step.ok .bl-body strong { color: var(--ink-2); }
 @media (max-width: 640px) { .bl-step { grid-template-columns: 30px minmax(0, 1fr); } .bl-step > .btn { grid-column: 2; justify-self: start; } }
 .prog-hl td { background: #efe9fd !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.num-input { width: 4.2em; } .drill-list li { padding: 4px 0; }

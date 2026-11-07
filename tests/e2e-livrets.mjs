@@ -595,6 +595,24 @@ await test('Dossiers : remplaçant (textes gardés, jours choisis, confidentiel 
   }
 });
 
+await test('Sécurité : exercice incendie noté (registre), PPMS prévu dans l’agenda, nombres attendus modifiables, fin de période', async () => {
+  await go('#/securite');
+  const fire = page.locator('[data-testid=drill-card][data-kind=incendie]');
+  await fire.getByTestId('drill-done').click();
+  await page.getByTestId('drill-date').fill('2026-09-15'); await page.getByTestId('drill-duration').fill('2 min 40');
+  await page.getByTestId('drill-save').click(); await page.waitForTimeout(400);
+  assert((await fire.innerText()).includes('2 min 40'), 'exercice noté');
+  const ai = page.locator('[data-testid=drill-card][data-kind=ppms-ai]');
+  await ai.getByTestId('drill-plan').click(); await page.getByTestId('drill-date').fill('2027-01-12'); await page.getByTestId('drill-save').click(); await page.waitForTimeout(400);
+  eq(await S(`return store.all('event').filter(e => !e.deletedAt && e.title === 'Exercice PPMS « attentat-intrusion »' && e.date === '2027-01-12').length;`), 1, 'ajouté à l’agenda');
+  await ai.getByTestId('drill-mark-done').click(); await page.getByTestId('drill-save').click(); await page.waitForTimeout(400);
+  assert((await ai.innerText()).includes('1/1'), 'PPMS noté comme fait');
+  await fire.locator('input[type=number]').fill('3'); await fire.locator('input[type=number]').dispatchEvent('change'); await page.waitForTimeout(400);
+  assert((await page.locator('[data-testid=drill-card][data-kind=incendie]').innerText()).includes('1/3'), 'nombre attendu modifiable');
+  await go('#/fin-periode');
+  assert((await page.getByTestId('bl-period').innerText()).includes('Sécurité'), 'rappel en fin de période');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

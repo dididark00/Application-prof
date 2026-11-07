@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (211) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 223 entrées.
+Légende : ✅ Réalisé (212) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 224 entrées.
 
 ## Étape 1 — Socle
 
@@ -251,3 +251,4 @@ Légende : ✅ Réalisé (211) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §2 Navigation | Aujourd’hui regroupé : Ma journée, Organiser, En classe |  |
 | ✅ | §14 Exports | Dossier remplaçant en un clic : fiche d’accueil (horaires, routines, fonctionnement, sécurité, où trouver — textes gardés), contacts utiles, liste de la classe, emploi du temps, cahier journal des jours choisis, fiches de séance ; élèves à besoins particuliers seulement si on le coche, pour cette impression | Organisation › Équipe et école › Dossiers remplaçant et visite. |
 | ✅ | §14 Exports | Dossier de visite (tuteur, inspection) : fiche de la séance observée, fiche de séquence, progression avec la séquence surlignée, cahier journal du jour ; bouton « Dossier de visite » sur chaque fiche de séance |  |
+| ✅ | §12 Organisation | Sécurité et obligations : exercices incendie et PPMS (risques majeurs, attentat-intrusion) notés avec date, heure, durée et observations, ou prévus dans l’agenda ; nombres attendus modifiables (note de la DSDEN) ; registre imprimable ; conseils d’école comptés depuis Réunions, lien 108 h et APC ; rappels sur l’accueil (incendie en retard) et en fin de période | Par défaut : 2 incendie (le premier dans le mois de la rentrée), 1 PPMS de chaque type, 3 conseils d’école. |
