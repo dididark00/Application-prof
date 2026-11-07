@@ -76,6 +76,7 @@ import * as Tuto from './tuto.js';
 import * as pEnClasse from './pages/enclasse.js';
 import * as pRegistre from './pages/registre.js';
 import * as pBilans from './pages/bilans.js';
+import * as pDossiers from './pages/dossiers.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -147,6 +148,7 @@ const ROUTES = {
   registre: pRegistre,
   'bilan-semaine': pBilans.week,
   'fin-periode': pBilans.period,
+  dossiers: pDossiers,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
   rdv: { render: pFam.renderRdv },

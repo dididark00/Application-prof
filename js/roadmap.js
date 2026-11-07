@@ -148,7 +148,7 @@ export const ROADMAP = [
   R(2, '§14 Exports', 'Impression EDT, cahier journal, préparations, séquences, progressions', 'fait'),
   R(3, '§14 Exports', 'Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans', 'fait'),
   R(4, '§14 Exports', 'Dossier de semaine ; finances ; étiquettes à taille réelle', 'fait', 'Cahier journal › semaine › « Dossier de la semaine » : semaine, matériel, fiches de séance et schémas EPS.'),
-  R(3, '§14 Exports', 'Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut', 'partiel', 'Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4).'),
+  R(3, '§14 Exports', 'Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut', 'fait', 'Impressions familles filtrées (bilans, rattrapage, listes) ; dossier remplaçant : rien de confidentiel sans le cocher.'),
 
   // ── §15 Fiabilité
   R(1, '§15 Fiabilité', 'Utilisable téléphone, tablette, ordinateur', 'fait'),
@@ -267,6 +267,8 @@ export const ROADMAP = [
   R(5, '§2 Aujourd’hui', 'Bilan de la semaine (rituel du vendredi) : faites / partielles / reportées / annulées / pas cochées avec « ♡ Faite » et « Décaler la séquence », matières en retard, semaine suivante (préparée ? créneaux sans fiche, photocopies) ; rappel sur l’accueil le vendredi et le week-end', 'fait', 'Navigation semaine par semaine ; chaque ligne mène à la page où l’on agit.'),
   R(5, '§9 Livrets', 'Assistant de fin de période : évaluations pas complètement saisies, rattrapages, élèves sans observation, séquences pas terminées, appréciations du livret, carnet, séquences de la période suivante ; rappel sur l’accueil les deux dernières semaines', 'fait', 'Lecture seule : rien n’est modifié depuis cette page.'),
   R(5, '§2 Navigation', 'Aujourd’hui regroupé : Ma journée, Organiser, En classe', 'fait', ''),
+  R(5, '§14 Exports', 'Dossier remplaçant en un clic : fiche d’accueil (horaires, routines, fonctionnement, sécurité, où trouver — textes gardés), contacts utiles, liste de la classe, emploi du temps, cahier journal des jours choisis, fiches de séance ; élèves à besoins particuliers seulement si on le coche, pour cette impression', 'fait', 'Organisation › Équipe et école › Dossiers remplaçant et visite.'),
+  R(5, '§14 Exports', 'Dossier de visite (tuteur, inspection) : fiche de la séance observée, fiche de séquence, progression avec la séquence surlignée, cahier journal du jour ; bouton « Dossier de visite » sur chaque fiche de séance', 'fait', ''),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -346,6 +348,7 @@ export const RUBRIQUES = [
     { id: 'reunions', groupe: 'Équipe et école', titre: 'Réunions et notes', route: 'reunions' },
     { id: 'heures', groupe: 'Administratif', titre: '108 h et APC', route: 'heures' },
     { id: 'transmissions', groupe: 'Équipe et école', titre: 'Transmissions binôme', route: 'transmissions' },
+    { id: 'dossiers', groupe: 'Équipe et école', titre: 'Dossiers remplaçant et visite', route: 'dossiers' },
     { id: 'argent', groupe: 'Administratif', titre: 'Argent et projets', route: 'argent' },
     { id: 'materiel', groupe: 'Administratif', titre: 'Matériel', route: 'materiel' },
     { id: 'redaction', groupe: 'Administratif', titre: 'Mots, autorisations et registres', route: 'redaction' },

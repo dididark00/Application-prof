@@ -573,6 +573,28 @@ await test('Bilans guidés : bilan de la semaine (faites, pas cochées, semaine 
   assert((await page.evaluate(() => location.hash)).startsWith('#/livrets'), 'lien vers les livrets');
 });
 
+await test('Dossiers : remplaçant (textes gardés, jours choisis, confidentiel seulement si coché) et visite (fiche, séquence, cahier du jour)', async () => {
+  await go('#/dossiers');
+  const ta = page.getByTestId('sub-routines'); await ta.fill('Accueil en musique, date, météo (test)'); await ta.blur(); await page.waitForTimeout(300);
+  const d = await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js'); for (let k = 0; k < 30; k++) { const x = model.addDays(model.todayIso(), k); if (PL.isSchoolDay(cls, x).ok) return x; } return null;`);
+  await page.getByTestId('sub-from').fill(d); await page.getByTestId('sub-to').fill(d);
+  await page.getByTestId('print-remplacant').click(); await page.waitForTimeout(400);
+  const t = await page.evaluate(() => window.__p || '');
+  assert(t.includes('Dossier pour la personne qui me remplace') && t.includes('Accueil en musique, date, météo (test)'), 'fiche d’accueil avec les textes');
+  assert(t.includes('Liste de la classe') && t.includes('Cahier-journal'), 'liste et cahier du jour');
+  assert(!t.includes('besoins particuliers (confidentiel)'), 'rien de confidentiel sans le cocher');
+  await go('#/'); await go('#/dossiers');
+  eq(await page.getByTestId('sub-routines').inputValue(), 'Accueil en musique, date, météo (test)', 'texte gardé pour la prochaine fois');
+  const v = await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js');
+    for (let k = -30; k < 60; k++) { const x = model.addDays(model.todayIso(), k); const e = PL.dayPlan(cls, x).entries.find(e => e.sessionId && store.get(e.sessionId)?.sequenceId); if (e) return { d: x, s: e.sessionId }; } return null;`);
+  if (v) {
+    await go(`#/dossiers?d=${v.d}&s=${v.s}`);
+    await page.getByTestId('print-visite').click(); await page.waitForTimeout(400);
+    const t2 = await page.evaluate(() => window.__p || '');
+    assert(t2.includes('Cahier-journal') && /séquence/i.test(t2), 'dossier de visite : fiche, séquence et cahier du jour');
+  }
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (208) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 221 entrées.
+Légende : ✅ Réalisé (211) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 223 entrées.
 
 ## Étape 1 — Socle
 
@@ -103,7 +103,7 @@ Légende : ✅ Réalisé (208) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §11 Fichiers | Éditeur simple de diapositives (titre, texte, image, consigne, exercice, timer) |  |
 | ✅ | §11 Fichiers | Mode projection séparé sans données privées ; notes présentateur |  |
 | ✅ | §14 Exports | Impression listes, trombinoscope, devoirs, rattrapage, évaluations, bilans |  |
-| 🟡 | §14 Exports | Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut | Impressions familles déjà filtrées (bilans, rattrapage, listes). Profils d’export complets avec le dossier remplaçant (étape 4). |
+| ✅ | §14 Exports | Profils d’export enseignant/élèves/familles/remplaçant ; exclusions par défaut | Impressions familles filtrées (bilans, rattrapage, listes) ; dossier remplaçant : rien de confidentiel sans le cocher. |
 | ✅ | §15 Fiabilité | Accès restreint aux données sensibles (santé, accompagnements) ; jamais en projection/recherche | Masquage (code facultatif), exclusion de la recherche et de la projection. |
 | ✅ | §2 Interface | Thèmes de couleurs (pastel, bleu, école, vert) et version sombre automatique le soir, au choix dans Réglages |  |
 | ✅ | §19 Atelier | Timer de couleur persistant (widget flottant, plein écran, heure cible) | Fenêtre flottante au-dessus des autres applications seulement si le navigateur le permet (Chrome, Edge). |
@@ -249,3 +249,5 @@ Légende : ✅ Réalisé (208) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §2 Aujourd’hui | Bilan de la semaine (rituel du vendredi) : faites / partielles / reportées / annulées / pas cochées avec « ♡ Faite » et « Décaler la séquence », matières en retard, semaine suivante (préparée ? créneaux sans fiche, photocopies) ; rappel sur l’accueil le vendredi et le week-end | Navigation semaine par semaine ; chaque ligne mène à la page où l’on agit. |
 | ✅ | §9 Livrets | Assistant de fin de période : évaluations pas complètement saisies, rattrapages, élèves sans observation, séquences pas terminées, appréciations du livret, carnet, séquences de la période suivante ; rappel sur l’accueil les deux dernières semaines | Lecture seule : rien n’est modifié depuis cette page. |
 | ✅ | §2 Navigation | Aujourd’hui regroupé : Ma journée, Organiser, En classe |  |
+| ✅ | §14 Exports | Dossier remplaçant en un clic : fiche d’accueil (horaires, routines, fonctionnement, sécurité, où trouver — textes gardés), contacts utiles, liste de la classe, emploi du temps, cahier journal des jours choisis, fiches de séance ; élèves à besoins particuliers seulement si on le coche, pour cette impression | Organisation › Équipe et école › Dossiers remplaçant et visite. |
+| ✅ | §14 Exports | Dossier de visite (tuteur, inspection) : fiche de la séance observée, fiche de séquence, progression avec la séquence surlignée, cahier journal du jour ; bouton « Dossier de visite » sur chaque fiche de séance |  |

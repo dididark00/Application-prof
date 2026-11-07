@@ -149,6 +149,7 @@ function detail(id) {
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'schedule', onclick: () => scheduleDialog(s, cls) }, icon('calendar', 16), 'Programmer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'duplicate-session', title: 'Crée une copie indépendante : la modifier ne change pas cette fiche', onclick: async () => { const c = await P.duplicateSession(s.id); toast('Copie indépendante créée'); location.hash = `#/seance/${c.id}`; } }, icon('copy', 16), 'Dupliquer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'print-session', onclick: () => printDocument(printSession(s.id), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer'),
+        h('a', { class: 'btn', href: `#/dossiers?s=${s.id}${(() => { const o = P.occurrencesOfSession(s.id).filter(x => x.status !== 'reportée').map(x => x.date).sort(); const d = o.find(x => x >= model.todayIso()) || o.at(-1); return d ? `&d=${d}` : ''; })()}`, 'data-testid': 'visit-dossier', title: 'Fiche, séquence, progression et cahier journal du jour, imprimés ensemble' }, 'Dossier de visite'),
         h('button', { class: 'btn', type: 'button', onclick: () => printDocument(printSession(s.id, { blank: true }), { orientation: 'landscape' }) }, 'Version vierge'),
         h('button', { class: 'btn btn-ghost-danger', type: 'button', 'aria-label': 'Mettre à la corbeille', onclick: async () => {
           const planned = occ.filter(o => o.status === 'prévue').length;
