@@ -187,6 +187,70 @@ export async function postpone(e, cls, target) {
   return newId;
 }
 
+// ───────── Séance non faite : décaler toute la séquence
+const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+/** Séances passées (jour fini, ou heure dépassée aujourd'hui) restées « prévue ». */
+export function uncheckedPast(cls, { days = 21, until = model.todayIso() } = {}) {
+  const out = []; const today = model.todayIso(); const hm = nowHM();
+  for (let k = days; k >= 0; k--) {
+    const d = model.addDays(until, -k);
+    if (d > today) continue;
+    const plan = dayPlan(cls, d);
+    if (!plan.school.ok) continue;
+    for (const e of plan.entries) {
+      if (e.kind === 'event' || e.status !== 'prévue' || !e.sessionId || groupOf(e, cls)) continue;
+      if (d === today && e.end > hm) continue;
+      out.push(e);
+    }
+  }
+  return out;
+}
+/**
+ * Prévisualise le décalage : les séances non faites (celle-ci et les suivantes déjà passées) reprennent dans l'ordre
+ * les prochains créneaux à venir de la séquence ; les séances en surplus vont aux prochains créneaux libres de la matière.
+ */
+export function shiftPreview(cls, e, { horizon = 120 } = {}) {
+  const sess = e.sessionId ? store.get(e.sessionId) : null;
+  if (!sess?.sequenceId) return null;
+  const order = P.sessionsOfSequence(sess.sequenceId).map(x => x.id);
+  const idx = order.indexOf(sess.id);
+  const today = model.todayIso(); const hm = nowHM();
+  const isPast = (o) => o.date < today || (o.date === today && o.end <= hm);
+  const later = store.all('occurrence').filter(o => !o.deletedAt && o.classId === cls.id && o.status === 'prévue' && o.sessionId && order.indexOf(o.sessionId) > idx
+    && (o.date > e.date || (o.date === e.date && o.start > e.start)) && o.date <= model.addDays(e.date, horizon))
+    .sort((x, y) => x.date.localeCompare(y.date) || x.start.localeCompare(y.start));
+  const pastOccs = later.filter(isPast);                // séances suivantes elles aussi non faites
+  const slots = later.filter(o => !isPast(o));         // créneaux à venir déjà réservés à la séquence
+  const queue = [sess.id];
+  for (const o of [...pastOccs, ...slots]) if (!queue.includes(o.sessionId)) queue.push(o.sessionId);
+  const steps = slots.slice(0, queue.length).map((o, i) => ({ sessionId: queue[i], occ: o }));
+  const rest = queue.slice(steps.length);
+  const fromEntry = steps.length ? { ...e, date: steps.at(-1).occ.date, start: steps.at(-1).occ.start } : { ...e, date: isPast(e) && e.date < today ? model.addDays(today, -1) : e.date };
+  const free = rest.length ? postponeCandidates(cls, fromEntry, { days: 42, max: rest.length }) : [];
+  const extra = rest.map((sessionId, i) => ({ sessionId, target: free[i] || null }));
+  const from = (id) => id === sess.id ? e : (() => { const o = later.find(x => x.sessionId === id); return o ? { date: o.date, start: o.start } : null; })();
+  return { sequenceId: sess.sequenceId, steps, extra, pastOccs, from };
+}
+export async function applyShift(cls, e, pv) {
+  const items = [];
+  const origId = e.kind === 'occ' ? e.occ.id : store.uid();
+  const origOf = { [e.sessionId]: origId };
+  if (e.kind === 'occ') items.push({ id: origId, patch: { status: 'reportée', snapshot: null } });
+  else items.push({ create: { type: 'occurrence', data: { ...occDataFromEntry(e, cls), id: origId, status: 'reportée' } } });
+  for (const o of pv.pastOccs) { items.push({ id: o.id, patch: { status: 'reportée', snapshot: null } }); origOf[o.sessionId] ??= o.id; }
+  const dest = {};
+  for (const st of pv.steps) { items.push({ id: st.occ.id, patch: { sessionId: st.sessionId, title: '', postponedFrom: origOf[st.sessionId] || null, status: 'prévue' } }); dest[st.sessionId] = st.occ.id; }
+  for (const x of pv.extra) {
+    if (!x.target) continue;
+    const t = x.target.entry; const carry = { sessionId: x.sessionId, title: '', postponedFrom: origOf[x.sessionId] || null, status: 'prévue' };
+    if (t.kind === 'occ') { items.push({ id: t.occ.id, patch: carry }); dest[x.sessionId] = t.occ.id; }
+    else { const id = store.uid(); items.push({ create: { type: 'occurrence', data: { ...occDataFromEntry({ ...t, sessionId: x.sessionId }, cls), ...carry, id } } }); dest[x.sessionId] = id; }
+  }
+  // Lien « reportée → nouvelle place » sur les séances d'origine
+  for (const [sid, oid] of Object.entries(origOf)) if (dest[sid]) { const it = items.find(i => i.id === oid) || items.find(i => i.create?.data.id === oid); if (it?.patch) it.patch.postponedTo = dest[sid]; else if (it?.create) it.create.data.postponedTo = dest[sid]; }
+  await store.batch(items, `Séquence décalée à partir de « ${e.title} » (${model.frShort(e.date)})`);
+}
+
 // ───────── Temps par matière
 export function weeklyMinutes(slots, levels) {
   const out = {};

@@ -20,6 +20,7 @@ function moments(cls, today) {
   const mats = PL.materials(cls, [today]).filter(r => r.kind !== 'copie' || r.status === 'à faire');
   const done = entries.filter(e => e.status === 'faite' || e.status === 'partielle').length;
   const past = entries.filter(e => e.end <= now && e.status === 'prévue');
+  const earlier = PL.uncheckedPast(cls, { days: 13, until: model.addDays(today, -1) }).length; // séances des jours précédents restées « prévue »
   const unsigned = store.all('carnet').filter(x => (!x.classId || x.classId === cls.id) && x.written && !x.signed).length;
   const col = (title, cls2, count, body) => h('section', { class: `moment ${cls2}`, 'aria-label': title }, h('div', { class: 'moment-head' }, h('h2', {}, title), h('span', { class: 'moment-count' }, count)), h('div', { class: 'moment-body' }, body));
   const check = (e) => {
@@ -37,8 +38,9 @@ function moments(cls, today) {
     col('Avant', 'm-avant', `${mats.length}`, mats.length ? mats.slice(0, 6).map(r => h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-time' }, r.entry.start), h('span', { class: 'moment-title' }, h('strong', {}, r.label), h('small', {}, r.kind === 'copie' ? `${r.count} ex.` : r.entry.title))))
       : h('p', { class: 'muted small' }, 'Rien à préparer pour aujourd’hui.')),
     col('Pendant', 'm-pendant', `${done} / ${entries.length}`, entries.length ? entries.map(check) : h('p', { class: 'muted small' }, 'Aucune activité au cahier journal.')),
-    col('Après', 'm-apres', `${past.length + unsigned}`, [
-      h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, past.length ? `${past.length} séance(s) à cocher` : 'Séances à jour ♡'), h('small', {}, 'faite, reportée ou annulée'))),
+    col('Après', 'm-apres', `${past.length + earlier + unsigned}`, [
+      h('a', { class: 'moment-row', href: `#/cahier?d=${today}`, 'data-testid': 'moment-tocheck' }, h('span', { class: 'moment-title' }, h('strong', {}, past.length + earlier ? `${past.length + earlier} séance(s) à cocher` : 'Séances à jour ♡'),
+        h('small', {}, earlier ? `dont ${earlier} des jours précédents · faite ou décaler la séquence` : 'faite, reportée ou annulée'))),
       h('a', { class: 'moment-row', href: '#/messages' }, h('span', { class: 'moment-title' }, h('strong', {}, unsigned ? `${unsigned} mot(s) à faire signer` : 'Carnet à jour'), h('small', {}, 'carnet de liaison'))),
       h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan du jour'), h('small', {}, 'deux lignes au cahier journal')))]));
 }

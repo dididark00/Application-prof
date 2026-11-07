@@ -72,6 +72,7 @@ function dayView(cls, date, nav) {
     prepareBanner(cls, date),
     !plan.school.ok ? h('p', { class: 'banner' }, plan.school.reason) : null,
     plan.school.ok && !plan.myDay ? h('p', { class: 'banner info' }, `Jour de classe de ${cls.binome?.name || 'la binôme'}.`) : null,
+    uncheckedCard(cls, date),
     plan.warnings.length ? h('div', { class: 'card warn-card', 'data-testid': 'conflicts' }, h('h2', {}, icon('alert', 18), ` ${plan.warnings.length} conflit(s)`),
       h('ul', {}, plan.warnings.map(w => h('li', {}, w.message, ' ',
         [w.a, w.b].filter(x => x.kind !== 'event' && x.status === 'prévue').map(x => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'propose-postpone', onclick: () => postponeDialog(cls, x) }, `Reporter « ${x.title} »`))))),
@@ -363,6 +364,7 @@ function entryCard(cls, e, inConflict) {
   const actions = h('div', { class: 'entry-actions' },
     active ? [['faite', 'Faite'], ['partielle', 'Partielle']].map(([st, l]) => h('button', { class: `btn btn-small ${e.status === st ? 'btn-primary' : ''}`, type: 'button', 'data-testid': `status-${st}`, onclick: () => PL.setStatus(e, cls, e.status === st ? 'prévue' : st) }, l)) : null,
     active && e.status !== 'faite' ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'postpone', onclick: () => postponeDialog(cls, e) }, 'Reporter…') : null,
+    active && e.status === 'prévue' && e.session?.sequenceId ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'shift-sequence', title: 'Cette séance prend la place de la suivante de la séquence, et ainsi de suite', onclick: () => shiftDialog(cls, e) }, 'Décaler la séquence…') : null,
     active ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => PL.setStatus(e, cls, e.status === 'annulée' ? 'prévue' : 'annulée') }, e.status === 'annulée' ? 'Rétablir' : 'Annuler') : null,
     h('details', { class: 'more' }, h('summary', { class: 'btn btn-small', 'data-testid': 'entry-more' }, 'Plus'), h('div', { class: 'more-menu', onclick: (ev) => { if (ev.target.closest('button')) ev.currentTarget.parentElement.open = false; } },
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edit-activity', onclick: () => activityDialog(cls, e) }, 'Modifier l’activité (objectif, déroulement…)'),
@@ -402,6 +404,42 @@ async function chooseSession(cls, e) {
   const items = all.sort((a, b) => (b.subject === e.subject) - (a.subject === e.subject)).map(s => ({ id: s.id, label: P.sessionTitle(s), detail: s.subject, group: s.sequenceId ? P.sequenceTitle(store.get(s.sequenceId)) : 'Hors séquence' }));
   const sel = await pickMany({ title: `Fiche pour le créneau ${e.start}–${e.end}`, items, single: true, emptyText: 'Aucune fiche : créez-en dans Préparer › Séquences ou Préparations.' });
   if (sel?.length) await PL.patchEntry(e, cls, { sessionId: sel[0] }, 'Fiche programmée');
+}
+
+const fmtSlot = (o) => `${model.frDate(o.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${o.start}`;
+const sessLabel = (id) => { const x = store.get(id); return x ? P.sessionTitle(x) : 'Séance'; };
+/** Séance non faite : décaler toute la séquence (aperçu avant de valider). */
+export function shiftDialog(cls, e) {
+  const pv = PL.shiftPreview(cls, e);
+  if (!pv) { postponeDialog(cls, e); return; }
+  const fromTxt = (id) => { const f = pv.from(id); return f ? fmtSlot(f) : ''; };
+  const rows = [
+    ...pv.steps.map(st => h('li', {}, h('strong', {}, sessLabel(st.sessionId)), ` : ${fromTxt(st.sessionId)} → `, h('strong', {}, fmtSlot(st.occ)))),
+    ...pv.extra.map(x => h('li', {}, h('strong', {}, sessLabel(x.sessionId)), ` : ${fromTxt(x.sessionId)} → `,
+      x.target ? h('strong', {}, `${fmtSlot({ date: x.target.date, start: x.target.entry.start })} (créneau libre${e.subject ? ` de ${e.subject}` : ''})`) : h('em', {}, 'aucun créneau libre dans les 6 semaines : à placer ensuite (Reporter…)')))];
+  modal({ title: `Décaler la séquence à partir de « ${e.title} »`, wide: true, body: h('div', { class: 'stack' },
+    h('p', {}, pv.pastOccs.length ? `${pv.pastOccs.length + 1} séances de la séquence n’ont pas été faites. Elles reprennent, dans l’ordre, les prochains créneaux :` : `Séance du ${model.frDate(e.date)} non faite. Chaque séance prend la place de la suivante :`),
+    h('ol', { class: 'shift-list', 'data-testid': 'shift-preview' }, rows),
+    h('p', { class: 'muted small' }, 'Les séances non faites restent au cahier journal, marquées « reportée ». La flèche Annuler défait tout le décalage d’un coup.')),
+    actions: [{ label: 'Annuler' },
+      { label: 'Reporter seulement cette séance…', onClick: () => { setTimeout(() => postponeDialog(cls, e), 0); } },
+      { label: 'Décaler la séquence', primary: true, testid: 'shift-go', onClick: async () => { await PL.applyShift(cls, e, pv); toast(`Séquence décalée (${pv.steps.length + pv.extra.filter(x => x.target).length} séance(s) replacée(s))`); } }] });
+}
+
+/** Séances passées pas encore cochées : faite, ou décaler la séquence, ou reporter. */
+function uncheckedCard(cls, date) {
+  if (date > model.todayIso()) return null;
+  const list = PL.uncheckedPast(cls, { days: date === model.todayIso() ? 14 : 0, until: date });
+  if (!list.length) return null;
+  return h('section', { class: 'card unchecked-card', 'data-testid': 'unchecked' },
+    h('h2', {}, `${list.length} séance${list.length > 1 ? 's' : ''} pas encore cochée${list.length > 1 ? 's' : ''}`),
+    h('p', { class: 'muted small' }, 'Faite ? Sinon, décalez la séquence : la séance prend la place de la suivante.'),
+    h('ul', { class: 'unchecked-list' }, list.map(e => h('li', { 'data-testid': 'unchecked-row' },
+      h('span', { class: 'unchecked-what' }, h('a', { href: `#/cahier?d=${e.date}` }, model.frDate(e.date, { weekday: 'short', day: 'numeric', month: 'short' })), ` · ${e.start} · `, h('strong', {}, e.title)),
+      h('span', { class: 'row wrap' },
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'unchecked-done', onclick: () => PL.setStatus(e, cls, 'faite') }, '♡ Faite'),
+        e.session?.sequenceId ? h('button', { class: 'btn btn-small btn-primary', type: 'button', 'data-testid': 'unchecked-shift', onclick: () => shiftDialog(cls, e) }, 'Décaler la séquence…') : null,
+        h('button', { class: 'btn btn-small', type: 'button', onclick: () => postponeDialog(cls, e) }, 'Reporter…'))))));
 }
 
 export function postponeDialog(cls, e) {

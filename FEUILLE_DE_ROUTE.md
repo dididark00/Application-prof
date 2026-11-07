@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (202) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 215 entrées.
+Légende : ✅ Réalisé (203) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 216 entrées.
 
 ## Étape 1 — Socle
 
@@ -243,3 +243,4 @@ Légende : ✅ Réalisé (202) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §2 Ergonomie | Menu regroupé : Préparer en 4 groupes (Mon année, Séquences et séances, Mes ressources, Créer), Ma classe en 3 (Mes élèves, Suivi des apprentissages, Vie de la classe), Organisation en 3 (Équipe et école, Administratif, Mon parcours) ; menu latéral replié sur le groupe utile, onglets à deux niveaux, groupes dans « Plus » ; liste des services modifiable depuis la page Cantine | Aucune page retirée ni déplacée : les adresses, favoris et données sont inchangés. |
 | ✅ | §20 Apparence | Tableaux au style Lavande (en-tête pastel arrondi, lignes aérées) et, sur téléphone, une carte par ligne avec le nom de chaque colonne (élèves, cantine, argent, sorties, heures, familles, bibliothèque…) ; astuces aux couleurs du thème ; consigne de la cantine raccourcie | Les grilles (emploi du temps, programmations, registre d’appel) gardent le défilement horizontal. |
 | ✅ | §6 Cahier journal | Glisser-déposer à la souris dans la journée (deux panneaux) : sur une activité pour échanger les horaires, sur une heure ou une pause pour déplacer en gardant la durée ; activités annulées / reportées masquées ou réaffichées d’un clic (jour et semaine) ; vue Semaine : couleur de chaque matière bien visible et légende | Les activités faites et celles sur toute la journée ne se déplacent pas ; la flèche Annuler défait un déplacement ; l’impression montre toujours tout. |
+| ✅ | §6 Cahier journal | Séances passées pas cochées : rappel au cahier journal (14 derniers jours, même le week-end) et sur l’accueil, avec « ♡ Faite », « Décaler la séquence… » ou « Reporter… » ; décaler = la séance non faite prend la place de la suivante de la même séquence, et ainsi de suite, la dernière va au prochain créneau libre de la matière ; aperçu avant de valider | Plusieurs séances non faites d’affilée reprennent ensemble, dans l’ordre, les créneaux à venir ; les originales restent marquées « reportée » ; un seul Annuler défait tout. |

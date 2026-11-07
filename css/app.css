@@ -1426,3 +1426,9 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .tl-break.drop-on, .cj-time.drop-on { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 10px; }
 .cj-time { border-radius: 10px; }
 .btn.on { border-color: var(--accent); color: var(--accent); }
+
+/* ───────── Séances pas cochées / décaler la séquence */
+.unchecked-card { border-left: 5px solid var(--warn, #d9a400); }
+.unchecked-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.unchecked-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line-soft, var(--line)); }
+.shift-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }

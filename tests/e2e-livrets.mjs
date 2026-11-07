@@ -470,6 +470,35 @@ await test('Cahier journal : glisser une activité (échanger, déplacer sur une
   await page.getByTestId('layout-liste').click();
 });
 
+await test('Séance pas cochée : proposition « Décaler la séquence » (S1 prend la place de S2, S2 celle de S3, S3 au prochain créneau libre)', async () => {
+  const r = await S(`const cls = store.get(store.getSettings().currentClassId); const PL = await import('./js/planning.js');
+    const today = model.todayIso(); const school = (from, dir) => { let d = from; for (let k = 0; k < 30; k++) { d = model.addDays(d, dir); if (PL.isSchoolDay(cls, d).ok) return d; } };
+    const d0 = school(today, -1), d1 = school(today, 1), d2 = school(d1, 1);
+    const seq = await store.create('sequence', { classId: cls.id, title: 'Séquence décalage (test)', subject: 'Mathématiques', levels: cls.levels });
+    const ss = []; for (let i = 1; i <= 3; i++) ss.push(await store.create('session', { classId: cls.id, sequenceId: seq.id, order: i, title: 'Décalage S' + i, subject: 'Mathématiques', levels: cls.levels, phases: [] }));
+    const mk = (d, s, st) => store.create('occurrence', { classId: cls.id, date: d, start: '15:00', end: '15:45', subject: 'Mathématiques', levels: cls.levels, mode: 'dirigé', status: 'prévue', sessionId: s.id });
+    const o0 = await mk(d0, ss[0]), o1 = await mk(d1, ss[1]), o2 = await mk(d2, ss[2]);
+    return { d0, d1, d2, s: ss.map(x => x.id), o: [o0.id, o1.id, o2.id] };`);
+  await go(`#/cahier?d=${r.d0}`);
+  const row = page.getByTestId('unchecked-row').filter({ hasText: 'Décalage S1' });
+  assert(await row.isVisible(), 'séance passée non cochée proposée');
+  await row.getByTestId('unchecked-shift').click(); await page.waitForTimeout(300);
+  const pv = await page.getByTestId('shift-preview').innerText();
+  assert(pv.includes('Décalage S1') && pv.includes('Décalage S2') && pv.includes('Décalage S3'), 'aperçu des 3 séances');
+  await page.getByTestId('shift-go').click(); await page.waitForTimeout(500);
+  const after = await S(`return a.o.map(id => { const o = store.get(id); return [o.status, o.sessionId]; });`, r);
+  eq(after[0][0], 'reportée', 'S1 d’origine marquée reportée');
+  eq(after[1][1], r.s[0], 'S1 prend la place de S2');
+  eq(after[2][1], r.s[1], 'S2 prend la place de S3');
+  const s3 = await S(`return store.all('occurrence').filter(o => !o.deletedAt && o.sessionId === a.s[2] && o.status === 'prévue').map(o => o.date);`, r);
+  assert(s3.length === 1 && s3[0] > r.d2, `S3 au prochain créneau libre (${s3.join(', ')})`);
+  assert(!(await page.getByTestId('unchecked-row').filter({ hasText: 'Décalage S1' }).count()), 'plus proposée une fois décalée');
+  // Annuler défait tout d'un coup
+  await S(`await store.undo(); return true;`); await page.waitForTimeout(300);
+  const back = await S(`return a.o.map(id => { const o = store.get(id); return [o.status, o.sessionId]; });`, r);
+  eq(JSON.stringify(back), JSON.stringify([['prévue', r.s[0]], ['prévue', r.s[1]], ['prévue', r.s[2]]]), 'Annuler défait tout le décalage d’un coup');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);
