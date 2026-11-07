@@ -264,6 +264,9 @@ export const ROADMAP = [
   R(5, '§6 Cahier journal', 'Séances passées pas cochées : rappel au cahier journal (14 derniers jours, même le week-end) et sur l’accueil, avec « ♡ Faite », « Décaler la séquence… » ou « Reporter… » ; décaler = la séance non faite prend la place de la suivante de la même séquence, et ainsi de suite, la dernière va au prochain créneau libre de la matière ; aperçu avant de valider', 'fait', 'Plusieurs séances non faites d’affilée reprennent ensemble, dans l’ordre, les créneaux à venir ; les originales restent marquées « reportée » ; un seul Annuler défait tout.'),
   R(5, '§9 Évaluations', 'Saisie rapide : un clic par case (NA / ECA / A / D, re-cliquer efface), au clavier touches 1 à 4 puis élève suivant, « Vides → A » par colonne, saisie élève par élève (gros boutons, absent, observation, suivant) ; nouvelle évaluation reprenant les compétences de la séquence', 'fait', 'Répartition mise à jour en direct ; la flèche Annuler défait un remplissage de colonne.'),
   R(5, '§9 Livrets', 'Livret v2 : période, semestre, année ou dates libres ; une ligne par compétence avec tous ses résultats datés et un niveau retenu (proposé en donnant plus de poids aux résultats récents, modifiable) ; livret imprimé avec positionnement Non acquis / En cours / Acquis / Dépassé coché par compétence, regroupé par domaine, dates des évaluations, appréciations, signatures', 'fait', 'Les bilans d’une plage de dates sont enregistrés à part de ceux des périodes.'),
+  R(5, '§2 Aujourd’hui', 'Bilan de la semaine (rituel du vendredi) : faites / partielles / reportées / annulées / pas cochées avec « ♡ Faite » et « Décaler la séquence », matières en retard, semaine suivante (préparée ? créneaux sans fiche, photocopies) ; rappel sur l’accueil le vendredi et le week-end', 'fait', 'Navigation semaine par semaine ; chaque ligne mène à la page où l’on agit.'),
+  R(5, '§9 Livrets', 'Assistant de fin de période : évaluations pas complètement saisies, rattrapages, élèves sans observation, séquences pas terminées, appréciations du livret, carnet, séquences de la période suivante ; rappel sur l’accueil les deux dernières semaines', 'fait', 'Lecture seule : rien n’est modifié depuis cette page.'),
+  R(5, '§2 Navigation', 'Aujourd’hui regroupé : Ma journée, Organiser, En classe', 'fait', ''),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -277,14 +280,16 @@ export const ROADMAP = [
 // `groupe` (facultatif) regroupe les sous-pages d'une rubrique chargée, dans le menu et les onglets.
 export const RUBRIQUES = [
   { id: 'aujourdhui', titre: 'Aujourd’hui', icone: 'sun', sous: [
-    { id: 'journee', titre: 'Ma journée', route: 'aujourdhui' },
-    { id: 'enclasse', titre: 'Mode en classe', route: 'enclasse' },
-    { id: 'appel', titre: 'Appel', route: 'appel' },
-    { id: 'registre', titre: 'Registre d’appel', route: 'registre' },
-    { id: 'services', titre: 'Cantine et services', route: 'services' },
-    { id: 'taches', titre: 'Tâches et rendez-vous', route: 'taches' },
-    { id: 'projection', titre: 'Projection', route: 'projection' },
-    { id: 'outils', titre: 'Outils de classe', route: 'outils' },
+    { id: 'journee', groupe: 'Ma journée', titre: 'Ma journée', route: 'aujourdhui' },
+    { id: 'enclasse', groupe: 'Ma journée', titre: 'Mode en classe', route: 'enclasse' },
+    { id: 'appel', groupe: 'Ma journée', titre: 'Appel', route: 'appel' },
+    { id: 'registre', groupe: 'Ma journée', titre: 'Registre d’appel', route: 'registre' },
+    { id: 'services', groupe: 'Ma journée', titre: 'Cantine et services', route: 'services' },
+    { id: 'taches', groupe: 'Organiser', titre: 'Tâches et rendez-vous', route: 'taches' },
+    { id: 'bilan-semaine', groupe: 'Organiser', titre: 'Bilan de la semaine', route: 'bilan-semaine' },
+    { id: 'fin-periode', groupe: 'Organiser', titre: 'Fin de période', route: 'fin-periode' },
+    { id: 'projection', groupe: 'En classe', titre: 'Projection', route: 'projection' },
+    { id: 'outils', groupe: 'En classe', titre: 'Outils de classe', route: 'outils' },
   ]},
   { id: 'preparer', titre: 'Préparer', icone: 'book', sous: [
     { id: 'avancement', groupe: 'Mon année', titre: 'Où j’en suis (avancement)', route: 'avancement' },

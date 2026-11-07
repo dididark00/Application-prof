@@ -1478,3 +1478,17 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .livret-general { border-color: #b4a2ee !important; }
 .livret table.livret-items thead th, .theme-couleur .livret table.livret-items thead th { background: #efe9fd !important; color: #4b3596 !important; border-bottom: 1px solid #d9d0f2 !important; }
 .comp-rows li { grid-template-columns: minmax(0, 1fr) auto minmax(180px, auto); }
+
+/* ───────── Bilans guidés (vendredi, fin de période) */
+.bl-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.bl-tile { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 16px; background: var(--surface-2); }
+.bl-tile b { font-family: "Bricolage Grotesque", "DM Sans", var(--font); font-size: 1.8rem; line-height: 1; }
+.bl-tile.ok { background: color-mix(in srgb, #a9dfc3 45%, var(--surface)); } .bl-tile.warn { background: color-mix(in srgb, #f7dc8e 50%, var(--surface)); } .bl-tile.info { background: color-mix(in srgb, #9fc6f0 40%, var(--surface)); }
+.bl-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bl-step { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.bl-step:first-child { border-top: 0; }
+.bl-mark { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 800; }
+.bl-step.ok .bl-mark { background: linear-gradient(180deg, #7e66d6, #6a4fc4); color: #fff; }
+.bl-step.todo .bl-mark { background: color-mix(in srgb, #f7dc8e 70%, var(--surface)); color: #6b4e00; }
+.bl-step.ok .bl-body strong { color: var(--ink-2); }
+@media (max-width: 640px) { .bl-step { grid-template-columns: 30px minmax(0, 1fr); } .bl-step > .btn { grid-column: 2; justify-self: start; } }

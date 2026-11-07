@@ -41,6 +41,8 @@ function moments(cls, today) {
     col('Après', 'm-apres', `${past.length + earlier + unsigned}`, [
       h('a', { class: 'moment-row', href: `#/cahier?d=${today}`, 'data-testid': 'moment-tocheck' }, h('span', { class: 'moment-title' }, h('strong', {}, past.length + earlier ? `${past.length + earlier} séance(s) à cocher` : 'Séances à jour ♡'),
         h('small', {}, earlier ? `dont ${earlier} des jours précédents · faite ou décaler la séquence` : 'faite, reportée ou annulée'))),
+      (() => { const dow = new Date(`${today}T12:00:00`).getDay(); return dow === 5 || dow === 6 || dow === 0 ? h('a', { class: 'moment-row', href: '#/bilan-semaine', 'data-testid': 'moment-bilan' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan de la semaine'), h('small', {}, '10 minutes : clore, regarder le rythme, préparer la suite'))) : null; })(),
+      (() => { const per = model.periodOfDate(store.get(cls.yearId), today); return per && model.addDays(per.end, -13) <= today ? h('a', { class: 'moment-row', href: '#/fin-periode', 'data-testid': 'moment-finperiode' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Fin de période'), h('small', {}, `jusqu’au ${model.frShort(per.end)} : évaluations, livrets, suite`))) : null; })(),
       h('a', { class: 'moment-row', href: '#/messages' }, h('span', { class: 'moment-title' }, h('strong', {}, unsigned ? `${unsigned} mot(s) à faire signer` : 'Carnet à jour'), h('small', {}, 'carnet de liaison'))),
       h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan du jour'), h('small', {}, 'deux lignes au cahier journal')))]));
 }

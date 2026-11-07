@@ -559,6 +559,20 @@ await test('Évaluations : saisie rapide (un clic, clavier 1-4 puis élève suiv
   }
 });
 
+await test('Bilans guidés : bilan de la semaine (faites, pas cochées, semaine suivante) et fin de période (points à régler, liens)', async () => {
+  await go('#/bilan-semaine');
+  assert(await page.getByTestId('bl-week-stats').isVisible(), 'ce qui a été fait');
+  assert(await page.getByTestId('bl-week-pace').isVisible(), 'rythme par matière');
+  const href = await page.getByTestId('bl-prepare').getAttribute('href');
+  assert(/#\/cahier\?d=\d{4}-\d{2}-\d{2}&v=semaine/.test(href), `préparer la semaine suivante (${href})`);
+  await go('#/fin-periode');
+  const n = await page.getByTestId('bl-step').count();
+  assert(n >= 6, `étapes de fin de période (${n})`);
+  assert(await page.locator('[data-testid=bl-step][data-state=todo], [data-testid=bl-step][data-state=ok]').count() === n, 'chaque étape a un état');
+  await page.getByTestId('bl-livrets').click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => location.hash)).startsWith('#/livrets'), 'lien vers les livrets');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

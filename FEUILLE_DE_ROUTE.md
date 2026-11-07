@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (205) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 218 entrées.
+Légende : ✅ Réalisé (208) · 🟡 Partiel (3) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 221 entrées.
 
 ## Étape 1 — Socle
 
@@ -246,3 +246,6 @@ Légende : ✅ Réalisé (205) · 🟡 Partiel (3) · ⚙️ À configurer (0) �
 | ✅ | §6 Cahier journal | Séances passées pas cochées : rappel au cahier journal (14 derniers jours, même le week-end) et sur l’accueil, avec « ♡ Faite », « Décaler la séquence… » ou « Reporter… » ; décaler = la séance non faite prend la place de la suivante de la même séquence, et ainsi de suite, la dernière va au prochain créneau libre de la matière ; aperçu avant de valider | Plusieurs séances non faites d’affilée reprennent ensemble, dans l’ordre, les créneaux à venir ; les originales restent marquées « reportée » ; un seul Annuler défait tout. |
 | ✅ | §9 Évaluations | Saisie rapide : un clic par case (NA / ECA / A / D, re-cliquer efface), au clavier touches 1 à 4 puis élève suivant, « Vides → A » par colonne, saisie élève par élève (gros boutons, absent, observation, suivant) ; nouvelle évaluation reprenant les compétences de la séquence | Répartition mise à jour en direct ; la flèche Annuler défait un remplissage de colonne. |
 | ✅ | §9 Livrets | Livret v2 : période, semestre, année ou dates libres ; une ligne par compétence avec tous ses résultats datés et un niveau retenu (proposé en donnant plus de poids aux résultats récents, modifiable) ; livret imprimé avec positionnement Non acquis / En cours / Acquis / Dépassé coché par compétence, regroupé par domaine, dates des évaluations, appréciations, signatures | Les bilans d’une plage de dates sont enregistrés à part de ceux des périodes. |
+| ✅ | §2 Aujourd’hui | Bilan de la semaine (rituel du vendredi) : faites / partielles / reportées / annulées / pas cochées avec « ♡ Faite » et « Décaler la séquence », matières en retard, semaine suivante (préparée ? créneaux sans fiche, photocopies) ; rappel sur l’accueil le vendredi et le week-end | Navigation semaine par semaine ; chaque ligne mène à la page où l’on agit. |
+| ✅ | §9 Livrets | Assistant de fin de période : évaluations pas complètement saisies, rattrapages, élèves sans observation, séquences pas terminées, appréciations du livret, carnet, séquences de la période suivante ; rappel sur l’accueil les deux dernières semaines | Lecture seule : rien n’est modifié depuis cette page. |
+| ✅ | §2 Navigation | Aujourd’hui regroupé : Ma journée, Organiser, En classe |  |
