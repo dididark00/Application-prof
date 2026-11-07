@@ -50,10 +50,14 @@ function newEval(cls) {
       field('Discipline', h('select', { name: 'subject' }, model.subjects().map(s => h('option', { value: s }, s)))),
       field('Séquence', h('select', { name: 'sequenceId' }, h('option', { value: '' }, '—'), seqs.map(s => h('option', { value: s.id }, P.sequenceTitle(s))))),
       field('Mode', h('select', { name: 'mode' }, [['maîtrise', 'Niveaux de maîtrise'], ['notes', 'Points / barème'], ['les deux', 'Les deux (saisis séparément)']].map(([v, l]) => h('option', { value: v }, l))))),
-    field('Compétences ou items (une par ligne)', h('textarea', { name: 'items', rows: 5, placeholder: 'Lire, écrire et représenter des nombres jusqu’à 10 000\nPoser et effectuer une addition' }), 'Vous pourrez aussi lier des compétences des référentiels validés.'));
+    h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: 'fromSeq', checked: true, 'data-testid': 'eval-from-seq' }), 'Reprendre les compétences de la séquence choisie (une ligne par compétence, déjà liée au livret)'),
+    field('Autres items (un par ligne, facultatif)', h('textarea', { name: 'items', rows: 4, placeholder: 'Lire, écrire et représenter des nombres jusqu’à 10 000\nPoser et effectuer une addition' }), 'Vous pourrez aussi lier des compétences des référentiels validés.'));
   modal({ title: 'Nouvelle évaluation', wide: true, body: form, actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, onClick: async () => {
     const d = formData(form); if (!d.title) return false;
-    const items = d.items.split('\n').map(x => x.trim()).filter(Boolean).map(label => ({ id: store.uid(), label, maxPoints: null, competencyId: null }));
+    const seq = d.sequenceId ? store.get(d.sequenceId) : null;
+    const fromSeq = form.querySelector('[name=fromSeq]').checked && seq ? (seq.competencyIds || []).map(cid => ({ id: store.uid(), label: competencyLabel(cid), maxPoints: null, competencyId: cid })) : [];
+    const items = [...fromSeq, ...d.items.split('\n').map(x => x.trim()).filter(Boolean).map(label => ({ id: store.uid(), label, maxPoints: null, competencyId: null }))];
+    if (!items.length) { toast('Ajoutez au moins un item, ou choisissez une séquence qui a des compétences.'); return false; }
     const ev = await store.create('evaluation', { classId: cls.id, title: d.title, date: d.date, subject: d.subject, sequenceId: d.sequenceId || null, mode: d.mode, items, results: {}, versions: [], conditions: '' }, `Évaluation « ${d.title} »`);
     location.hash = `#/evaluations/${ev.id}`;
   } }] });
@@ -70,41 +74,81 @@ function detail(id, rerender) {
   const saveRes = (sid, patch, label = 'Résultat', quiet = true) => { const cur = structuredClone(store.get(ev.id).results || {}); cur[sid] = { ...(cur[sid] || {}), ...patch }; return store.update(ev.id, { results: cur }, `${ev.title} : ${label}`, { quiet }); };
   const saveItem = (sid, itemId, patch) => { const cur = structuredClone(store.get(ev.id).results || {}); const r = cur[sid] || {}; r.items = { ...(r.items || {}), [itemId]: { ...(r.items?.[itemId] || {}), ...patch } }; cur[sid] = r; return store.update(ev.id, { results: cur }, `${ev.title} : saisie`, { quiet: true }); };
 
+  const levelKeys = sc.map(([k]) => k);
+  const fillKey = levelKeys.includes('A') ? 'A' : levelKeys[Math.max(0, levelKeys.length - 2)];
+  const footTxt = (it) => { const c = colStats(it); return [...sc.map(([k]) => c[k] ? `${k} ${c[k]}` : ''), c['—'] ? `non évalués ${c['—']}` : ''].filter(Boolean).join(' · '); };
+  const refreshFoot = (it) => { const el = document.querySelector(`[data-foot="${it.id}"]`); if (el) el.textContent = footTxt(it); };
+  const setLevel = async (sid, it, val, seg) => {
+    await saveItem(sid, it.id, { level: val });
+    ev.results = store.get(ev.id).results; // pour la répartition affichée
+    seg.querySelectorAll('button').forEach(b => { const on = b.dataset.k === val; b.setAttribute('aria-checked', String(on)); b.classList.toggle('on', on); });
+    seg.dataset.val = val; refreshFoot(it);
+  };
+  const focusCell = (row, col) => { const el = document.querySelector(`.lvl-seg[data-row="${row}"][data-col="${col}"]`); (el?.querySelector('button.on') || el?.querySelector('button'))?.focus(); return !!el; };
+  /** Une case = des boutons NA / ECA / A / D : un clic (re-cliquer efface), ou au clavier 1-4, 0 pour effacer, puis élève suivant. */
+  const levelSeg = (s, it, v, row, col) => {
+    const seg = h('div', { class: 'lvl-seg', role: 'radiogroup', 'aria-label': `${s.firstName} — ${it.label}`, 'data-testid': 'eval-seg', 'data-row': row, 'data-col': col, 'data-val': v.level || '' },
+      sc.map(([k, l], i) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${v.level === k ? 'on' : ''}`, role: 'radio', 'aria-checked': String(v.level === k), 'data-k': k, title: `${l} (touche ${i + 1})`, tabindex: (v.level ? v.level === k : i === 0) ? 0 : -1,
+        onclick: () => setLevel(s.id, it, seg.dataset.val === k ? '' : k, seg) }, k)));
+    seg.addEventListener('keydown', async (e) => {
+      const n = Number(e.key);
+      let val = null;
+      if (n >= 1 && n <= sc.length) val = sc[n - 1][0];
+      else if (e.key === '0' || e.key === 'Delete' || e.key === 'Backspace') val = '';
+      else { const up = e.key.toUpperCase(); if (levelKeys.includes(up)) val = up; }
+      if (val !== null) { e.preventDefault(); await setLevel(s.id, it, val, seg); if (!focusCell(row + 1, col)) focusCell(0, col + 1); return; }
+      if (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); focusCell(row + 1, col); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); focusCell(row - 1, col); }
+      else if (e.key === 'ArrowRight' && e.target === seg.lastElementChild) { e.preventDefault(); focusCell(row, col + 1); }
+      else if (e.key === 'ArrowLeft' && e.target === seg.firstElementChild) { e.preventDefault(); focusCell(row, col - 1); }
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); const bs = [...seg.querySelectorAll('button')]; const i = bs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : -1); bs[Math.max(0, Math.min(bs.length - 1, i))].focus(); }
+    });
+    return seg;
+  };
+  const fillColumn = async (it) => {
+    const cur = structuredClone(store.get(ev.id).results || {}); let n = 0;
+    for (const { student: s } of students) { const r = cur[s.id] || {}; if (r.absent || r.items?.[it.id]?.level) continue; r.items = { ...(r.items || {}), [it.id]: { ...(r.items?.[it.id] || {}), level: fillKey } }; cur[s.id] = r; n++; }
+    if (!n) return toast('Aucune case vide dans cette colonne.');
+    await store.update(ev.id, { results: cur }, `${ev.title} : cases vides → ${fillKey}`);
+    toast(`${n} case(s) vide(s) → ${fillKey}. Corrigez ensuite les exceptions (la flèche Annuler défait tout).`);
+  };
+
   const colStats = (it) => { const c = {}; for (const { student: s } of students) { const r = ev.results?.[s.id]; if (r?.absent) continue; const l = r?.items?.[it.id]?.level; c[l || '—'] = (c[l || '—'] || 0) + 1; } return c; };
 
   const grid = h('div', { class: 'table-wrap' }, h('table', { class: 'table eval-grid', 'data-testid': 'eval-grid' },
-    h('thead', {}, h('tr', {}, h('th', {}, 'Élève'), h('th', {}, 'Absent'), ev.items.map(it => h('th', { class: 'eval-item' }, h('button', { class: 'linklike', type: 'button', onclick: () => itemDialog(ev, it) }, it.label), it.competencyId ? h('div', { class: 'small muted' }, competencyLabel(it.competencyId, idx)) : null, showPts && it.maxPoints ? h('div', { class: 'small muted' }, `/ ${it.maxPoints}`) : null)),
+    h('thead', {}, h('tr', {}, h('th', {}, 'Élève'), h('th', {}, 'Absent'), ev.items.map(it => h('th', { class: 'eval-item' }, h('button', { class: 'linklike', type: 'button', onclick: () => itemDialog(ev, it) }, it.label), it.competencyId && competencyLabel(it.competencyId, idx) !== it.label ? h('div', { class: 'small muted' }, competencyLabel(it.competencyId, idx)) : null, showPts && it.maxPoints ? h('div', { class: 'small muted' }, `/ ${it.maxPoints}`) : null,
+      showLevel ? h('button', { class: 'btn btn-small fill-col', type: 'button', 'data-testid': 'fill-col', title: `Met « ${fillKey} » dans toutes les cases vides de la colonne (absents exclus)`, onclick: () => fillColumn(it) }, `Vides → ${fillKey}`) : null)),
       showPts ? h('th', {}, 'Total') : null, (ev.versions || []).length ? h('th', {}, 'Version') : null, h('th', {}, 'Observation'))),
-    h('tbody', {}, students.map(({ student: s }) => {
+    h('tbody', {}, students.map(({ student: s }, row) => {
       const r = ev.results?.[s.id] || {};
       const total = ev.items.reduce((t, it) => t + (Number(r.items?.[it.id]?.points) || 0), 0);
       const max = ev.items.reduce((t, it) => t + (Number(it.maxPoints) || 0), 0);
       return h('tr', { class: r.absent ? 'row-absent' : '' }, h('td', {}, h('a', { href: `#/eleve/${s.id}?t=suivi` }, `${s.firstName} ${s.lastName}`)),
         h('td', {}, h('input', { type: 'checkbox', checked: !!r.absent, 'aria-label': `${s.firstName} absent`, 'data-testid': 'eval-absent', onchange: (e) => saveRes(s.id, { absent: e.target.checked, catchup: e.target.checked ? 'à rattraper' : null }, 'absence', false) }),
           r.absent ? h('select', { 'aria-label': 'Rattrapage', onchange: (e) => saveRes(s.id, { catchup: e.target.value, catchupDate: e.target.value === 'rattrapé' ? model.todayIso() : null }, 'rattrapage', false) }, ['à rattraper', 'rattrapé', 'non rattrapé'].map(x => h('option', { value: x, selected: r.catchup === x }, x))) : null),
-        ev.items.map(it => {
+        ev.items.map((it, col) => {
           const v = r.items?.[it.id] || {};
           return h('td', {}, r.absent ? h('span', { class: 'muted' }, 'abs.') : h('div', { class: 'eval-cell' },
-            showLevel ? h('select', { class: `lvl-${v.level || 'none'}`, 'aria-label': `${s.firstName} — ${it.label}`, 'data-testid': 'eval-level', onchange: (e) => { e.target.className = `lvl-${e.target.value || 'none'}`; saveItem(s.id, it.id, { level: e.target.value }); } },
-              h('option', { value: '' }, '— non évalué'), sc.map(([k, l]) => h('option', { value: k, selected: v.level === k, title: l }, k))) : null,
+            showLevel ? levelSeg(s, it, v, row, col) : null,
             showPts ? h('input', { type: 'number', step: '0.5', min: 0, max: it.maxPoints || null, value: v.points ?? '', class: 'pts', 'aria-label': `${s.firstName} — ${it.label} (points)`, onchange: (e) => saveItem(s.id, it.id, { points: e.target.value === '' ? null : Number(e.target.value) }) }) : null));
         }),
         showPts ? h('td', { class: 'nowrap' }, r.absent ? '' : `${total}${max ? ' / ' + max : ''}`) : null,
         (ev.versions || []).length ? h('td', {}, h('select', { 'aria-label': 'Version passée', onchange: (e) => saveRes(s.id, { versionId: e.target.value || null }, 'version') }, h('option', { value: '' }, 'standard'), ev.versions.map(vv => h('option', { value: vv.id, selected: r.versionId === vv.id }, vv.label)))) : null,
         h('td', {}, bound({ type: 'text', compact: true, value: r.observation, placeholder: 'observation, conditions…', onSave: (v) => saveRes(s.id, { observation: v }, 'observation') })));
     })),
-    showLevel ? h('tfoot', {}, h('tr', {}, h('th', {}, 'Répartition'), h('td', {}), ev.items.map(it => { const c = colStats(it); return h('td', { class: 'small' }, [...sc.map(([k]) => c[k] ? `${k} ${c[k]}` : ''), c['—'] ? `non évalués ${c['—']}` : ''].filter(Boolean).join(' · ')); }),
+    showLevel ? h('tfoot', {}, h('tr', {}, h('th', {}, 'Répartition'), h('td', {}), ev.items.map(it => h('td', { class: 'small', 'data-foot': it.id }, footTxt(it))),
       showPts ? h('td', {}) : null, (ev.versions || []).length ? h('td', {}) : null, h('td', {}))) : null));
 
   const printDoc = (blank) => h('div', { class: 'print-doc' }, h('header', { class: 'print-head' }, h('h1', {}, ev.title), h('p', {}, [cls.name, model.frDate(ev.date), ev.subject].filter(Boolean).join(' · '))),
     h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, h('th', { style: { width: '20%' } }, 'Élève'), ev.items.map(it => h('th', {}, it.label)), h('th', {}, 'Observation'))),
-      h('tbody', {}, students.map(({ student: s }) => { const r = ev.results?.[s.id] || {};
+      h('tbody', {}, students.map(({ student: s }, row) => { const r = ev.results?.[s.id] || {};
         return h('tr', {}, h('td', {}, `${(s.lastName || '').toUpperCase()} ${s.firstName}`), ev.items.map(it => h('td', {}, blank ? '' : r.absent ? 'abs.' : [r.items?.[it.id]?.level, r.items?.[it.id]?.points != null ? `${r.items[it.id].points}${it.maxPoints ? '/' + it.maxPoints : ''}` : ''].filter(Boolean).join(' · '))), h('td', {}, blank ? '' : r.observation || '')); }))),
     h('p', { class: 'print-foot' }, `Légende : ${sc.map(([k, l]) => `${k} = ${l}`).join(' · ')} · case vide = non évalué`));
 
   return h('div', { class: 'page' },
     h('p', {}, h('a', { href: '#/evaluations', class: 'back' }, '← Évaluations')),
     pageHeader(ev.title, { subtitle: [cls.name, model.frDate(ev.date), ev.subject, ev.mode].filter(Boolean).join(' · '), actions: [
+      ev.items.length && students.length ? h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'eval-by-student', onclick: () => byStudent(ev, students, 0) }, 'Saisir élève par élève') : null,
       h('button', { class: 'btn', type: 'button', onclick: () => itemDialog(ev) }, icon('plus', 16), 'Item'),
       h('button', { class: 'btn', type: 'button', onclick: () => versionDialog(ev) }, 'Version adaptée'),
       h('button', { class: 'btn', type: 'button', 'data-testid': 'print-eval', onclick: () => printDocument(printDoc(false), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer'),
@@ -118,8 +162,43 @@ function detail(id, rerender) {
       h('div', { class: 'field' }, h('label', {}, 'Légende'), h('p', { class: 'small' }, sc.map(([k, l]) => `${k} : ${l}`).join(' · '), h('br'), 'Vide : non évalué (différent de « non acquis »).'))),
       (ev.versions || []).length ? h('p', { class: 'small' }, 'Versions : ', ev.versions.map(v => `${v.label}${v.note ? ` (${v.note})` : ''}`).join(' ; ')) : null),
     ev.items.length ? h('section', { class: 'card' }, grid) : emptyState('Aucun item', 'Ajoutez des items ou des compétences à évaluer.'),
-    h('p', { class: 'muted small' }, 'Aucune note n’est convertie en niveau de maîtrise (ni l’inverse). Les absents sont signalés au rattrapage.'));
+    h('p', { class: 'muted small' }, 'Saisie rapide : un clic par case (re-cliquer efface), ou au clavier les touches 1 à ', String(sc.length), ' puis l’élève suivant (0 efface, flèches pour se déplacer). « Vides → ', fillKey, ' » remplit une colonne, il ne reste qu’à corriger les exceptions. Aucune note n’est convertie en niveau de maîtrise (ni l’inverse). Les absents sont signalés au rattrapage.'));
   void rerender;
+}
+
+/** Saisie élève par élève (copies en main) : gros boutons, absent, observation, suivant. */
+function byStudent(ev0, students, i) {
+  const sc = scale();
+  const { student: s } = students[i];
+  const ev = store.get(ev0.id);
+  const r = ev.results?.[s.id] || {};
+  const showLevel = ev.mode !== 'notes', showPts = ev.mode !== 'maîtrise';
+  const state = { absent: !!r.absent, items: structuredClone(r.items || {}), observation: r.observation || '' };
+  const body = h('div', { class: 'stack by-student' });
+  const draw = () => {
+    body.replaceChildren(
+      h('p', { class: 'muted' }, `Élève ${i + 1} sur ${students.length}`),
+      h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: state.absent, 'data-testid': 'bs-absent', onchange: (e) => { state.absent = e.target.checked; draw(); } }), 'Absent (à rattraper)'),
+      state.absent ? null : h('div', { class: 'stack' }, ev.items.map(it => h('div', { class: 'bs-item' },
+        h('div', { class: 'bs-label' }, it.label, showPts && it.maxPoints ? h('span', { class: 'muted small' }, ` / ${it.maxPoints}`) : null),
+        h('div', { class: 'row wrap' },
+          showLevel ? h('div', { class: 'lvl-seg big', role: 'radiogroup', 'aria-label': it.label }, sc.map(([k, l]) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${state.items[it.id]?.level === k ? 'on' : ''}`, role: 'radio', 'aria-checked': String(state.items[it.id]?.level === k), title: l, 'data-testid': 'bs-level',
+            onclick: () => { const cur = state.items[it.id]?.level; state.items[it.id] = { ...(state.items[it.id] || {}), level: cur === k ? '' : k }; draw(); } }, k))) : null,
+          showPts ? h('input', { type: 'number', step: '0.5', min: 0, class: 'pts', 'aria-label': `${it.label} (points)`, value: state.items[it.id]?.points ?? '', oninput: (e) => { state.items[it.id] = { ...(state.items[it.id] || {}), points: e.target.value === '' ? null : Number(e.target.value) }; } }) : null)))),
+      h('div', { class: 'field' }, h('label', {}, 'Observation'), h('input', { type: 'text', value: state.observation, placeholder: 'facultatif', oninput: (e) => { state.observation = e.target.value; } })));
+  };
+  draw();
+  const save = async () => {
+    const cur = structuredClone(store.get(ev.id).results || {});
+    cur[s.id] = { ...(cur[s.id] || {}), absent: state.absent, catchup: state.absent ? (cur[s.id]?.catchup || 'à rattraper') : null, items: state.items, observation: state.observation };
+    await store.update(ev.id, { results: cur }, `${ev.title} : ${s.firstName}`, { quiet: true });
+  };
+  const actions = [{ label: 'Fermer' }];
+  if (i > 0) actions.push({ label: '← Précédent', onClick: async () => { await save(); setTimeout(() => byStudent(ev, students, i - 1), 0); } });
+  actions.push(i < students.length - 1
+    ? { label: `Suivant : ${students[i + 1].student.firstName} →`, primary: true, testid: 'bs-next', onClick: async () => { await save(); setTimeout(() => byStudent(ev, students, i + 1), 0); } }
+    : { label: 'Terminer', primary: true, testid: 'bs-next', onClick: async () => { await save(); await store.update(ev.id, {}, `${ev.title} : saisie terminée`); toast('Saisie terminée'); } });
+  modal({ title: `${s.firstName} ${s.lastName || ''}`, wide: true, body, actions, onClose: () => store.update(ev.id, {}, `${ev.title}`) });
 }
 
 function itemDialog(ev, it = null) {

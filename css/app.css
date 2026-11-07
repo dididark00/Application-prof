@@ -1432,3 +1432,49 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .unchecked-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .unchecked-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line-soft, var(--line)); }
 .shift-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+
+/* ───────── Saisie rapide des évaluations */
+.lvl-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+.lvl-btn { min-width: 34px; min-height: 30px; padding: 0 6px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: .78rem; font-weight: 700; color: var(--ink-2); cursor: pointer; }
+.lvl-btn:hover { background: var(--surface); color: var(--ink); }
+.lvl-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.lvl-btn.on.lvl-NA { background: #f2b8a6; color: #4a1d0f; }
+.lvl-btn.on.lvl-ECA { background: #f7dc8e; color: #4a3a05; }
+.lvl-btn.on.lvl-A { background: #a9dfc3; color: #0f3d27; }
+.lvl-btn.on.lvl-D { background: #9fc6f0; color: #0c2c52; }
+.lvl-btn.on:not(.lvl-NA):not(.lvl-ECA):not(.lvl-A):not(.lvl-D) { background: var(--accent); color: #fff; }
+.lvl-seg.big .lvl-btn { min-width: 58px; min-height: 46px; font-size: 1rem; }
+.fill-col { display: block; margin-top: 4px; }
+.eval-grid td { vertical-align: middle; }
+.bs-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.bs-label { font-weight: 600; flex: 1 1 260px; }
+
+/* ───────── Livret v2 : compétences regroupées, positionnement par colonne */
+.comp-panel { margin-top: 8px; }
+.comp-panel summary { cursor: pointer; font-weight: 600; }
+.comp-panel h4 { margin: 10px 0 4px; font-size: .9rem; }
+.comp-rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+.comp-hist { display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; }
+.comp-hist .chip { font-size: .72rem; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); }
+.comp-hist .chip.lvl-NA { background: #f6d2c6; } .comp-hist .chip.lvl-ECA { background: #f9e7b4; } .comp-hist .chip.lvl-A { background: #cdeedc; } .comp-hist .chip.lvl-D { background: #cfe2f7; }
+@media (max-width: 640px) { .comp-rows li { grid-template-columns: 1fr; } .comp-hist { justify-content: flex-start; } }
+
+.livret .livret-head { border-bottom: 0; background: linear-gradient(120deg, #efe9fd, #e3dbfa); border-radius: 10px; padding: 10px 14px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.livret .livret-title h1 { color: #4b3596; letter-spacing: .04em; }
+.livret .livret-name { font-size: 1.15em; color: #1e1b24; }
+.livret .livret-sub { border: 1px solid #d9d0f2; border-radius: 10px; }
+.livret .livret-sub-head { background: #f3effb; border-bottom: 1px solid #e3dbfa; }
+.livret .livret-sub-name { color: #4b3596; }
+.livret-items thead th { font-size: .72em; font-weight: 700; color: #555; background: #fbfaff; border: 0; border-bottom: 1px solid #e3dbfa; padding: 3px 4px; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.livret-items thead th.livret-comp { text-align: left; padding-left: 9px; }
+.livret-items td.livret-comp { width: auto; }
+.livret-items th.livret-pos, .livret-items td.livret-pos { width: 13%; text-align: center; border-left: 1px solid #eee8fb; }
+.livret-pos.on { font-size: 1.1em; font-weight: 800; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.livret-pos.on.lv-NA { background: #fbe3db; color: #a33; } .livret-pos.on.lv-ECA { background: #fcefc9; color: #8a5a00; } .livret-pos.on.lv-A { background: #dcf3e6; color: #2f6f3f; } .livret-pos.on.lv-D { background: #dce9f8; color: #1f4e79; }
+.livret-domain td { font-size: .78em; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6a4fc4; background: #fbfaff; padding: 3px 9px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.livret .livret-app { padding: 6px 9px; border-top: 1px dashed #e3dbfa; }
+.livret-app-label { display: block; font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6a4fc4; }
+.livret-app p { margin: 2px 0 0; }
+.livret-general { border-color: #b4a2ee !important; }
+.livret table.livret-items thead th, .theme-couleur .livret table.livret-items thead th { background: #efe9fd !important; color: #4b3596 !important; border-bottom: 1px solid #d9d0f2 !important; }
+.comp-rows li { grid-template-columns: minmax(0, 1fr) auto minmax(180px, auto); }

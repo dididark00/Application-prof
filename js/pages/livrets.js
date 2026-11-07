@@ -7,7 +7,7 @@ import * as E from '../eleve.js';
 import * as V from '../vie.js';
 import * as P from '../pedago.js';
 import { competencyIndex, competencyLabel } from './referentiels.js';
-import { h, icon, toast, badge, emptyState, download, modal } from '../ui.js';
+import { h, icon, toast, badge, emptyState, download, modal, field } from '../ui.js';
 import { pageHeader, subTabs, needClass, avatar } from '../components.js';
 import { bound } from '../forms.js';
 import { resultsOf, scale, levelKind } from './evaluations.js';
@@ -16,6 +16,62 @@ import { printDocument } from '../print.js';
 import { appreciationDialog } from './redaction.js';
 
 let selPeriod = null;
+let selRange = null; // { start, end } : dates choisies (semestre, année, ou libres)
+
+/** Plage du livret : une période, ou des dates (semestre, année, libres). `id` sert de clé aux bilans enregistrés. */
+function rangeOf(periods) {
+  if (selRange) {
+    const inside = periods.map((p, i) => [p, i]).filter(([p]) => p.start >= selRange.start && p.end <= selRange.end);
+    const label = inside.length > 1 && inside[0][0].start === selRange.start && inside.at(-1)[0].end === selRange.end
+      ? (inside.length === periods.length ? 'Année' : `Périodes ${inside[0][1] + 1} à ${inside.at(-1)[1] + 1}`)
+      : `Du ${model.frShort(selRange.start)} au ${model.frShort(selRange.end)}`;
+    return { id: `dates:${selRange.start}:${selRange.end}`, start: selRange.start, end: selRange.end, label, custom: true };
+  }
+  return null;
+}
+function rangeDialog(periods, rerender) {
+  const half = Math.ceil(periods.length / 2);
+  const quick = [
+    periods.length > 1 ? ['Semestre 1', periods[0].start, periods[half - 1].end] : null,
+    periods.length > 1 ? ['Semestre 2', periods[half].start, periods.at(-1).end] : null,
+    ['Toute l’année', periods[0].start, periods.at(-1).end]].filter(Boolean);
+  const from = h('input', { type: 'date', value: selRange?.start || periods[0]?.start, 'data-testid': 'range-from' });
+  const to = h('input', { type: 'date', value: selRange?.end || model.todayIso(), 'data-testid': 'range-to' });
+  let dlg = null;
+  const pick = (a, b) => { selRange = { start: a, end: b }; dlg?.close(); rerender(); };
+  dlg = modal({ title: 'Dates du livret', body: h('div', { class: 'stack' },
+    h('p', { class: 'muted small' }, 'Le livret reprend toutes les évaluations faites entre ces deux dates (vous pouvez ensuite en retirer ou en ajouter).'),
+    h('div', { class: 'row wrap' }, quick.map(([l, a, b]) => h('button', { class: 'btn', type: 'button', 'data-testid': 'range-quick', onclick: () => pick(a, b) }, l))),
+    h('div', { class: 'grid-2' }, field('Du', from), field('Au', to))),
+    actions: [{ label: 'Annuler' }, { label: 'Utiliser ces dates', primary: true, testid: 'range-go', onClick: () => { if (!from.value || !to.value || from.value > to.value) { toast('Vérifiez les deux dates.'); return false; } selRange = { start: from.value, end: to.value }; rerender(); } }] });
+}
+
+// ───── Synthèse par compétence : chaque compétence une seule fois, avec tous ses résultats datés et un niveau retenu.
+const compKey = (it) => it.competencyId ? `c:${it.competencyId}` : `l:${(it.label || '').trim().toLowerCase()}`;
+/** Niveau proposé : moyenne des résultats, pondérée vers les plus récents (les progrès comptent davantage). */
+export function retainedLevel(levels, sc) {
+  const keys = sc.map(([k]) => k); const xs = levels.map(l => keys.indexOf(l)).filter(i => i >= 0);
+  if (!xs.length) return '';
+  let w = 0, t = 0; xs.forEach((x, i) => { const wi = i + 1; w += wi; t += wi * x; });
+  return keys[Math.min(keys.length - 1, Math.round(t / w))];
+}
+export function compSynth(res, sc, rep = null, idx = competencyIndex()) {
+  const bySub = {};
+  for (const r of res.filter(x => !x.absent && (x.level || x.points != null)).sort((a, b) => (a.ev.date || '').localeCompare(b.ev.date || ''))) {
+    const sub = r.ev.subject || 'Autre';
+    const key = compKey(r.item);
+    const c = idx.get(r.item.competencyId);
+    const row = ((bySub[sub] ||= new Map()).get(key)) || { key, label: r.item.competencyId ? competencyLabel(r.item.competencyId, idx) : r.item.label, domain: c?.domain || '', results: [] };
+    row.results.push({ date: r.ev.date, level: r.level, points: r.points, max: Number(r.item.maxPoints) || 0, title: r.ev.title });
+    bySub[sub].set(key, row);
+  }
+  for (const m of Object.values(bySub)) for (const row of m.values()) {
+    row.proposed = retainedLevel(row.results.map(x => x.level).filter(Boolean), sc);
+    row.level = rep?.compLevels?.[row.key] || row.proposed;
+    row.forced = !!rep?.compLevels?.[row.key] && rep.compLevels[row.key] !== row.proposed;
+  }
+  return Object.fromEntries(Object.entries(bySub).map(([k, m]) => [k, [...m.values()]]));
+}
 const MATERNELLE = ['TPS', 'PS', 'MS', 'GS'];
 
 /** Évaluations qui alimentent le livret d'une période : celles de la période, sauf exclues, plus celles ajoutées. */
@@ -59,7 +115,7 @@ function draft(sub, sm, sc) {
 }
 
 // ───── Notes et niveaux par discipline (proposés d'après les évaluations, modifiables)
-const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, detail: true, absences: true, ...(store.get(cls.id)?.livretOptions || {}) });
+const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, detail: true, dates: true, absences: true, ...(store.get(cls.id)?.livretOptions || {}) });
 /** Proposition : note sur « sur » (points des évaluations retenues) et niveau le plus représentatif. */
 export function suggestMark(sm, sc, sur = 20) {
   if (!sm) return { note: '', level: '' };
@@ -77,9 +133,11 @@ export function render({ rerender }) {
   if (missing) return h('div', { class: 'page' }, pageHeader('Livrets et bilans'), subTabs(), missing);
   const mat = (cls.levels || []).every(l => MATERNELLE.includes(l));
   const year = store.get(cls.yearId); const periods = model.periodsOf(year);
-  const per = periods.find(p => p.id === selPeriod) || model.periodOfDate(year, model.todayIso()) || periods[0];
-  if (!per) return h('div', { class: 'page' }, pageHeader('Livrets et bilans'), subTabs(), emptyState('Aucune période définie'));
-  const pi = periods.indexOf(per);
+  const basePer = periods.find(p => p.id === selPeriod) || model.periodOfDate(year, model.todayIso()) || periods[0];
+  if (!basePer) return h('div', { class: 'page' }, pageHeader('Livrets et bilans'), subTabs(), emptyState('Aucune période définie'));
+  const custom = rangeOf(periods);
+  const pi = custom ? -1 : periods.indexOf(basePer);
+  const per = custom || { ...basePer, label: `Période ${pi + 1}` };
   const students = model.studentsOfClass(cls.id, { date: per.end > model.todayIso() ? model.todayIso() : per.end, includeLeft: false });
   const sc = scale();
   const subjects = model.subjects();
@@ -107,23 +165,43 @@ export function render({ rerender }) {
           h('div', { class: 'row' }, h('select', { 'aria-label': 'Ajouter une discipline', onchange: (e) => { if (!e.target.value) return; saveReport(cls, per, s, { subjects: { ...(rep?.subjects || {}), [e.target.value]: rep?.subjects?.[e.target.value] || '' } }, 'Discipline ajoutée').then(rerender); } },
             h('option', { value: '' }, '+ discipline'), subjects.filter(x => !subs.includes(x)).map(x => h('option', { value: x }, x)))),
           bound({ label: mat ? 'Synthèse des acquis' : 'Appréciation générale', value: rep?.general, testid: 'report-general', onSave: (v) => saveReport(cls, per, s, { general: v }, 'Appréciation générale') }),
-          h('button', { class: 'btn btn-link small', type: 'button', 'data-testid': 'report-help', onclick: () => appreciationDialog(s, { initial: reportOf(cls.id, per.id, s.id)?.general || '', onUse: (text) => saveReport(cls, per, s, { general: text }, 'Appréciation générale').then(rerender) }) }, 'Aide à la rédaction (phrases-types)'))));
+          h('button', { class: 'btn btn-link small', type: 'button', 'data-testid': 'report-help', onclick: () => appreciationDialog(s, { initial: reportOf(cls.id, per.id, s.id)?.general || '', onUse: (text) => saveReport(cls, per, s, { general: text }, 'Appréciation générale').then(rerender) }) }, 'Aide à la rédaction (phrases-types)'))),
+      !mat ? compPanel(cls, per, s, res, sc, rerender) : null);
   };
 
   return h('div', { class: 'page' },
-    pageHeader(mat ? 'Carnets de suivi des apprentissages' : 'Livrets et bilans', { favKey: 'classe/livrets', subtitle: `${cls.name} · P${pi + 1}`, actions: [
+    pageHeader(mat ? 'Carnets de suivi des apprentissages' : 'Livrets et bilans', { favKey: 'classe/livrets', subtitle: `${cls.name} · ${per.label}`, actions: [
       h('button', { class: 'btn', type: 'button', 'data-testid': 'export-lsu', onclick: () => {
         const rows = students.map(({ student: s }) => { const r = reportOf(cls.id, per.id, s.id); return [s.lastName, s.firstName, ...subjects.map(x => r?.subjects?.[x] || ''), r?.general || '', r?.status || 'brouillon']; });
-        download(`bilans-P${pi + 1}-${cls.name.replace(/[^\w-]+/g, '_')}.csv`, toCsv([['Nom', 'Prénom', ...subjects, 'Appréciation générale', 'Statut'], ...rows]), 'text/csv;charset=utf-8');
+        download(`bilans-${per.label.replace(/[^\w-]+/g, '_')}-${cls.name.replace(/[^\w-]+/g, '_')}.csv`, toCsv([['Nom', 'Prénom', ...subjects, 'Appréciation générale', 'Statut'], ...rows]), 'text/csv;charset=utf-8');
         toast('Export des appréciations (à reporter dans le LSU)');
       } }, icon('download', 16), 'Exporter les appréciations'),
       h('button', { class: 'btn', type: 'button', 'data-testid': 'livrets-fill-marks', onclick: () => fillMarks(cls, per, students, sc).then(rerender) }, 'Reprendre les notes des évaluations'),
       h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'livrets-generate', onclick: () => generateDialog(cls, per, pi, students.map(x => x.student), mat) }, icon('print', 16), mat ? 'Générer les carnets de la classe' : 'Générer les livrets de la classe')] }),
     subTabs(),
-    h('div', { class: 'seg', role: 'group', 'aria-label': 'Période' }, periods.map((p, i) => h('button', { type: 'button', class: p.id === per.id ? 'on' : '', onclick: () => { selPeriod = p.id; rerender(); } }, `P${i + 1}`))),
+    h('div', { class: 'row wrap' },
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Période' }, periods.map((p, i) => h('button', { type: 'button', class: !custom && p.id === per.id ? 'on' : '', onclick: () => { selPeriod = p.id; selRange = null; rerender(); } }, `P${i + 1}`)),
+        h('button', { type: 'button', class: custom ? 'on' : '', 'data-testid': 'livret-range', onclick: () => rangeDialog(periods, rerender) }, custom ? `${custom.label} ✎` : 'Autres dates…')),
+      h('span', { class: 'muted small' }, `Du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
     evalPanel(cls, per, rerender, mat),
     h('p', { class: 'muted small' }, 'Les résultats et observations de la période sont affichés pour vous aider ; les appréciations restent entièrement rédigées et modifiées par vous. L’export est un tableau à reporter dans le LSU : la compatibilité d’un import direct n’a pas été vérifiée et l’application ne remplace pas le service officiel.'),
     students.length ? h('div', { class: 'stack' }, students.map(card)) : emptyState('Aucun élève'));
+}
+
+/** Compétences évaluées de l'élève : une ligne par compétence, ses résultats datés, le niveau retenu (modifiable). */
+function compPanel(cls, per, s, res, sc, rerender) {
+  const rep = reportOf(cls.id, per.id, s.id);
+  const syn = compSynth(res, sc, rep);
+  const n = Object.values(syn).reduce((t, l) => t + l.length, 0);
+  if (!n) return null;
+  const setLv = async (key, v) => { const cur = { ...(reportOf(cls.id, per.id, s.id)?.compLevels || {}) }; if (v) cur[key] = v; else delete cur[key]; await saveReport(cls, per, s, { compLevels: cur }, 'Niveau retenu'); rerender(); };
+  return h('details', { class: 'comp-panel', 'data-testid': 'comp-panel' }, h('summary', {}, `${n} compétence(s) évaluée(s) — niveaux retenus pour le livret`),
+    Object.entries(syn).map(([sub, rows]) => h('div', {}, h('h4', {}, sub), h('ul', { class: 'plain comp-rows' }, rows.map(r => h('li', { 'data-testid': 'comp-row' },
+      h('span', { class: 'comp-label' }, r.label),
+      h('span', { class: 'comp-hist' }, r.results.map(x => h('span', { class: `chip lvl-${x.level || 'none'}`, title: `${x.title} — ${model.frShort(x.date)}` }, `${model.frShort(x.date)} ${x.level || (x.points != null ? `${x.points}${x.max ? '/' + x.max : ''}` : '')}`))),
+      h('select', { 'aria-label': `Niveau retenu : ${r.label}`, 'data-testid': 'comp-level', onchange: (e) => setLv(r.key, e.target.value === r.proposed ? '' : e.target.value) },
+        h('option', { value: '' }, r.proposed ? `retenu : ${r.proposed} (proposé)` : '—'), sc.map(([k, l]) => h('option', { value: k, selected: r.forced && r.level === k }, `${k} — ${l}`)))))))),
+    h('p', { class: 'muted small' }, 'Niveau proposé : moyenne des résultats, en donnant plus de poids aux plus récents. Choisissez un autre niveau si besoin.'));
 }
 
 /** Note et niveau d'une discipline (carte de l'élève). */
@@ -154,12 +232,12 @@ function generateDialog(cls, per, pi, students, mat) {
   const box = (k, l) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: k, checked: !!o[k], 'data-testid': `gen-${k}` }), l);
   const sur = h('select', { name: 'sur', 'data-testid': 'gen-sur' }, [10, 20, 100].map(v => h('option', { value: v, selected: Number(o.sur) === v }, `/${v}`)));
   const form = h('div', { class: 'form' },
-    mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('detail', 'Détail des compétences évaluées'), box('absences', 'Absences de la période')),
+    mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('detail', 'Tableau des compétences (une ligne par compétence, niveau retenu coché)'), box('dates', 'Dates et résultats de chaque évaluation sous la compétence'), box('absences', 'Absences de la période')),
     h('p', { class: 'muted small' }, 'Appréciations, légende de l’échelle et cadre de signatures (enseignante, direction, famille) figurent toujours. Pour un PDF : « Enregistrer au format PDF » dans la fenêtre d’impression.'));
-  modal({ title: mat ? 'Générer les carnets de suivi' : `Générer ${students.length > 1 ? 'les livrets' : 'le livret'} — période ${pi + 1}`, body: form,
+  modal({ title: mat ? 'Générer les carnets de suivi' : `Générer ${students.length > 1 ? 'les livrets' : 'le livret'} — ${per.label.toLowerCase()}`, body: form,
   actions: [{ label: 'Annuler' }, { label: 'Générer', primary: true, testid: 'gen-go', onClick: async (ev) => {
     const next = { ...o, sur: Number(form.querySelector('[name=sur]')?.value || o.sur) };
-    for (const k of ['niveaux', 'notes', 'detail', 'absences']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
+    for (const k of ['niveaux', 'notes', 'detail', 'dates', 'absences']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
     if (JSON.stringify(next) !== JSON.stringify(o)) await store.update(cls.id, { livretOptions: next }, 'Options du livret', { quiet: true });
     printDocument(h('div', {}, students.map(s => h('div', { class: 'livret-page' }, printReport(cls, per, pi, s, mat, next)))));
     void ev;
@@ -177,27 +255,32 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
   const bySub = {};
   for (const r of res.filter(x => !x.absent && x.level || (!x.absent && x.points != null))) (bySub[r.ev.subject || 'Autre'] ||= []).push(r);
   const order = model.subjects();
-  const subs = [...new Set([...Object.keys(rep?.subjects || {}), ...Object.keys(rep?.marks || {}), ...(mat ? [] : Object.keys(bySub))])].sort((a, b) => ((order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99)) || a.localeCompare(b));
+  const subs = [...new Set([...Object.keys(rep?.subjects || {}), ...Object.keys(rep?.marks || {}), ...(mat ? [] : Object.keys(bySub))])].filter(x => x).sort((a, b) => ((order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99)) || a.localeCompare(b));
   const obs = mat ? E.of('observation', s.id).filter(x => x.date >= per.start && x.date <= per.end && x.kind === 'réussite') : [];
   const port = mat ? E.of('portfolio', s.id).filter(p => (p.date || '') >= per.start && (p.date || '') <= per.end) : [];
   const abs = V.attendanceOfStudent(s.id).filter(x => x.a.date >= per.start && x.a.date <= per.end && x.m.status === 'absent').length;
   const teacher = [store.getSettings().userName, model.hasBinome(cls) ? cls.binome?.name : ''].filter(Boolean).join(' et ');
   const notes = subs.map(sub => String(markOf(rep, sub).note || '').trim()).filter(Boolean).map(x => Number(x.replace(',', '.'))).filter(Number.isFinite);
+  const syn = mat ? {} : compSynth(res, sc, rep, idx);
   const head = h('header', { class: 'livret-head' },
     h('div', { class: 'livret-school' }, h('strong', {}, cls.school || 'École'), h('div', {}, `Année scolaire ${year?.label || ''}`)),
-    h('div', { class: 'livret-title' }, h('h1', {}, mat ? 'Carnet de suivi des apprentissages' : 'Livret scolaire'), h('div', { class: 'print-sub' }, `Période ${pi + 1} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
-    h('div', { class: 'livret-student' }, h('strong', {}, `${s.firstName} ${s.lastName}`), h('div', {}, `Classe : ${cls.name}`), teacher ? h('div', {}, `Enseignante${teacher.includes(' et ') ? 's' : ''} : ${teacher}`) : null));
-  const legend = !mat && o.niveaux ? h('p', { class: 'livret-legend' }, h('strong', {}, 'Niveaux : '), sc.map(([k, l]) => `${k} = ${l}`).join(' · ')) : null;
+    h('div', { class: 'livret-title' }, h('h1', {}, mat ? 'Carnet de suivi des apprentissages' : 'Livret scolaire'), h('div', { class: 'print-sub' }, `${per.label} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
+    h('div', { class: 'livret-student' }, h('strong', { class: 'livret-name' }, `${s.firstName} ${s.lastName}`), h('div', {}, `Classe : ${cls.name}`), teacher ? h('div', {}, `Enseignante${teacher.includes(' et ') ? 's' : ''} : ${teacher}`) : null));
+  const legend = !mat && (o.niveaux || o.detail) ? h('p', { class: 'livret-legend' }, h('strong', {}, 'Positionnement : '), sc.map(([k, l]) => `${k} = ${l}`).join(' · ')) : null;
   const subBlock = (sub) => {
-    const m = markOf(rep, sub); const items = bySub[sub] || [];
+    const m = markOf(rep, sub); const rows = syn[sub] || [];
+    const domains = [...new Set(rows.map(r => r.domain))];
+    const compRow = (r) => h('tr', {},
+      h('td', { class: 'livret-comp' }, r.label, o.dates && r.results.length ? h('div', { class: 'livret-ev' }, r.results.map(x => `${model.frShort(x.date)} : ${x.level || ''}${x.points != null && x.max ? ` ${x.points}/${x.max}` : ''}`).join(' · ')) : null),
+      sc.map(([k]) => h('td', { class: `livret-pos ${r.level === k ? `on lv-${k}` : ''}` }, r.level === k ? '●' : '')));
     return h('section', { class: 'livret-sub' },
       h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, sub),
         o.niveaux && m.level ? h('span', { class: `livret-level lv-${m.level}` }, `${m.level} · ${label[m.level] || ''}`) : null,
         o.notes && m.note ? h('span', { class: 'livret-note' }, `${m.note} / ${o.sur}`) : null),
-      o.detail && items.length ? h('table', { class: 'print-table livret-items' }, h('tbody', {}, items.map(r => h('tr', {},
-        h('td', {}, r.item.competencyId ? competencyLabel(r.item.competencyId, idx) : r.item.label, h('div', { class: 'livret-ev' }, `${r.ev.title} — ${model.frShort(r.ev.date)}`)),
-        h('td', { class: 'livret-cell' }, r.level ? `${r.level}` : ''), o.notes ? h('td', { class: 'livret-cell' }, r.points != null && r.item.maxPoints ? `${r.points}/${r.item.maxPoints}` : '') : null)))) : null,
-      rep?.subjects?.[sub] ? h('p', { class: 'livret-app pre' }, rep.subjects[sub]) : null);
+      o.detail && rows.length ? h('table', { class: 'print-table livret-items' },
+        h('thead', {}, h('tr', {}, h('th', { class: 'livret-comp' }, 'Compétences évaluées'), sc.map(([k, l]) => h('th', { class: 'livret-pos', title: l }, h('span', {}, l))))),
+        h('tbody', {}, domains.length > 1 || domains[0] ? domains.flatMap(d => [d ? h('tr', { class: 'livret-domain' }, h('td', { colspan: sc.length + 1 }, d)) : null, ...rows.filter(r => r.domain === d).map(compRow)]) : rows.map(compRow))) : null,
+      rep?.subjects?.[sub] ? h('div', { class: 'livret-app' }, h('span', { class: 'livret-app-label' }, 'Appréciation'), h('p', { class: 'pre' }, rep.subjects[sub])) : null);
   };
   return h('div', { class: 'print-doc livret' }, head,
     mat ? [

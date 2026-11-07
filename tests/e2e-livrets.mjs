@@ -499,6 +499,66 @@ await test('Séance pas cochée : proposition « Décaler la séquence » (S1 pr
   eq(JSON.stringify(back), JSON.stringify([['prévue', r.s[0]], ['prévue', r.s[1]], ['prévue', r.s[2]]]), 'Annuler défait tout le décalage d’un coup');
 });
 
+await test('Livret v2 : dates libres, une ligne par compétence avec ses résultats datés, niveau retenu modifiable, positionnement imprimé', async () => {
+  const r = await S(`const cls = store.get(store.getSettings().currentClassId); const st = model.studentsOfClass(cls.id)[0].student;
+    const mk = (title, date, lv) => store.create('evaluation', { classId: cls.id, title, subject: 'Sciences', date, mode: 'maîtrise', items: [{ id: 'z', label: 'Décrire le vivant (test v2)' }], results: { [st.id]: { items: { z: { level: lv } } } } });
+    await mk('Vivant 1', '2026-09-10', 'NA'); await mk('Vivant 2', '2026-10-01', 'ECA'); await mk('Vivant 3', '2026-12-01', 'A');
+    return { sid: st.id, name: st.firstName };`);
+  await go('#/livrets');
+  await page.getByTestId('livret-range').click(); await page.waitForTimeout(200);
+  await page.getByTestId('range-from').fill('2026-09-01'); await page.getByTestId('range-to').fill('2026-10-31');
+  await page.getByTestId('range-go').click(); await page.waitForTimeout(400);
+  const card = page.getByTestId('report-card').filter({ hasText: r.name }).first();
+  await card.getByTestId('comp-panel').locator('summary').click(); await page.waitForTimeout(150);
+  const row = card.getByTestId('comp-row').filter({ hasText: 'Décrire le vivant (test v2)' });
+  eq(await row.count(), 1, 'une seule ligne pour la compétence évaluée deux fois');
+  eq(await row.locator('.chip').count(), 2, 'les deux résultats datés de la plage (pas celui de décembre)');
+  assert((await row.getByTestId('comp-level').inputValue()) === '', 'niveau proposé par défaut');
+  await row.getByTestId('comp-level').selectOption('A'); await page.waitForTimeout(400);
+  await page.getByTestId('report-card').filter({ hasText: r.name }).first().getByRole('button', { name: /Imprimer le bilan/ }).click(); await page.waitForTimeout(150);
+  await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
+  const html = await page.evaluate(() => document.getElementById('print-root').innerHTML);
+  assert(html.includes('Décrire le vivant (test v2)') && /livret-pos on lv-A/.test(html), 'niveau retenu coché dans la bonne colonne');
+  assert(html.includes('Du 01/09/2026 au 31/10/2026') || html.includes('Périodes'), 'dates du livret imprimées');
+  await page.getByTestId('livret-range').click(); await page.getByTestId('range-quick').last().click(); await page.waitForTimeout(300);
+  assert((await page.getByTestId('livret-range').innerText()).includes('Année'), 'raccourci « Toute l’année »');
+});
+
+await test('Évaluations : saisie rapide (un clic, clavier 1-4 puis élève suivant, « Vides → A », élève par élève), séquence reprise', async () => {
+  const id = await S(`const cls = store.get(store.getSettings().currentClassId);
+    const ev = await store.create('evaluation', { classId: cls.id, title: 'Saisie rapide (test)', subject: 'Mathématiques', date: model.todayIso(), mode: 'maîtrise', items: [{ id: 'x', label: 'Item X' }, { id: 'y', label: 'Item Y' }], results: {} });
+    return ev.id;`);
+  await go(`#/evaluations/${id}`);
+  const seg0 = page.getByTestId('eval-seg').nth(0);
+  await seg0.locator('button', { hasText: 'ECA' }).click(); await page.waitForTimeout(200);
+  await seg0.locator('button.on').focus();
+  await page.keyboard.press('3'); await page.waitForTimeout(150); // ligne 1 -> A, puis ligne 2
+  await page.keyboard.press('1'); await page.waitForTimeout(150); // ligne 2 -> NA
+  const lv = await S(`const ev = store.get(a); return Object.values(ev.results).map(r => r.items?.x?.level).filter(Boolean);`, id);
+  eq(JSON.stringify(lv.sort()), JSON.stringify(['A', 'NA']), 'clic puis clavier : la 1re case modifiée, la 2e remplie');
+  await page.getByTestId('fill-col').nth(1).click(); await page.waitForTimeout(400);
+  const n = await S(`const ev = store.get(a); return Object.values(ev.results).filter(r => r.items?.y?.level === 'A').length;`, id);
+  const nStudents = await page.getByTestId('eval-seg').count() / 2;
+  eq(n, nStudents, '« Vides → A » remplit la colonne');
+  assert((await page.getByTestId('eval-grid').locator('tfoot').innerText()).includes('A '), 'répartition mise à jour');
+  await page.getByTestId('eval-by-student').click(); await page.waitForTimeout(200);
+  await page.getByTestId('bs-level').filter({ hasText: 'D' }).first().click();
+  await page.getByTestId('bs-next').click(); await page.waitForTimeout(400);
+  const d = await S(`const ev = store.get(a); return Object.values(ev.results).filter(r => r.items?.x?.level === 'D').length;`, id);
+  eq(d, 1, 'élève par élève enregistré');
+  await page.keyboard.press('Escape');
+  // nouvelle évaluation reprenant les compétences de la séquence
+  const seq = await S(`const cls = store.get(store.getSettings().currentClassId); const ref = store.all('referential').find(r => (r.items || []).length >= 2);
+    if (!ref) return null; const s = await store.create('sequence', { classId: cls.id, title: 'Séquence compétences (test)', subject: 'Mathématiques', competencyIds: ref.items.slice(0, 2).map(i => i.id) }); return s.id;`);
+  if (seq) {
+    await go('#/evaluations'); await page.getByTestId('new-eval').click();
+    await page.locator('.modal [name=title]').fill('Depuis la séquence (test)');
+    await page.locator('.modal [name=sequenceId]').selectOption(seq);
+    await page.locator('.modal').getByRole('button', { name: 'Créer' }).click(); await page.waitForTimeout(500);
+    eq(await page.getByTestId('fill-col').count(), 2, 'items repris des compétences de la séquence');
+  }
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);
@@ -573,7 +633,7 @@ await test('Livret : notes et niveaux repris des évaluations, modifiables, livr
   await first.getByRole('button', { name: /Imprimer le bilan/ }).click(); await page.waitForTimeout(150);
   await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
   const t = await page.evaluate(() => window.__p || '');
-  for (const x of ['Livret scolaire', '/ 20', 'Dictée notée', 'Les responsables légaux', 'Niveaux :']) assert(t.includes(x), `livret : ${x}`);
+  for (const x of ['Livret scolaire', '/ 20', 'Dictée notée', 'Les responsables légaux', 'Positionnement :']) assert(t.includes(x), `livret : ${x}`);
   await page.getByTestId('livrets-generate').click(); await page.waitForTimeout(150);
   await page.getByTestId('gen-notes').uncheck(); await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
   assert(!(await page.evaluate(() => window.__p || '')).includes('/ 20'), 'notes masquées sur demande');
