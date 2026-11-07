@@ -613,6 +613,35 @@ await test('Sécurité : exercice incendie noté (registre), PPMS prévu dans l�
   assert((await page.getByTestId('bl-period').innerText()).includes('Sécurité'), 'rappel en fin de période');
 });
 
+await test('Observation éclair (compétence → niveau → élève, vers l’évaluation du jour et le suivi), anniversaires sur l’accueil, mode léger', async () => {
+  const r = await S(`const cls = store.get(store.getSettings().currentClassId); const ref = store.all('referential').find(x => (x.items || []).length);
+    const st = model.studentsOfClass(cls.id)[0].student;
+    await store.update(st.id, { birthDate: '2018-' + model.addDays(model.todayIso(), 2).slice(5) });
+    const O = await import('./js/pages/observer.js');
+    if (ref) await O.recordLevel(cls, model.todayIso(), { compId: ref.items[0].id, subject: 'Mathématiques', level: 'ECA', student: st, note: 'test éclair' });
+    return { name: st.firstName, sid: st.id, ok: !!ref };`);
+  if (r.ok) {
+    const ev = await S(`return store.all('evaluation').find(e => e.source === 'observation' && e.date === model.todayIso());`);
+    assert(ev && Object.values(ev.results[r.sid].items)[0].level === 'ECA', 'niveau rangé dans l’évaluation du jour');
+    eq(await S(`return store.all('observation').filter(o => o.studentId === a && o.text.includes('test éclair')).length;`, r.sid), 1, 'observation ajoutée au suivi');
+  }
+  await go('#/observer');
+  await page.getByTestId('obs-student').first().click(); await page.waitForTimeout(300);
+  assert(await S(`return store.all('observation').filter(o => o.date === model.todayIso()).length;`) >= 1, 'un geste = une observation');
+  await go('#/');
+  assert((await page.getByTestId('birthdays').innerText()).includes(r.name), 'anniversaire annoncé sur l’accueil');
+  await go('#/reglages/modules');
+  const lm = page.getByTestId('light-mode');
+  if (await lm.getByTestId('light-apply').count()) {
+    const before = await page.locator('#sidebar a.nav-sub, #sidebar .nav-item').count();
+    await lm.getByTestId('light-apply').click(); await page.waitForTimeout(400);
+    assert((await S(`return (store.getSettings().hiddenModules || []).length;`)) > 0, 'pages jamais ouvertes masquées');
+    await page.getByTestId('light-reset').click(); await page.waitForTimeout(300);
+    eq(await S(`return (store.getSettings().hiddenModules || []).length;`), 0, 'tout réaffiché');
+    void before;
+  }
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

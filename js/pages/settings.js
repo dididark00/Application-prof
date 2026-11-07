@@ -20,7 +20,7 @@ const TABS = [
   ['general', 'Général'],
   ['annees', 'Années et périodes'],
   ['classes', 'Classes'],
-  ['modules', 'Modules'],
+  ['modules', 'Modules et mode léger'],
   ['charte', 'Charte visuelle'],
   ['sauvegarde', 'Sauvegarde'],
   ['synchro', 'Synchronisation (Nuage)'],
@@ -311,7 +311,17 @@ function modules() {
     on ? cur.delete(key) : cur.add(key);
     await store.setSettings({ hiddenModules: [...cur] });
   };
+  // Mode léger : pages jamais ouvertes sur cet appareil (compteur local, sans aucun envoi).
+  let visits = {}; try { visits = JSON.parse(localStorage.getItem('classeur.visits') || '{}'); } catch { /* */ }
+  const unused = RUBRIQUES.filter(r => r.id !== 'aujourdhui' && !hidden.has(r.id)).flatMap(r => r.sous.filter(s => s.route && !visits[s.route] && !hidden.has(`${r.id}/${s.id}`)).map(s => ({ r, s })));
+  const light = h('section', { class: 'card', 'data-testid': 'light-mode' }, h('h2', {}, 'Mode léger'),
+    h('p', { class: 'small' }, unused.length ? `${unused.length} page(s) jamais ouverte(s) sur cet appareil : les masquer raccourcit le menu. Rien n’est effacé, et vous pouvez tout réafficher ici.` : 'Toutes les pages affichées ont déjà servi sur cet appareil.'),
+    unused.length ? h('details', {}, h('summary', { class: 'small' }, 'Voir la liste'), h('p', { class: 'small muted' }, unused.map(x => `${x.r.titre} › ${x.s.titre}`).join(' · '))) : null,
+    h('div', { class: 'row wrap' },
+      unused.length ? h('button', { class: 'btn btn-primary btn-small', type: 'button', 'data-testid': 'light-apply', onclick: async () => { const cur = new Set(store.getSettings().hiddenModules || []); unused.forEach(x => cur.add(`${x.r.id}/${x.s.id}`)); await store.setSettings({ hiddenModules: [...cur] }); toast(`${unused.length} page(s) masquée(s) — tout se réaffiche ici`); } }, `Masquer ces ${unused.length} page(s)`) : null,
+      hidden.size ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'light-reset', onclick: async () => { await store.setSettings({ hiddenModules: [] }); toast('Toutes les pages sont de nouveau affichées'); } }, 'Tout réafficher') : null));
   return h('div', { class: 'stack' },
+    light,
     h('p', { class: 'muted' }, 'Masquer un module le retire de la navigation, des favoris et de la recherche. Aucune donnée n’est effacée : réaffichez-le pour la retrouver.'),
     RUBRIQUES.map(r => h('div', { class: 'card' },
       h('label', { class: 'switch-row' },

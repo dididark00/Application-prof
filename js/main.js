@@ -78,6 +78,7 @@ import * as pRegistre from './pages/registre.js';
 import * as pBilans from './pages/bilans.js';
 import * as pDossiers from './pages/dossiers.js';
 import * as pSecurite from './pages/securite.js';
+import * as pObserver from './pages/observer.js';
 
 // Table des routes réalisées. Toute autre sous-page affiche honnêtement « à venir ».
 const ROUTES = {
@@ -151,6 +152,7 @@ const ROUTES = {
   'fin-periode': pBilans.period,
   dossiers: pDossiers,
   securite: pSecurite,
+  observer: pObserver,
   publications: { render: pFam.renderPublications },
   messages: { render: pFam.renderMessages },
   rdv: { render: pFam.renderRdv },

@@ -270,6 +270,9 @@ export const ROADMAP = [
   R(5, '§14 Exports', 'Dossier remplaçant en un clic : fiche d’accueil (horaires, routines, fonctionnement, sécurité, où trouver — textes gardés), contacts utiles, liste de la classe, emploi du temps, cahier journal des jours choisis, fiches de séance ; élèves à besoins particuliers seulement si on le coche, pour cette impression', 'fait', 'Organisation › Équipe et école › Dossiers remplaçant et visite.'),
   R(5, '§14 Exports', 'Dossier de visite (tuteur, inspection) : fiche de la séance observée, fiche de séquence, progression avec la séquence surlignée, cahier journal du jour ; bouton « Dossier de visite » sur chaque fiche de séance', 'fait', ''),
   R(5, '§12 Organisation', 'Sécurité et obligations : exercices incendie et PPMS (risques majeurs, attentat-intrusion) notés avec date, heure, durée et observations, ou prévus dans l’agenda ; nombres attendus modifiables (note de la DSDEN) ; registre imprimable ; conseils d’école comptés depuis Réunions, lien 108 h et APC ; rappels sur l’accueil (incendie en retard) et en fin de période', 'fait', 'Par défaut : 2 incendie (le premier dans le mois de la rentrée), 1 PPMS de chaque type, 3 conseils d’école.'),
+  R(5, '§8 Élèves', 'Observation éclair (téléphone, en classe) : compétence des séances du jour → niveau → toucher l’élève ; le niveau va dans l’évaluation « Observations en classe » du jour (donc le livret) et une observation datée dans le suivi ; sans compétence : réussite, difficulté, comportement, remarque', 'fait', 'Aujourd’hui › En classe › Observation éclair ; la flèche Annuler défait chaque geste.'),
+  R(5, '§2 Aujourd’hui', 'Anniversaires des élèves sur l’accueil (7 jours, âge) ; jours sans classe : l’accueil garde « Avant » et « Après » (séances à cocher, bilan de la semaine, rappels)', 'fait', 'D’après la date de naissance de la fiche élève.'),
+  R(5, '§20 Apparence', 'Mode léger : masquer d’un clic les pages jamais ouvertes sur cet appareil, tout réafficher d’un clic', 'fait', 'Réglages › Modules et mode léger ; aucune donnée effacée.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -291,6 +294,7 @@ export const RUBRIQUES = [
     { id: 'taches', groupe: 'Organiser', titre: 'Tâches et rendez-vous', route: 'taches' },
     { id: 'bilan-semaine', groupe: 'Organiser', titre: 'Bilan de la semaine', route: 'bilan-semaine' },
     { id: 'fin-periode', groupe: 'Organiser', titre: 'Fin de période', route: 'fin-periode' },
+    { id: 'observer', groupe: 'En classe', titre: 'Observation éclair', route: 'observer' },
     { id: 'projection', groupe: 'En classe', titre: 'Projection', route: 'projection' },
     { id: 'outils', groupe: 'En classe', titre: 'Outils de classe', route: 'outils' },
   ]},

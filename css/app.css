@@ -1494,3 +1494,14 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 @media (max-width: 640px) { .bl-step { grid-template-columns: 30px minmax(0, 1fr); } .bl-step > .btn { grid-column: 2; justify-self: start; } }
 .prog-hl td { background: #efe9fd !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .num-input { width: 4.2em; } .drill-list li { padding: 4px 0; }
+
+/* ───────── Observation éclair */
+.obs-comps .chip { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 6px 10px; font: inherit; cursor: pointer; }
+.obs-comps .chip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.obs-comps .chip small { color: var(--ink-2); }
+.obs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.obs-student { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 96px; padding: 10px 6px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); font: inherit; cursor: pointer; box-shadow: var(--shadow); }
+.obs-student:active { transform: scale(.97); }
+.obs-name { font-weight: 700; }
+.obs-last { font-size: .72rem; color: var(--ink-2); }
+.moments-off { grid-template-columns: repeat(2, minmax(0, 1fr)); } .moments-off > .moment-off { grid-column: 1 / -1; margin: 0; } @media (max-width: 760px) { .moments-off { grid-template-columns: 1fr; } }

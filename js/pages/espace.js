@@ -13,6 +13,23 @@ let weekOffset = 0;
 const nextSchoolDays = (cls, from, n) => { const out = []; let d = from; for (let k = 0; out.length < n && k < 20; k++, d = model.addDays(d, 1)) if (PL.isSchoolDay(cls, d).ok && PL.isMyDay(cls, d)) out.push(d); return out; };
 
 const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+/** Anniversaires des élèves dans les 7 prochains jours (ceux du week-end sont annoncés le vendredi). */
+export function upcomingBirthdays(cls, today, days = 7) {
+  const out = [];
+  for (const { student: s } of model.studentsOfClass(cls.id, { date: today })) {
+    if (!s.birthDate) continue;
+    for (let k = 0; k <= days; k++) { const d = model.addDays(today, k); if (d.slice(5) === s.birthDate.slice(5)) { out.push({ s, date: d, age: Number(d.slice(0, 4)) - Number(s.birthDate.slice(0, 4)), inDays: k }); break; } }
+  }
+  return out.sort((a, b) => a.inDays - b.inDays);
+}
+function birthdays(cls, today) {
+  const list = upcomingBirthdays(cls, today);
+  if (!list.length) return null;
+  return h('div', { class: 'moment-row bday', 'data-testid': 'birthdays' }, h('span', { class: 'moment-time', 'aria-hidden': 'true' }, '🎂'),
+    h('span', { class: 'moment-title' }, h('strong', {}, list.map(b => b.s.firstName).join(', ')),
+      h('small', {}, list.map(b => `${b.inDays === 0 ? 'aujourd’hui' : b.inDays === 1 ? 'demain' : model.frDate(b.date, { weekday: 'long' })} · ${b.age} ans`).join(' · '))));
+}
+
 /** Avant / pendant / après la classe : ce qu'il faut préparer, la journée à cocher, ce qu'il reste à clore. */
 function moments(cls, today) {
   const plan = PL.dayPlan(cls, today);
@@ -34,11 +51,13 @@ function moments(cls, today) {
       e.status === 'annulée' ? null : h('button', { type: 'button', class: `moment-check${isDone ? ' on' : ''}`, 'aria-label': isDone ? `« ${e.title} » faite : décocher` : `Marquer « ${e.title} » faite`, 'data-testid': 'moment-check',
         onclick: () => PL.setStatus(e, cls, isDone ? 'prévue' : 'faite') }, isDone ? '♡' : ''));
   };
-  if (!plan.school.ok) return h('p', { class: 'muted moment-off' }, plan.school.reason);
-  return h('div', { class: 'moments', 'data-testid': 'moments' },
-    col('Avant', 'm-avant', `${mats.length}`, mats.length ? mats.slice(0, 6).map(r => h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-time' }, r.entry.start), h('span', { class: 'moment-title' }, h('strong', {}, r.label), h('small', {}, r.kind === 'copie' ? `${r.count} ex.` : r.entry.title))))
-      : h('p', { class: 'muted small' }, 'Rien à préparer pour aujourd’hui.')),
-    col('Pendant', 'm-pendant', `${done} / ${entries.length}`, entries.length ? entries.map(check) : h('p', { class: 'muted small' }, 'Aucune activité au cahier journal.')),
+  // Jour sans classe : on garde « Avant » (anniversaires) et « Après » (séances à cocher, bilan de la semaine…), sans « Pendant ».
+  const off = !plan.school.ok;
+  return h('div', { class: `moments ${off ? 'moments-off' : ''}`, 'data-testid': 'moments' },
+    off ? h('p', { class: 'muted moment-off' }, plan.school.reason) : null,
+    col('Avant', 'm-avant', `${mats.length}`, [birthdays(cls, today), ...(mats.length ? mats.slice(0, 6).map(r => h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-time' }, r.entry.start), h('span', { class: 'moment-title' }, h('strong', {}, r.label), h('small', {}, r.kind === 'copie' ? `${r.count} ex.` : r.entry.title))))
+      : [h('p', { class: 'muted small' }, off ? 'Pas de classe aujourd’hui.' : 'Rien à préparer pour aujourd’hui.')])]),
+    off ? null : col('Pendant', 'm-pendant', `${done} / ${entries.length}`, entries.length ? entries.map(check) : h('p', { class: 'muted small' }, 'Aucune activité au cahier journal.')),
     col('Après', 'm-apres', `${past.length + earlier + unsigned}`, [
       h('a', { class: 'moment-row', href: `#/cahier?d=${today}`, 'data-testid': 'moment-tocheck' }, h('span', { class: 'moment-title' }, h('strong', {}, past.length + earlier ? `${past.length + earlier} séance(s) à cocher` : 'Séances à jour ♡'),
         h('small', {}, earlier ? `dont ${earlier} des jours précédents · faite ou décaler la séquence` : 'faite, reportée ou annulée'))),
