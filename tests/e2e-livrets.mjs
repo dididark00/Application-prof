@@ -912,6 +912,21 @@ await test('Générateur EPS : proposition selon matériel et espace, modifiable
   assert(none.includes('Aucune situation'), 'sans matériel : message clair');
 });
 
+await test('Texte à compléter en conjugaison : infinitif à côté du trou, correction conjuguée d’après le pronom', async () => {
+  const c = await page.evaluate(async () => { const C = await import('./js/conjugaison.js'); return [C.conjugate('grincer', 'présent', 3), C.conjugate('pénétrer', 'présent', 2), C.conjugate('appeler', 'futur', 0), C.conjugate('aller', 'passé composé', 5, { fem: true }), C.conjugate('nettoyer', 'présent', 5), C.conjugate('manger', 'imparfait', 0)].join(','); });
+  eq(c, 'grinçons,pénètre,appellerai,sont allées,nettoient,mangeais', 'formes conjuguées');
+  await page.goto(`${BASE}/#/atelier`); await page.waitForTimeout(400);
+  await page.getByTestId('tool-texte').click(); await page.waitForTimeout(200);
+  await page.getByTestId('p-mode').selectOption('conjugaison'); await page.waitForTimeout(200);
+  await page.getByTestId('p-source').fill("Tu grinces des dents. Nous [grincer] des dents.\nJ' [étonner] tout le monde. Ils [aller:futur] au parc. Le chat [dormir=dort].\nLa fille [bavarder].");
+  await page.getByTestId('correction').check(); await page.waitForTimeout(200);
+  const txt = await page.getByTestId('atelier-preview').textContent();
+  for (const x of ['Conjugue les verbes au présent.', 'grinçons', '(grincer)', 'étonne', 'iront', '(aller, futur)', 'dort', 'bavarde']) assert(txt.includes(x), `aperçu : ${x}`);
+  assert((await page.getByTestId('conj-doubt').textContent()).includes('bavarder'), 'sujet deviné signalé');
+  await page.getByTestId('correction').uncheck(); await page.getByTestId('p-banque').uncheck(); await page.waitForTimeout(200);
+  assert(!(await page.getByTestId('atelier-preview').textContent()).includes('grinçons'), 'fiche élève sans la réponse');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

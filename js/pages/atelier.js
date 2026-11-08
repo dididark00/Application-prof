@@ -9,6 +9,7 @@ import { h, icon, toast, modal, field } from '../ui.js';
 import { pageHeader, subTabs } from '../components.js';
 import { pickMany } from '../forms.js';
 import * as F from '../fonts.js';
+import * as C from '../conjugaison.js';
 import * as T from '../atelier-tools.js';
 import { attachInstruments } from '../instruments.js';
 
@@ -27,7 +28,7 @@ const state = {
   ecriture: { texte: 'Le chat dort sur le tapis.\nIl fait beau aujourd’hui.', police: '', casse: 'minuscules', hauteur: 1, ajuste: 100, interligne: 8, sauter: true, encre: '#1d3d6e', marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f' },
   seyes: { interligne: 8, lignes: 26, marge: 30, couleur: '#7aa7d8', marge_couleur: '#d9534f', modele: '' },
   reglure: { ecart: 10, lignes: 24, couleur: '#888888' },
-  texte: { source: 'Le [chat] dort sur le [tapis]. Il fait [beau] aujourd’hui.', banque: true, taille: 5 },
+  texte: { mode: 'mots', temps: 'présent', source: 'Le [chat] dort sur le [tapis]. Il fait [beau] aujourd’hui.', banque: true, taille: 5 },
   droite: { debut: 0, fin: 20, pas: 1, sous: 0, etiquettes: 'extrémités', nb: 4 },
   numeration: { classes: 'milliers,unités', lignes: 6, nombres: '' },
   fractions: { liste: '1/2, 1/3, 3/4, 2/5, 5/8', forme: 'barre', colorier: true },
@@ -43,6 +44,11 @@ const state = {
 // ───── Petits outils de dessin SVG (unités : mm)
 const NS = 'http://www.w3.org/2000/svg';
 function S(tag, attrs = {}, text) { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; }
+let measureCtx = null;
+/** Largeur réelle d'un texte en mm (Arial), pour des espaces réguliers entre les mots. */
+function tw(text, size, italic = false) {
+  try { measureCtx ||= document.createElement('canvas').getContext('2d'); measureCtx.font = `${italic ? 'italic ' : ''}${size * 10}px Arial, Helvetica, sans-serif`; return measureCtx.measureText(text).width / 10; } catch { return text.length * size * 0.52; }
+}
 function page(title) {
   const svg = S('svg', { xmlns: NS, viewBox: `0 0 ${PAGE.w} ${PAGE.h}`, width: `${PAGE.w}mm`, height: `${PAGE.h}mm`, class: 'atelier-page', 'font-family': 'Arial, Helvetica, sans-serif' });
   svg.append(S('rect', { x: 0, y: 0, width: PAGE.w, height: PAGE.h, fill: '#fff' }));
@@ -123,26 +129,40 @@ const DRAW = {
     return svg;
   },
   texte(o, corr) {
-    const svg = page(state.title || 'Complète le texte.');
-    const words = []; const txt = o.source.replace(/\[([^\]]+)\]/g, (_, w) => { words.push(w); return `\u0001${words.length - 1}\u0001`; });
+    const conj = o.mode === 'conjugaison';
+    const svg = page(state.title || (conj ? `Conjugue les verbes au ${o.temps || 'présent'}.` : 'Complète le texte.'));
+    const { blanks, parts } = C.parseBlanks(o.source, { mode: o.mode, tense: o.temps || 'présent' });
     const fs = Number(o.taille) || 5; const lineH = fs * 2.2; const maxW = PAGE.w - 30;
     let x = 15, y = 32;
     const charW = fs * 0.52;
-    for (const tok of txt.split(/(\u0001\d+\u0001|\s+)/).filter(t => t !== '')) {
-      if (/^\s+$/.test(tok)) { x += charW; continue; }
-      const blank = tok.match(/^\u0001(\d+)\u0001$/);
-      const w = blank ? Math.max(28, words[+blank[1]].length * charW + 6) : tok.length * charW;
-      if (x + w > 15 + maxW) { x = 15; y += lineH; }
-      if (blank) {
+    const toks = [];
+    for (const p of parts) {
+      if (typeof p !== 'string') { toks.push(p); continue; }
+      p.split(/(\n|[ \t]+)/).filter(t => t !== '').forEach(t => toks.push(t));
+    }
+    for (const tok of toks) {
+      if (tok === '\n') { x = 15; y += lineH; continue; }
+      if (typeof tok === 'string' && /^\s+$/.test(tok)) { x += tw(' ', fs) * 1.2; continue; }
+      if (typeof tok !== 'string') {
+        const w = Math.max(24, tw(tok.answer, fs) + 8);
+        const hint = tok.hint ? `(${tok.hint})` : '';
+        const hw = hint ? tw(hint, fs * 0.92, true) + charW * 0.6 : 0;
+        if (x + w + hw > 15 + maxW && x > 15) { x = 15; y += lineH; }
         svg.append(S('line', { x1: x, x2: x + w, y1: y + 1.2, y2: y + 1.2, stroke: '#333', 'stroke-width': 0.3 }));
-        if (corr) svg.append(S('text', { x: x + 2, y, 'font-size': fs, fill: '#c0392b', 'font-weight': 700 }, words[+blank[1]]));
-      } else svg.append(S('text', { x, y, 'font-size': fs }, tok));
+        if (corr) svg.append(S('text', { x: x + 2, y, 'font-size': fs, fill: '#c0392b', 'font-weight': 700 }, tok.answer));
+        x += w;
+        if (hint) { svg.append(S('text', { x: x + charW * 0.6, y, 'font-size': fs * 0.92, fill: '#555', 'font-style': 'italic' }, hint)); x += hw; }
+        continue;
+      }
+      const w = tw(tok, fs);
+      if (x + w > 15 + maxW && x > 15) { x = 15; y += lineH; }
+      svg.append(S('text', { x, y, 'font-size': fs }, tok));
       x += w;
     }
-    if (o.banque && words.length) {
+    if (o.banque && blanks.length) {
       y += lineH * 2;
       svg.append(S('rect', { x: 15, y: y - fs * 1.4, width: maxW, height: fs * 2.4, fill: 'none', stroke: '#999', 'stroke-dasharray': '2 1.5', 'stroke-width': 0.3 }));
-      svg.append(S('text', { x: 18, y, 'font-size': fs * 0.9 }, `Mots : ${[...words].sort((a, b) => a.localeCompare(b, 'fr')).join('  ·  ')}`));
+      svg.append(S('text', { x: 18, y, 'font-size': fs * 0.9 }, `${conj ? 'Formes' : 'Mots'} : ${blanks.map(b => b.answer).sort((a, b) => a.localeCompare(b, 'fr')).join('  ·  ')}`));
     }
     return svg;
   },
@@ -248,7 +268,8 @@ const PARAMS = {
   ecriture: [['texte', 'Texte à écrire (Entrée = nouvelle ligne)', 'textarea'], ['police', 'Police', 'font'], ['casse', 'Écriture', [['minuscules', 'normale (minuscules et majuscules)'], ['capitales', 'CAPITALES D’IMPRIMERIE (maternelle)']]], ['hauteur', 'Hauteur des minuscules', [['1', '1 interligne (cahier)'], ['2', '2 interlignes (grand)']]], ['ajuste', 'Ajustement de la taille (%)', 'number'], ['sauter', 'Sauter une ligne entre deux lignes écrites', 'checkbox'], ['interligne', 'Interligne (mm)', 'number'], ['marge', 'Marge (mm)', 'number'], ['encre', 'Couleur de l’écriture', 'color'], ['couleur', 'Couleur des lignes', 'color']],
   seyes: [['interligne', 'Interligne (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['marge', 'Marge (mm)', 'number'], ['couleur', 'Couleur des lignes', 'color'], ['marge_couleur', 'Couleur de la marge', 'color'], ['modele', 'Modèle d’écriture (1re ligne)', 'text']],
   reglure: [['ecart', 'Écart entre les lignes (mm)', 'number'], ['lignes', 'Nombre de lignes', 'number'], ['couleur', 'Couleur', 'color']],
-  texte: [['source', 'Texte (mettez les mots à trouver entre [crochets])', 'textarea'], ['taille', 'Taille du texte (mm)', 'number'], ['banque', 'Banque de mots', 'checkbox']],
+  texte: [['mode', 'Type d’exercice', [['mots', 'Mots à trouver (dictée, vocabulaire)'], ['conjugaison', 'Conjugaison (verbe à l’infinitif entre crochets)']]], ['temps', 'Temps', C.TENSES, (o) => o.mode === 'conjugaison'],
+    ['source', 'Texte (mettez les mots à trouver entre [crochets])', 'textarea'], ['aide', '', 'note'], ['taille', 'Taille du texte (mm)', 'number'], ['banque', 'Banque de mots (ou de formes conjuguées)', 'checkbox']],
   droite: [['debut', 'Début', 'number'], ['fin', 'Fin', 'number'], ['pas', 'Pas', 'number'], ['sous', 'Subdivisions entre deux graduations', 'number'], ['etiquettes', 'Nombres affichés', ['extrémités', 'une sur deux', 'toutes', 'aucun']], ['nb', 'Droites par page', 'number']],
   numeration: [['classes', 'Classes (séparées par des virgules)', 'text'], ['nombres', 'Nombres à placer (facultatif)', 'text'], ['lignes', 'Lignes vides', 'number']],
   fractions: [['liste', 'Fractions (ex. 1/2, 3/4)', 'text'], ['forme', 'Forme', ['barre', 'disque']]],
@@ -299,6 +320,16 @@ function drawFigures(o, done) {
   } }] });
 }
 
+/** Aide sous le texte à trous : syntaxe, et en conjugaison les réponses à vérifier. */
+function texteHelp(o) {
+  if (o.mode !== 'conjugaison') return [h('p', { class: 'muted small' }, 'Astuce : [indice=réponse] écrit l’indice entre parenthèses à côté du trou, ex. « deux [cheval=chevaux] ».')];
+  const { blanks } = C.parseBlanks(o.source, { mode: 'conjugaison', tense: o.temps || 'présent' });
+  const doubt = blanks.filter(b => b.guessed || b.unknown);
+  return [h('p', { class: 'muted small' }, 'Écrivez le verbe à l’infinitif entre crochets après son sujet : « Nous [grincer] des dents. » L’infinitif s’affiche à côté du trou et la version corrigée est conjuguée automatiquement d’après le pronom. Forcer une réponse : [grincer=grinçons] · autre temps pour un verbe : [aller:futur].'),
+    doubt.length ? h('p', { class: 'banner warn small', 'data-testid': 'conj-doubt' }, 'À vérifier dans la version corrigée : ',
+      doubt.map(b => b.unknown ? `« ${b.raw} » (verbe non reconnu : écrivez [${b.raw}=forme])` : `« ${b.raw} » → ${b.answer} (sujet deviné)`).join(' · ')) : null].filter(Boolean);
+}
+
 /** Ouvre l'Atelier sur un outil d'écriture avec un texte déjà rempli (ex. texte lu dans une photo). */
 export function openWithText(text, tool = 'ecriture') {
   state.tool = tool;
@@ -309,14 +340,18 @@ export function openWithText(text, tool = 'ecriture') {
 export function render({ rerender }) {
   const o = state[state.tool];
   const preview = h('div', { class: 'atelier-preview', 'data-testid': 'atelier-preview' });
+  const note = h('div', { class: 'atelier-note', 'data-testid': 'atelier-note' });
   const redraw = () => {
     preview.replaceChildren(DRAW[state.tool](o, state.correction));
+    if (state.tool === 'texte') note.replaceChildren(...texteHelp(o));
     if (state.tool === 'carte') { const name = String(o.carte).startsWith('France') ? 'france' : 'monde'; if (!T.mapReady(name)) T.loadMap(name).then(redraw).catch(() => toast('Carte indisponible', { kind: 'error' })); }
   };
   const params = h('div', { class: 'form' },
     field('Titre (facultatif)', h('input', { value: state.title, oninput: (e) => { state.title = e.target.value; redraw(); } })),
-    PARAMS[state.tool].map(([k, label, type]) => {
-      if (Array.isArray(type)) return field(label, h('select', { 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.value; if (k === 'source' || k === 'axe') rerender(); else redraw(); } }, type.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return h('option', { value: val, selected: String(o[k]) === val }, lab); })));
+    PARAMS[state.tool].map(([k, label, type, when]) => {
+      if (when && !when(o)) return null;
+      if (type === 'note') return note;
+      if (Array.isArray(type)) return field(label, h('select', { 'data-testid': `p-${k}`, onchange: (e) => { o[k] = e.target.value; if (k === 'source' || k === 'axe' || k === 'mode') rerender(); else redraw(); } }, type.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return h('option', { value: val, selected: String(o[k]) === val }, lab); })));
       if (type === 'font') return fontField(o, rerender);
       if (type === 'draw') return o.source === 'mes figures' ? h('div', { class: 'stack' }, h('button', { class: 'btn', type: 'button', 'data-testid': 'draw-figures', onclick: () => drawFigures(o, () => rerender()) }, `${label} (${(o.mine || []).filter(m => m?.pts?.length).length} prête(s))`), h('p', { class: 'muted small' }, 'Les exercices sans figure dessinée sont complétés au hasard.')) : null;
       if (type === 'seed') return field(label, h('div', { class: 'row' }, h('input', { type: 'number', value: o[k], 'data-testid': 'p-graine', style: { width: '7em' }, oninput: (e) => { o[k] = Number(e.target.value) || 1; redraw(); } }),
