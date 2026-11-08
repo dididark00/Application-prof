@@ -5,7 +5,7 @@
 import * as store from '../store.js';
 import * as model from '../model.js';
 import * as E from '../eleve.js';
-import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyState, pickFiles, download } from '../ui.js';
+import { h, icon, toast, modal, field, formData, confirmDialog, badge, emptyState, pickFiles, download, safeUrl } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 import { printDocument, printTable } from '../print.js';
 import { consumeFlag } from '../router.js';
@@ -240,6 +240,52 @@ export async function book(slotId, studentId, withWho = '') {
   if (cur.studentId && cur.studentId !== studentId) throw new Error('Ce créneau est déjà réservé.');
   return store.update(slotId, { studentId, with: withWho, status: 'réservé' }, `Rendez-vous de ${store.get(studentId)?.firstName}`);
 }
+export const RDV_MODES = [['présentiel', 'En présentiel'], ['visio', 'En visio'], ['téléphone', 'Par téléphone']];
+export const RDV_MOTIFS = ['Point sur les apprentissages', 'Bilan de période', 'Comportement', 'Demande de la famille', 'Difficultés : aides et dispositifs', 'Santé, PAI', 'Passage, orientation', 'Remise du livret'];
+const whereOf = (r) => (r.mode === 'visio' ? 'en visio' : r.mode === 'téléphone' ? 'par téléphone' : r.place || '');
+/** Texte d'invitation à copier (messagerie, application de l'école). */
+export function rdvInvitation(r) {
+  const s = r.studentId && store.get(r.studentId);
+  return [`Bonjour,`, `Je vous confirme notre rendez-vous${s ? ` au sujet de ${s.firstName}` : ''} le ${model.frDate(r.date, { weekday: 'long', day: 'numeric', month: 'long' })} de ${r.start} à ${r.end}${r.mode === 'visio' ? ', en visio' : r.mode === 'téléphone' ? ', par téléphone' : r.place ? `, ${r.place}` : ''}.`,
+    r.mode === 'visio' && r.link ? `Lien pour vous connecter : ${r.link}` : '', r.motif ? `Objet : ${r.motif}.` : '', 'Bien cordialement.'].filter(Boolean).join('\n');
+}
+/** Champs communs : mode, lieu, lien de visio, motif. */
+function rdvFields(r) {
+  const mode = h('select', { name: 'mode', 'data-testid': 'rdv-mode' }, RDV_MODES.map(([v, l]) => h('option', { value: v, selected: (r.mode || 'présentiel') === v }, l)));
+  const place = h('input', { name: 'place', value: r.place || '' });
+  const link = h('input', { name: 'link', type: 'url', value: r.link || '', placeholder: 'https://… (Visio-agents, BBB de l’ENT, Teams, Meet…)', 'data-testid': 'rdv-link' });
+  const motif = h('input', { name: 'motif', value: r.motif || '', list: 'rdv-motifs', placeholder: 'Choisissez ou écrivez', 'data-testid': 'rdv-motif' });
+  const placeF = field('Lieu', place); const linkF = field('Lien de la visio', link, 'Il est ajouté au texte d’invitation à copier.');
+  const sync = () => { placeF.hidden = mode.value !== 'présentiel'; linkF.hidden = mode.value !== 'visio'; };
+  mode.addEventListener('change', sync); sync();
+  return [h('div', { class: 'grid-2' }, field('Comment', mode), placeF), linkF, field('Motif du rendez-vous', motif), h('datalist', { id: 'rdv-motifs' }, RDV_MOTIFS.map(m => h('option', { value: m })))];
+}
+function rdvPatch(d) {
+  const link = (d.link || '').trim();
+  if (d.mode === 'visio' && link && !safeUrl(link)) throw new Error('Le lien de la visio doit commencer par https://');
+  return { mode: d.mode || 'présentiel', place: d.mode === 'présentiel' ? (d.place || '').trim() : (d.place || '').trim(), link: d.mode === 'visio' ? link : '', motif: (d.motif || '').trim() };
+}
+function editDialog(r, st) {
+  const sel = h('select', { name: 'studentId', 'data-testid': 'rdv-edit-student' }, h('option', { value: '' }, '— créneau libre —'), st.map(s => h('option', { value: s.id, selected: r.studentId === s.id }, fullName(s))));
+  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
+    h('div', { class: 'grid-3' }, field('Date', h('input', { type: 'date', name: 'date', value: r.date, required: true, 'data-testid': 'rdv-edit-date' })), field('De', h('input', { type: 'time', name: 'start', value: r.start, 'data-testid': 'rdv-edit-start' })), field('À', h('input', { type: 'time', name: 'end', value: r.end, 'data-testid': 'rdv-edit-end' }))),
+    h('div', { class: 'grid-2' }, field('Famille de', sel), field('Avec (facultatif)', h('input', { name: 'with', value: r.with || '', placeholder: 'ex. la mère, les deux parents' }))),
+    ...rdvFields(r), field('Note (privée)', h('textarea', { name: 'note', rows: 2 }, r.note || '')));
+  const actions = [
+    { label: r.status === 'annulé' ? 'Rétablir' : 'Annuler le rendez-vous', danger: r.status !== 'annulé', onClick: async () => { await store.update(r.id, { status: r.status === 'annulé' ? (r.studentId ? 'réservé' : 'libre') : 'annulé' }, r.status === 'annulé' ? 'Rendez-vous rétabli' : 'Rendez-vous annulé'); } },
+    { label: 'Fermer' },
+    { label: 'Enregistrer', primary: true, testid: 'rdv-edit-save', onClick: async () => {
+      const d = formData(form);
+      if (!d.date || !d.start || !d.end || model.minutes(d.end) <= model.minutes(d.start)) { toast('Vérifiez la date et les heures.', { kind: 'error' }); return false; }
+      let patch; try { patch = rdvPatch(d); } catch (e) { toast(e.message, { kind: 'error' }); return false; }
+      const clash = store.all('rdvslot').find(x => x.id !== r.id && !x.deletedAt && x.status !== 'annulé' && x.date === d.date && x.start < d.end && d.start < x.end && x.classId === r.classId);
+      if (clash && !await confirmDialog('Créneau déjà occupé', `Un autre créneau existe le ${model.frShort(d.date)} de ${clash.start} à ${clash.end}. Enregistrer quand même ?`, { confirmLabel: 'Enregistrer' })) return false;
+      const sid = d.studentId || null;
+      const status = r.status === 'fait' || r.status === 'annulé' ? r.status : sid ? 'réservé' : 'libre';
+      await store.update(r.id, { date: d.date, start: d.start, end: d.end, studentId: sid, with: sid ? (d.with || '').trim() : '', note: (d.note || '').trim(), status, ...patch }, 'Rendez-vous modifié');
+    } }];
+  modal({ title: 'Modifier le rendez-vous', wide: true, body: form, actions });
+}
 export function renderRdv({ rerender }) {
   const cls = model.currentClass(); const miss = needClass();
   if (miss) return page('Rendez-vous', 'familles/rdv', null, miss);
@@ -248,9 +294,14 @@ export function renderRdv({ rerender }) {
   const past = all.filter(r => r.date < model.todayIso() || r.status === 'annulé');
   const st = students(cls);
   const row = (r) => { const s = r.studentId && store.get(r.studentId);
-    return h('tr', { 'data-testid': 'rdv-row' }, h('td', {}, model.frDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' })), h('td', {}, `${r.start}–${r.end}`), h('td', {}, r.place || ''),
-      h('td', {}, s ? h('a', { href: `#/eleve/${s.id}?t=echanges` }, fullName(s)) : badge('libre', 'ok'), r.with ? h('span', { class: 'muted small' }, ` (${r.with})`) : null),
+    const url = r.mode === 'visio' && safeUrl(r.link);
+    return h('tr', { 'data-testid': 'rdv-row' }, h('td', {}, model.frDate(r.date, { weekday: 'short', day: 'numeric', month: 'short' })), h('td', {}, `${r.start}–${r.end}`),
+      h('td', {}, r.mode === 'visio' ? [badge('visio', 'info'), ' ', url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', 'data-testid': 'rdv-join' }, 'Rejoindre') : h('span', { class: 'muted small' }, 'lien à ajouter')] : r.mode === 'téléphone' ? badge('téléphone', 'info') : (r.place || '')),
+      h('td', {}, s ? h('a', { href: `#/eleve/${s.id}?t=echanges` }, fullName(s)) : badge('libre', 'ok'), r.with ? h('span', { class: 'muted small' }, ` (${r.with})`) : null,
+        r.motif ? h('div', { class: 'small muted', 'data-testid': 'rdv-motif-view' }, r.motif) : null, r.status === 'annulé' ? badge('annulé', 'warn') : null),
       h('td', { class: 'row' },
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rdv-edit', onclick: () => editDialog(r, st) }, 'Modifier'),
+        s && r.status === 'réservé' ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rdv-invite', title: 'Texte de confirmation (date, heure, lien de la visio, motif) à coller dans la messagerie', onclick: () => copy(rdvInvitation(r)) }, icon('copy', 14), 'Invitation') : null,
         !s ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rdv-book', onclick: () => bookDialog(r, st, rerender) }, 'Réserver') : null,
         s && r.status === 'réservé' ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rdv-done', onclick: () => doneDialog(r, s) }, 'Fait') : null,
         s && r.status === 'réservé' ? h('button', { class: 'btn btn-link small', type: 'button', onclick: async () => { await store.update(r.id, { studentId: null, with: '', status: 'libre' }, 'Créneau libéré'); } }, 'libérer') : null,
@@ -258,9 +309,9 @@ export function renderRdv({ rerender }) {
         !s ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Supprimer le créneau', onclick: () => store.remove(r.id, 'Créneau supprimé') }, icon('trash', 14)) : null)); };
   const printFree = () => { const fs = freeSlots(cls); printDocument(h('div', { class: 'print-doc' }, h('header', { class: 'print-head' }, h('h1', {}, 'Rencontres parents – enseignante'), h('p', {}, cls.name)),
     h('p', {}, 'Madame, Monsieur, je vous propose de nous rencontrer. Cochez le créneau qui vous convient (et un second choix) et rapportez ce papier.'),
-    h('ul', { class: 'rdv-print' }, fs.map(r => h('li', {}, `☐ ${model.frDate(r.date, { weekday: 'long', day: 'numeric', month: 'long' })}, ${r.start}–${r.end}${r.place ? ' — ' + r.place : ''}`))),
+    h('ul', { class: 'rdv-print' }, fs.map(r => h('li', {}, `☐ ${model.frDate(r.date, { weekday: 'long', day: 'numeric', month: 'long' })}, ${r.start}–${r.end}${whereOf(r) ? ' — ' + whereOf(r) : ''}`))),
     h('p', {}, 'Élève : ……………………………   Signature :'))); };
-  const planning = () => printDocument(printTable({ title: 'Planning des rendez-vous', subtitle: cls.name, columns: [{ label: 'Date' }, { label: 'Heure' }, { label: 'Lieu' }, { label: 'Famille' }], rows: upcoming.map(r => [model.frShort(r.date), `${r.start}–${r.end}`, r.place || '', r.studentId ? `${fullName(store.get(r.studentId))}${r.with ? ' (' + r.with + ')' : ''}` : 'libre']) }));
+  const planning = () => printDocument(printTable({ title: 'Planning des rendez-vous', subtitle: cls.name, columns: [{ label: 'Date' }, { label: 'Heure' }, { label: 'Lieu' }, { label: 'Famille' }, { label: 'Motif' }], rows: upcoming.map(r => [model.frShort(r.date), `${r.start}–${r.end}`, r.mode === 'visio' ? `visio${r.link ? ' : ' + r.link : ''}` : whereOf(r), r.studentId ? `${fullName(store.get(r.studentId))}${r.with ? ' (' + r.with + ')' : ''}` : 'libre', r.motif || '']) }));
   const without = st.filter(s => !all.some(r => r.studentId === s.id && r.status !== 'annulé'));
   return page('Rendez-vous', 'familles/rdv', cls, h('div', { class: 'stack' },
     h('p', { class: 'muted' }, 'Ouvrez des créneaux, proposez-les aux familles (mot imprimé, e-mail ou application de l’école), notez les réservations : un créneau ne peut pas être pris deux fois. Une fois le rendez-vous fait, le compte rendu va dans l’historique de l’élève.'), notice(),
@@ -274,11 +325,12 @@ export function renderRdv({ rerender }) {
 function slotsDialog(cls) {
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
     h('div', { class: 'grid-2' }, field('Date', h('input', { type: 'date', name: 'date', value: model.todayIso(), 'data-testid': 'rdv-date' })), field('Lieu', h('input', { name: 'place', value: 'Salle de classe' }))),
-    h('div', { class: 'grid-3' }, field('De', h('input', { type: 'time', name: 'from', value: '16:45', 'data-testid': 'rdv-from' })), field('À', h('input', { type: 'time', name: 'to', value: '18:15', 'data-testid': 'rdv-to' })), field('Durée (min)', h('input', { type: 'number', name: 'dur', value: 15, min: 5, max: 120 }))));
+    h('div', { class: 'grid-3' }, field('De', h('input', { type: 'time', name: 'from', value: '16:45', 'data-testid': 'rdv-from' })), field('À', h('input', { type: 'time', name: 'to', value: '18:15', 'data-testid': 'rdv-to' })), field('Durée (min)', h('input', { type: 'number', name: 'dur', value: 15, min: 5, max: 120 }))),
+    field('Comment', h('select', { name: 'mode' }, RDV_MODES.map(([v, l]) => h('option', { value: v }, l)))), field('Lien de la visio (si visio, facultatif)', h('input', { name: 'link', type: 'url', placeholder: 'https://…' })));
   modal({ title: 'Ouvrir des créneaux', body: form, actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, onClick: async () => {
     const d = formData(form); const a = model.minutes(d.from), b = model.minutes(d.to), step = Number(d.dur) || 15;
     if (!d.date || b <= a) { toast('Vérifiez la date et les heures.', { kind: 'error' }); return false; }
-    const items = []; for (let t = a; t + step <= b; t += step) items.push({ create: { type: 'rdvslot', data: { classId: cls.id, date: d.date, start: model.hhmm(t), end: model.hhmm(t + step), place: d.place, studentId: null, status: 'libre' } } });
+    const items = []; for (let t = a; t + step <= b; t += step) items.push({ create: { type: 'rdvslot', data: { classId: cls.id, date: d.date, start: model.hhmm(t), end: model.hhmm(t + step), place: d.place, mode: d.mode || 'présentiel', link: d.mode === 'visio' && safeUrl((d.link || '').trim()) ? d.link.trim() : '', motif: '', studentId: null, status: 'libre' } } });
     await store.batch(items, `${items.length} créneau(x) de rendez-vous`); toast(`${items.length} créneau(x) créé(s)`);
   } }] });
 }
@@ -286,8 +338,11 @@ function bookDialog(r, st, rerender) {
   const taken = new Set(store.all('rdvslot').filter(x => x.studentId && x.status === 'réservé' && x.date >= model.todayIso()).map(x => x.studentId));
   const sel = h('select', { 'data-testid': 'rdv-student' }, st.map(s => h('option', { value: s.id }, `${fullName(s)}${taken.has(s.id) ? ' (a déjà un rendez-vous)' : ''}`)));
   const who = h('input', { placeholder: 'ex. la mère, les deux parents' });
-  modal({ title: `Réserver le ${model.frShort(r.date)} à ${r.start}`, body: h('div', { class: 'form' }, field('Famille de', sel), field('Avec (facultatif)', who)),
-    actions: [{ label: 'Annuler' }, { label: 'Réserver', primary: true, onClick: async () => { try { await book(r.id, sel.value, who.value.trim()); } catch (e) { toast(e.message, { kind: 'error' }); } rerender(); } }] });
+  const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() }, field('Famille de', sel), field('Avec (facultatif)', who), ...rdvFields(r));
+  modal({ title: `Réserver le ${model.frShort(r.date)} à ${r.start}`, body: form,
+    actions: [{ label: 'Annuler' }, { label: 'Réserver', primary: true, onClick: async () => {
+      let patch; try { patch = rdvPatch(formData(form)); } catch (e) { toast(e.message, { kind: 'error' }); return false; }
+      try { await book(r.id, sel.value, who.value.trim()); await store.update(r.id, patch, 'Rendez-vous : détails'); } catch (e) { toast(e.message, { kind: 'error' }); } rerender(); } }] });
 }
 function doneDialog(r, s) {
   const ta = h('textarea', { rows: 4, 'data-testid': 'rdv-summary', placeholder: 'Points abordés, décisions' }); const follow = h('input', { placeholder: 'Suite à donner (facultatif)' });
@@ -343,7 +398,7 @@ export function renderApercu({ query, rerender }) {
     h('h2', {}, `Famille de ${fullName(s)}`),
     h('h3', {}, 'Devoirs à venir'), v.hw.length ? h('ul', {}, v.hw.map(x => h('li', {}, `${x.title} — pour le ${model.frShort(x.dueDate)}`))) : h('p', { class: 'muted' }, 'Aucun.'),
     h('h3', {}, 'Publications de la classe'), v.pubs.length ? h('ul', {}, v.pubs.map(p => h('li', {}, `${p.title || 'Sans titre'} (${model.frShort(p.publishedAt)})`))) : h('p', { class: 'muted' }, 'Aucune.'),
-    h('h3', {}, 'Rendez-vous'), v.rdv.length ? h('ul', {}, v.rdv.map(r => h('li', {}, `${model.frDate(r.date)} à ${r.start}${r.place ? ', ' + r.place : ''}`))) : h('p', { class: 'muted' }, 'Aucun.'),
+    h('h3', {}, 'Rendez-vous'), v.rdv.length ? h('ul', {}, v.rdv.map(r => h('li', {}, `${model.frDate(r.date)} à ${r.start}${whereOf(r) ? ', ' + whereOf(r) : ''}`, r.mode === 'visio' && safeUrl(r.link) ? [' — ', h('a', { href: safeUrl(r.link), target: '_blank', rel: 'noopener noreferrer' }, 'lien de la visio')] : null))) : h('p', { class: 'muted' }, 'Aucun.'),
     h('h3', {}, 'Documents à rapporter'), v.toReturn.length ? h('ul', {}, v.toReturn.map(t => h('li', {}, t))) : h('p', { class: 'muted' }, 'Rien.'),
     h('h3', {}, 'Bilans finalisés'), v.reports.length ? v.reports.map(r => h('div', {}, h('strong', {}, r.label || 'Période'), Object.entries(r.subjects || {}).filter(([, t]) => t).map(([k, t]) => h('p', { class: 'small' }, `${k} : ${t}`)), r.general ? h('p', {}, r.general) : null)) : h('p', { class: 'muted' }, 'Aucun bilan finalisé.'));
   return page('Aperçu parent', 'familles/apercu', cls, h('div', { class: 'stack' },

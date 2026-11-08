@@ -961,6 +961,30 @@ await test('Fichiers reliés avec un rôle : depuis Fichiers (fiche ou moment) e
   assert(await page.locator('[data-testid=entry-files]', { hasText: 'Ressource' }).count() > 0, 'ressource jointe depuis le cahier');
 });
 
+await test('Rendez-vous parents : modifier (date, heure, famille), visio avec lien, motif, invitation à copier', async () => {
+  const id = await S(`const cls = model.currentClass(); const r = await store.create('rdvslot', { classId: cls.id, date: '2030-01-14', start: '16:45', end: '17:00', place: 'Salle de classe', studentId: null, status: 'libre' }); return r.id;`);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await go('#/rdv'); await page.waitForTimeout(300);
+  const row = page.locator('[data-testid=rdv-row]', { hasText: '16:45' }).filter({ hasText: '14' }).first();
+  await row.getByTestId('rdv-edit').click(); await page.waitForTimeout(200);
+  await page.getByTestId('rdv-edit-start').fill('17:15'); await page.getByTestId('rdv-edit-end').fill('17:45');
+  await page.getByTestId('rdv-edit-student').selectOption({ index: 1 });
+  await page.getByTestId('rdv-mode').selectOption('visio');
+  await page.getByTestId('rdv-link').fill('javascript:alert(1)'); await page.getByTestId('rdv-edit-save').click(); await page.waitForTimeout(200);
+  assert(await page.getByTestId('rdv-link').isVisible(), 'lien non sûr refusé');
+  await page.getByTestId('rdv-link').fill('https://visio-agents.education.fr/test'); await page.getByTestId('rdv-motif').fill('Point sur les apprentissages');
+  await page.getByTestId('rdv-edit-save').click(); await page.waitForTimeout(400);
+  const r = await S(`return store.get(a);`, id);
+  eq(`${r.start}-${r.end}-${r.mode}-${r.status}-${r.motif}`, '17:15-17:45-visio-réservé-Point sur les apprentissages', 'rendez-vous modifié');
+  eq(r.link, 'https://visio-agents.education.fr/test', 'lien enregistré');
+  const row2 = page.locator('[data-testid=rdv-row]', { hasText: '17:15' }).first();
+  eq(await row2.getByTestId('rdv-join').getAttribute('href'), 'https://visio-agents.education.fr/test', 'bouton Rejoindre');
+  assert((await row2.textContent()).includes('Point sur les apprentissages'), 'motif affiché');
+  await row2.getByTestId('rdv-invite').click(); await page.waitForTimeout(200);
+  const clip = await page.evaluate(() => navigator.clipboard.readText());
+  assert(clip.includes('17:15') && clip.includes('https://visio-agents.education.fr/test') && clip.includes('Objet : Point sur les apprentissages'), `invitation : ${clip}`);
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));
