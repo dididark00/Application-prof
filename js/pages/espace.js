@@ -3,6 +3,7 @@
 // Tout vient des données déjà saisies (tâches, agenda, cahier journal) : rien n'est ressaisi.
 import * as store from '../store.js';
 import { safetyStatus } from './securite.js';
+import * as D from '../device.js';
 import * as model from '../model.js';
 import * as PL from '../planning.js';
 import { h, icon, badge } from '../ui.js';
@@ -13,6 +14,31 @@ let weekOffset = 0;
 const nextSchoolDays = (cls, from, n) => { const out = []; let d = from; for (let k = 0; out.length < n && k < 20; k++, d = model.addDays(d, 1)) if (PL.isSchoolDay(cls, d).ok && PL.isMyDay(cls, d)) out.push(d); return out; };
 
 const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+/**
+ * Rappel de synchronisation et de sauvegarde (rempli après coup : l'état de l'appareil se lit en asynchrone).
+ * - synchronisation configurée et dernier envoi ou dernière récupération il y a 3 jours ou plus ;
+ * - sauvegarde exportée il y a 7 jours ou plus (ou jamais, s'il y a des données).
+ */
+export function syncReminder() {
+  const slot = h('div', { class: 'moment-slot', 'data-testid': 'sync-reminder-slot' });
+  (async () => {
+    const days = (iso) => (iso ? Math.floor((Date.now() - new Date(iso)) / 86400000) : null);
+    const lastSend = await D.get('lastSync'); const seen = (await D.get('seen')) || {};
+    const lastRecv = Object.values(seen).map(x => x.mergedAt).filter(Boolean).sort().at(-1) || null;
+    const configured = !!(lastSend || lastRecv || (await D.get('syncPassword')));
+    const rows = [];
+    const ds = days(lastSend), dr = days(lastRecv);
+    if (configured && ((ds ?? 99) >= 3 || (dr ?? 99) >= 3)) rows.push(h('a', { class: 'moment-row', href: '#/reglages/synchro', 'data-testid': 'sync-reminder' },
+      h('span', { class: 'moment-title' }, h('strong', {}, 'Synchroniser avec Nuage'),
+        h('small', {}, [ds == null ? 'jamais envoyé' : `envoyé il y a ${ds} j`, dr == null ? 'jamais récupéré' : `récupéré il y a ${dr} j`].join(' · ')))));
+    const lb = store.getSettings().lastBackupAt; const db = days(lb);
+    if (store.count() > 0 && (db == null || db >= 7)) rows.push(h('a', { class: 'moment-row', href: '#/reglages/sauvegarde', 'data-testid': 'backup-reminder' },
+      h('span', { class: 'moment-title' }, h('strong', {}, 'Faire une sauvegarde'), h('small', {}, db == null ? 'aucune sauvegarde exportée pour l’instant' : `la dernière date de ${db} jours`))));
+    slot.replaceChildren(...rows);
+  })().catch(() => {});
+  return slot;
+}
+
 /** Anniversaires des élèves dans les 7 prochains jours (ceux du week-end sont annoncés le vendredi). */
 export function upcomingBirthdays(cls, today, days = 7) {
   const out = [];
@@ -64,6 +90,8 @@ function moments(cls, today) {
       (() => { const dow = new Date(`${today}T12:00:00`).getDay(); return dow === 5 || dow === 6 || dow === 0 ? h('a', { class: 'moment-row', href: '#/bilan-semaine', 'data-testid': 'moment-bilan' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan de la semaine'), h('small', {}, '10 minutes : clore, regarder le rythme, préparer la suite'))) : null; })(),
       (() => { const per = model.periodOfDate(store.get(cls.yearId), today); return per && model.addDays(per.end, -13) <= today ? h('a', { class: 'moment-row', href: '#/fin-periode', 'data-testid': 'moment-finperiode' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Fin de période'), h('small', {}, `jusqu’au ${model.frShort(per.end)} : évaluations, livrets, suite`))) : null; })(),
       (() => { const late = safetyStatus(store.get(cls.yearId)).filter(x => x.late); return late.length ? h('a', { class: 'moment-row', href: '#/securite', 'data-testid': 'moment-securite' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Exercice incendie à faire'), h('small', {}, 'le premier se fait dans le mois qui suit la rentrée'))) : null; })(),
+      (() => { const md = today.slice(5); return md >= '08-15' && md <= '09-30' ? h('a', { class: 'moment-row', href: '#/rentree', 'data-testid': 'moment-rentree' }, h('span', { class: 'moment-title' }, h('strong', {}, 'Assistant de rentrée'), h('small', {}, 'les étapes dans l’ordre, cochées au fur et à mesure'))) : null; })(),
+      syncReminder(),
       h('a', { class: 'moment-row', href: '#/messages' }, h('span', { class: 'moment-title' }, h('strong', {}, unsigned ? `${unsigned} mot(s) à faire signer` : 'Carnet à jour'), h('small', {}, 'carnet de liaison'))),
       h('a', { class: 'moment-row', href: `#/cahier?d=${today}` }, h('span', { class: 'moment-title' }, h('strong', {}, 'Bilan du jour'), h('small', {}, 'deux lignes au cahier journal')))]));
 }

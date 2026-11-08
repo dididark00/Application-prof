@@ -785,6 +785,28 @@ await test('Bilan annuel et bilan de fin de cycle (8 composantes, degré propos�
   await page.reload(); await page.waitForTimeout(900); await page.evaluate(() => { window.print = () => { window.__p = document.getElementById('print-root').textContent; window.__n = document.querySelectorAll('#print-root .livret-page').length; }; });
 });
 
+await test('Assistant de rentrée, transmissions de fin d’année, rappel de synchronisation et de sauvegarde', async () => {
+  await go('#/rentree');
+  const n = await page.getByTestId('rentree-step').count();
+  assert(n >= 10, `étapes de rentrée (${n})`);
+  const before = await page.locator('[data-testid=rentree-step][data-state=ok]').count();
+  await page.getByTestId('rentree-manual-etiquettes').check(); await page.waitForTimeout(300);
+  eq(await page.locator('[data-testid=rentree-step][data-state=ok]').count(), before + 1, 'étape cochée à la main');
+  await go('#/passation');
+  await page.getByTestId('pass-to').fill('Mme Exemple, CM1'); await page.getByTestId('pass-to').blur();
+  const card = page.getByTestId('pass-card').first(); await card.locator('summary').click();
+  await card.getByTestId('pass-conseils').fill('Le placer près du tableau (test)'); await card.getByTestId('pass-conseils').blur(); await page.waitForTimeout(300);
+  await page.getByTestId('pass-print').click(); await page.waitForTimeout(300);
+  const t = await page.evaluate(() => window.__p || '');
+  assert(t.includes('Transmission de fin d’année') && t.includes('Pour : Mme Exemple, CM1') && t.includes('Le placer près du tableau (test)'), 'dossier imprimé avec destinataire et conseils');
+  assert(!t.includes('Dispositifs et aménagements'), 'aucun dispositif sans le cocher');
+  await S(`const D = await import('./js/device.js'); await D.set('lastSync', new Date(Date.now() - 5 * 86400000).toISOString()); await store.setSettings({ lastBackupAt: new Date(Date.now() - 9 * 86400000).toISOString() }); return true;`);
+  await go('#/'); await page.waitForTimeout(400);
+  assert(await page.getByTestId('sync-reminder').isVisible(), 'rappel de synchronisation');
+  assert((await page.getByTestId('backup-reminder').innerText()).includes('9 jours'), 'rappel de sauvegarde');
+  await S(`await store.setSettings({ lastBackupAt: new Date().toISOString() }); return true;`);
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

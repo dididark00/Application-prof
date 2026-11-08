@@ -1551,3 +1551,5 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .attest-who { font-size: 1.2em; line-height: 1.8; }
 .attest-cert ul { list-style: none; padding: 0; text-align: left; display: inline-block; }
 .cycle-table td:first-child { font-size: .9rem; } .cycle-table select { min-width: 210px; }
+.moment-slot { display: contents; }
+.pass-card summary { cursor: pointer; } .passation .pass-cols ul { margin: 4px 0; padding-left: 20px; font-size: .9em; }

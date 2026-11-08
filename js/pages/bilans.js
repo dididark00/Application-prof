@@ -128,6 +128,7 @@ function renderPeriod(cls, rerender) {
       link('#/livrets', r.withApp.length === n ? 'Générer les livrets' : 'Écrire les appréciations', 'bl-livrets')),
     step(r.unsigned.length ? 'todo' : 'ok', r.unsigned.length ? `${plural(r.unsigned.length, 'mot')} du carnet pas encore signé${r.unsigned.length > 1 ? 's' : ''}` : 'Carnet de liaison à jour', null, r.unsigned.length ? link('#/messages', 'Carnet') : null),
     (() => { const ss = safetyStatus(store.get(cls.yearId)); const miss = ss.filter(x => !x.ok && !x.planned.length); return step(miss.length ? 'todo' : 'ok', miss.length ? `Sécurité : ${miss.map(x => x.label.replace('Exercice ', '').replace('d’évacuation ', '')).join(', ')} à prévoir` : 'Exercices de sécurité faits ou prévus', null, link('#/securite', 'Sécurité')); })(),
+    r.next ? null : step('todo', 'Dernière période : transmissions de fin d’année', 'Un dossier par élève pour le ou la collègue de l’an prochain.', link('#/passation', 'Transmissions')),
     r.next ? step(r.nextSeqs.length ? 'ok' : 'todo', r.nextSeqs.length ? `Période ${pi + 2} : ${plural(r.nextSeqs.length, 'séquence')} déjà prévue${r.nextSeqs.length > 1 ? 's' : ''}` : `Période ${pi + 2} : aucune séquence encore rattachée`,
       'Programmations, progressions et séquences de la période suivante.', link('#/progressions', 'Préparer la suite')) : null];
   const todo = steps.filter(x => x?.dataset.state === 'todo').length;

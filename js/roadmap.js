@@ -282,6 +282,9 @@ export const ROADMAP = [
   R(5, '§9 Livrets', 'Statistiques de la classe (plage choisie) : répartition NA / ECA / A / D / NE, maîtrise par élève, profil en étoile et jauges par discipline de la classe', 'fait', 'Pour l’enseignante seulement : jamais dans les livrets des familles.'),
   R(5, '§9 Attestations', 'Attestations suivies (savoir rouler à vélo, aisance aquatique, savoir nager en sécurité, APER, apprendre à porter secours, ou personnalisée) : tableau élèves × étapes (à faire → en cours → acquis daté), obtenue quand tout est acquis, tableau de suivi et attestations individuelles imprimables, attestations obtenues dans le livret', 'fait', 'Étapes proposées modifiables : à vérifier sur la grille de la circonscription.'),
   R(5, '§9 Livrets', 'Bilan annuel (toute l’année, titre « Bilan annuel ») et bilan de fin de cycle : 8 composantes du socle, 4 degrés de maîtrise, degré proposé d’après les niveaux de l’année (modifiable), synthèse, impression', 'fait', 'Prépare la saisie officielle dans le LSU, sans la remplacer.'),
+  R(5, '§2 Aujourd’hui', 'Assistant de rentrée : 12 étapes dans l’ordre (année, service 108 h, classe, élèves, reprise des modèles, emploi du temps, progressions, fiches de renseignements, étiquettes, exercice incendie, première semaine, sauvegarde), cochées d’après les données, quelques-unes à la main ; rappel sur l’accueil du 15 août au 30 septembre', 'fait', 'Rien n’est créé depuis l’assistant : chaque étape mène à sa page.'),
+  R(5, '§8 Élèves', 'Transmissions de fin d’année : un dossier par élève pour le ou la collègue suivant (maîtrise par discipline sur l’année, points forts, compétences à consolider, attestations, ce qui marche, vigilance, conseils), destinataire, dispositifs seulement si coché ; rappel en fin de dernière période', 'fait', 'Document de liaison entre enseignants, jamais destiné aux familles.'),
+  R(5, '§19 Sauvegarde', 'Rappels sur l’accueil : synchroniser avec Nuage (envoi ou récupération de plus de 3 jours, utile sur téléphone) et faire une sauvegarde (plus de 7 jours)', 'fait', 'D’après l’état propre à chaque appareil.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),
@@ -303,6 +306,7 @@ export const RUBRIQUES = [
     { id: 'taches', groupe: 'Organiser', titre: 'Tâches et rendez-vous', route: 'taches' },
     { id: 'bilan-semaine', groupe: 'Organiser', titre: 'Bilan de la semaine', route: 'bilan-semaine' },
     { id: 'fin-periode', groupe: 'Organiser', titre: 'Fin de période', route: 'fin-periode' },
+    { id: 'rentree', groupe: 'Organiser', titre: 'Assistant de rentrée', route: 'rentree' },
     { id: 'observer', groupe: 'En classe', titre: 'Observation éclair', route: 'observer' },
     { id: 'projection', groupe: 'En classe', titre: 'Projection', route: 'projection' },
     { id: 'outils', groupe: 'En classe', titre: 'Outils de classe', route: 'outils' },
@@ -347,6 +351,7 @@ export const RUBRIQUES = [
     { id: 'rattrapage', groupe: 'Suivi des apprentissages', titre: 'Rattrapage', route: 'rattrapage' },
     { id: 'attestations', groupe: 'Suivi des apprentissages', titre: 'Attestations', route: 'attestations' },
     { id: 'listes', groupe: 'Mes élèves', titre: 'Listes', route: 'listes' },
+    { id: 'passation', groupe: 'Mes élèves', titre: 'Transmissions de fin d’année', route: 'passation' },
     { id: 'plan', groupe: 'Vie de la classe', titre: 'Plan de classe et groupes', route: 'plan' },
     { id: 'responsabilites', groupe: 'Vie de la classe', titre: 'Responsabilités', route: 'responsabilites' },
     { id: 'bibliotheque', groupe: 'Vie de la classe', titre: 'Bibliothèque', route: 'bibliotheque' },

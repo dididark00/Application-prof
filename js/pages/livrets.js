@@ -87,13 +87,13 @@ async function setLivretEvals(cls, per, patch) {
   await store.update(cls.id, { livretEvals: cur }, 'Évaluations du livret');
 }
 /** Résultats d'un élève limités aux évaluations retenues pour le livret. */
-function livretResults(cls, per, sid) {
+export function livretResults(cls, per, sid) {
   const ids = new Set(livretEvals(cls, per).map(e => e.id));
   return resultsOf(sid, cls.id, null, null).filter(r => ids.has(r.ev.id));
 }
 
-function reportOf(classId, periodId, studentId) { return store.all('report').find(r => r.classId === classId && r.periodId === periodId && r.studentId === studentId) || null; }
-async function saveReport(cls, per, s, patch, label) {
+export function reportOf(classId, periodId, studentId) { return store.all('report').find(r => r.classId === classId && r.periodId === periodId && r.studentId === studentId) || null; }
+export async function saveReport(cls, per, s, patch, label) {
   const cur = reportOf(cls.id, per.id, s.id);
   if (cur) return store.update(cur.id, patch, label, { quiet: true });
   return store.create('report', { classId: cls.id, periodId: per.id, studentId: s.id, subjects: {}, general: '', status: 'brouillon', ...patch }, label);

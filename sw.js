@@ -1,7 +1,7 @@
 // Fichier généré par tools/build-sw.mjs — ne pas modifier à la main.
 // Met en cache l'application pour un fonctionnement hors connexion.
 // Les données ne passent jamais par ce fichier : elles restent dans IndexedDB.
-const CACHE = 'classeur-d34aef1d5c91';
+const CACHE = 'classeur-66c7634bf266';
 const OCR_CACHE = 'ocr-tesseract-wasm-1';
 const ASSETS = [
   "./",
@@ -136,6 +136,7 @@ const ASSETS = [
   "js/pages/more.js",
   "js/pages/observer.js",
   "js/pages/outils.js",
+  "js/pages/passation.js",
   "js/pages/pes.js",
   "js/pages/placeholder.js",
   "js/pages/plan.js",
@@ -149,6 +150,7 @@ const ASSETS = [
   "js/pages/referentiels.js",
   "js/pages/registre.js",
   "js/pages/remplacement.js",
+  "js/pages/rentree.js",
   "js/pages/repartition.js",
   "js/pages/responsabilites.js",
   "js/pages/reunions.js",

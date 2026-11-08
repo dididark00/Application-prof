@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (224) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 236 entrées.
+Légende : ✅ Réalisé (227) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 239 entrées.
 
 ## Étape 1 — Socle
 
@@ -264,3 +264,6 @@ Légende : ✅ Réalisé (224) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §9 Livrets | Statistiques de la classe (plage choisie) : répartition NA / ECA / A / D / NE, maîtrise par élève, profil en étoile et jauges par discipline de la classe | Pour l’enseignante seulement : jamais dans les livrets des familles. |
 | ✅ | §9 Attestations | Attestations suivies (savoir rouler à vélo, aisance aquatique, savoir nager en sécurité, APER, apprendre à porter secours, ou personnalisée) : tableau élèves × étapes (à faire → en cours → acquis daté), obtenue quand tout est acquis, tableau de suivi et attestations individuelles imprimables, attestations obtenues dans le livret | Étapes proposées modifiables : à vérifier sur la grille de la circonscription. |
 | ✅ | §9 Livrets | Bilan annuel (toute l’année, titre « Bilan annuel ») et bilan de fin de cycle : 8 composantes du socle, 4 degrés de maîtrise, degré proposé d’après les niveaux de l’année (modifiable), synthèse, impression | Prépare la saisie officielle dans le LSU, sans la remplacer. |
+| ✅ | §2 Aujourd’hui | Assistant de rentrée : 12 étapes dans l’ordre (année, service 108 h, classe, élèves, reprise des modèles, emploi du temps, progressions, fiches de renseignements, étiquettes, exercice incendie, première semaine, sauvegarde), cochées d’après les données, quelques-unes à la main ; rappel sur l’accueil du 15 août au 30 septembre | Rien n’est créé depuis l’assistant : chaque étape mène à sa page. |
+| ✅ | §8 Élèves | Transmissions de fin d’année : un dossier par élève pour le ou la collègue suivant (maîtrise par discipline sur l’année, points forts, compétences à consolider, attestations, ce qui marche, vigilance, conseils), destinataire, dispositifs seulement si coché ; rappel en fin de dernière période | Document de liaison entre enseignants, jamais destiné aux familles. |
+| ✅ | §19 Sauvegarde | Rappels sur l’accueil : synchroniser avec Nuage (envoi ou récupération de plus de 3 jours, utile sur téléphone) et faire une sauvegarde (plus de 7 jours) | D’après l’état propre à chaque appareil. |
