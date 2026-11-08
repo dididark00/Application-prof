@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (220) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 232 entrées.
+Légende : ✅ Réalisé (222) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 234 entrées.
 
 ## Étape 1 — Socle
 
@@ -260,3 +260,5 @@ Légende : ✅ Réalisé (220) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §9 Évaluations | Type d’évaluation (sommative, contrôle continu, formative, diagnostique) et interrupteur « Dans le livret » (formatives et diagnostiques hors livret par défaut) ; NE (non évalué) et Abs (absent à l’exercice) dans chaque case, touches N et X, comptés à part et jamais comme « non acquis » ; liste des évaluations regroupée par discipline | Les évaluations déjà saisies restent dans le livret (type sommatif par défaut). |
 | ✅ | §9 Livrets | Livret visuel : profil en étoile par discipline (3 disciplines ou plus) et jauge de maîtrise par discipline (moyenne des niveaux retenus), option « Profil » à la génération | Dessin vectoriel : net à l’impression comme en PDF. |
 | ✅ | §12 108 h | 108 h : profil par année (PES à 50 % : 24 + 9 + 3 h et dispense d’APC ; titulaire : 48 + 18 + 6 + 36 h ; personnalisé avec quotité) ; compteur « Travail en équipe, suivi des élèves et relations avec les parents » regroupant les deux anciennes catégories (sous-catégories gardées) ; réalisé, programmé, restant, projection et dépassement par compteur ; activités annulées non comptées ; durée réelle des réunions après une durée estimée ; alertes doublon et dépassement sans rien bloquer | Aucune donnée réécrite : regroupement à l’affichage, anciens objectifs repris tels quels tant qu’aucun profil n’est choisi. |
+| ✅ | §9 Livrets | Noms sur les documents et accords (une enseignante, des enseignantes, un enseignant, des enseignants), repris dans l’en-tête et le cadre de signature ; cadre de signatures en option | Retenus pour la prochaine génération. |
+| ✅ | §9 Livrets | Statistiques de la classe (plage choisie) : répartition NA / ECA / A / D / NE, maîtrise par élève, profil en étoile et jauges par discipline de la classe | Pour l’enseignante seulement : jamais dans les livrets des familles. |

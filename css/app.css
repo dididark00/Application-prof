@@ -1528,3 +1528,15 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .lp-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f2b8a6, #f7dc8e 35%, #a9dfc3 70%, #9fc6f0); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .lp-pct { text-align: right; font-weight: 700; }
 .lp-note { font-size: .7em; color: #777; margin: 2px 0 0; }
+.class-stats summary { cursor: pointer; }
+.cs-dist { display: flex; height: 30px; border-radius: 999px; overflow: hidden; margin: 12px 0; gap: 2px; }
+.cs-seg { display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; color: #1e1b24; min-width: 42px; white-space: nowrap; }
+.cs-seg.lv-NA { background: #f2b8a6; } .cs-seg.lv-ECA { background: #f7dc8e; } .cs-seg.lv-A { background: #a9dfc3; } .cs-seg.lv-D { background: #9fc6f0; } .cs-seg.lv-NE { background: #e4e1ea; }
+.cs-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cs-grid .livret-profile { margin: 0; color: var(--ink); }
+.cs-students { display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow: auto; }
+@media (max-width: 900px) { .cs-grid { grid-template-columns: 1fr; } .cs-grid .livret-profile { flex-direction: column; } }
+:root[data-mode="sombre"] .lp-bar { background: var(--line); }
+.cs-grid .livret-profile { flex-direction: column; align-items: stretch; }
+.cs-grid .lp-star { width: 100%; max-width: 360px; align-self: center; }
+.lp-star { width: 300px; }

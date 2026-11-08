@@ -520,6 +520,9 @@ await test('Livret v2 : dates libres, une ligne par compétence avec ses résult
   const html = await page.evaluate(() => document.getElementById('print-root').innerHTML);
   assert(html.includes('Décrire le vivant (test v2)') && /livret-pos on lv-A/.test(html), 'niveau retenu coché dans la bonne colonne');
   assert(html.includes('livret-profile') && html.includes('Maîtrise par discipline'), 'profil et jauges de maîtrise imprimés');
+  assert(await page.getByTestId('class-stats').count() === 1, 'statistiques de la classe');
+  await page.getByTestId('class-stats').locator('summary').click();
+  assert((await page.getByTestId('class-stats').textContent()).includes('Maîtrise par élève'), 'maîtrise par élève');
   assert(html.includes('Du 01/09/2026 au 31/10/2026') || html.includes('Périodes'), 'dates du livret imprimées');
   await page.getByTestId('livret-range').click(); await page.getByTestId('range-quick').last().click(); await page.waitForTimeout(300);
   assert((await page.getByTestId('livret-range').innerText()).includes('Année'), 'raccourci « Toute l’année »');
@@ -733,6 +736,19 @@ await test('108 h : anciens réglages gardés, profils PES / titulaire, compteur
   eq(y2.targets.besoins, 12, 'anciens réglages conservés dans l’année'); eq(y2.profile, 'pes50', 'profil enregistré pour cette année');
   await go('#/heures?t=apc'); assert(await page.getByTestId('apc-dispense').isVisible(), 'APC : dispense');
   await S(`await store.setSettings({ currentYearId: a.y, currentClassId: a.c }); return true;`, prev); await go('#/');
+});
+
+await test('Livret : noms et accords sur les documents, signatures en option', async () => {
+  await go('#/livrets');
+  await page.getByTestId('livrets-generate').click();
+  await page.getByTestId('gen-names').fill('Julia T. et Elena E.'); await page.getByTestId('gen-accord').selectOption('fn');
+  await page.getByTestId('gen-signatures').uncheck();
+  await page.getByTestId('gen-go').click(); await page.waitForTimeout(400);
+  const t = await page.evaluate(() => window.__p || '');
+  assert(t.includes('Enseignantes : Julia T. et Elena E.'), 'noms et accord');
+  assert(!t.includes('Les responsables légaux'), 'sans signatures');
+  await page.getByTestId('livrets-generate').click(); await page.getByTestId('gen-signatures').check(); await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => window.__p || '')).includes('Les enseignantes'), 'cadre de signature accordé');
 });
 
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {

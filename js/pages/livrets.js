@@ -116,7 +116,7 @@ function draft(sub, sm, sc) {
 }
 
 // ───── Notes et niveaux par discipline (proposés d'après les évaluations, modifiables)
-const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, profil: true, detail: true, dates: true, absences: true, ...(store.get(cls.id)?.livretOptions || {}) });
+const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, profil: true, detail: true, dates: true, absences: true, signatures: true, names: '', accord: '', ...(store.get(cls.id)?.livretOptions || {}) });
 /** Proposition : note sur « sur » (points des évaluations retenues) et niveau le plus représentatif. */
 export function suggestMark(sm, sc, sur = 20) {
   if (!sm) return { note: '', level: '' };
@@ -185,6 +185,7 @@ export function render({ rerender }) {
         h('button', { type: 'button', class: custom ? 'on' : '', 'data-testid': 'livret-range', onclick: () => rangeDialog(periods, rerender) }, custom ? `${custom.label} ✎` : 'Autres dates…')),
       h('span', { class: 'muted small' }, `Du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
     evalPanel(cls, per, rerender, mat),
+    mat ? null : classStats(cls, per, students),
     h('p', { class: 'muted small' }, 'Les résultats et observations de la période sont affichés pour vous aider ; les appréciations restent entièrement rédigées et modifiées par vous. L’export est un tableau à reporter dans le LSU : la compatibilité d’un import direct n’a pas été vérifiée et l’application ne remplace pas le service officiel.'),
     students.length ? h('div', { class: 'stack' }, students.map(card)) : emptyState('Aucun élève'));
 }
@@ -228,17 +229,27 @@ async function fillMarks(cls, per, students, sc) {
 }
 
 /** Choix avant de générer : ce qui figure sur le livret remis aux familles. */
+// Accords grammaticaux des documents : « L’enseignante », « Les enseignantes », « L’enseignant », « Les enseignants ».
+const ACCORDS = [['f1', 'Une enseignante'], ['fn', 'Des enseignantes'], ['m1', 'Un enseignant'], ['mn', 'Des enseignants / une équipe mixte']];
+const ACCORD_WORD = { f1: ['L’enseignante', 'Enseignante'], fn: ['Les enseignantes', 'Enseignantes'], m1: ['L’enseignant', 'Enseignant'], mn: ['Les enseignants', 'Enseignants'] };
+const defaultNames = (cls) => [store.getSettings().userName, model.hasBinome(cls) ? cls.binome?.name : ''].filter(Boolean).join(' et ');
+const defaultAccord = (cls) => (model.hasBinome(cls) && cls.binome?.name ? 'fn' : 'f1');
+
 function generateDialog(cls, per, pi, students, mat) {
   const o = optsOf(cls);
   const box = (k, l) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: k, checked: !!o[k], 'data-testid': `gen-${k}` }), l);
   const sur = h('select', { name: 'sur', 'data-testid': 'gen-sur' }, [10, 20, 100].map(v => h('option', { value: v, selected: Number(o.sur) === v }, `/${v}`)));
   const form = h('div', { class: 'form' },
     mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('profil', 'Profil en étoile et jauge de maîtrise par discipline'), box('detail', 'Tableau des compétences (une ligne par compétence, niveau retenu coché)'), box('dates', 'Dates et résultats de chaque évaluation sous la compétence'), box('absences', 'Absences de la période')),
-    h('p', { class: 'muted small' }, 'Appréciations, légende de l’échelle et cadre de signatures (enseignante, direction, famille) figurent toujours. Pour un PDF : « Enregistrer au format PDF » dans la fenêtre d’impression.'));
+    h('div', { class: 'grid-2' },
+      field('Nom(s) sur les documents', h('input', { name: 'names', value: o.names || defaultNames(cls), 'data-testid': 'gen-names', placeholder: 'ex. Julia T. et Elena E.' })),
+      field('Accords', h('select', { name: 'accord', 'data-testid': 'gen-accord' }, ACCORDS.map(([v, l]) => h('option', { value: v, selected: (o.accord || defaultAccord(cls)) === v }, l))))),
+    box('signatures', 'Cadre de signatures (enseignante(s), direction, famille)'),
+    h('p', { class: 'muted small' }, 'Appréciations et légende de l’échelle figurent toujours. Pour un PDF : « Enregistrer au format PDF » dans la fenêtre d’impression.'));
   modal({ title: mat ? 'Générer les carnets de suivi' : `Générer ${students.length > 1 ? 'les livrets' : 'le livret'} — ${per.label.toLowerCase()}`, body: form,
   actions: [{ label: 'Annuler' }, { label: 'Générer', primary: true, testid: 'gen-go', onClick: async (ev) => {
-    const next = { ...o, sur: Number(form.querySelector('[name=sur]')?.value || o.sur) };
-    for (const k of ['niveaux', 'notes', 'profil', 'detail', 'dates', 'absences']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
+    const next = { ...o, sur: Number(form.querySelector('[name=sur]')?.value || o.sur), names: form.querySelector('[name=names]').value.trim(), accord: form.querySelector('[name=accord]').value };
+    for (const k of ['niveaux', 'notes', 'profil', 'detail', 'dates', 'absences', 'signatures']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
     if (JSON.stringify(next) !== JSON.stringify(o)) await store.update(cls.id, { livretOptions: next }, 'Options du livret', { quiet: true });
     printDocument(h('div', {}, students.map(s => h('div', { class: 'livret-page' }, printReport(cls, per, pi, s, mat, next)))));
     void ev;
@@ -260,13 +271,14 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
   const obs = mat ? E.of('observation', s.id).filter(x => x.date >= per.start && x.date <= per.end && x.kind === 'réussite') : [];
   const port = mat ? E.of('portfolio', s.id).filter(p => (p.date || '') >= per.start && (p.date || '') <= per.end) : [];
   const abs = V.attendanceOfStudent(s.id).filter(x => x.a.date >= per.start && x.a.date <= per.end && x.m.status === 'absent').length;
-  const teacher = [store.getSettings().userName, model.hasBinome(cls) ? cls.binome?.name : ''].filter(Boolean).join(' et ');
+  const teacher = o.names || defaultNames(cls);
+  const [W, Wcap] = ACCORD_WORD[o.accord || defaultAccord(cls)] || ACCORD_WORD.f1;
   const notes = subs.map(sub => String(markOf(rep, sub).note || '').trim()).filter(Boolean).map(x => Number(x.replace(',', '.'))).filter(Number.isFinite);
   const syn = mat ? {} : compSynth(res, sc, rep, idx);
   const head = h('header', { class: 'livret-head' },
     h('div', { class: 'livret-school' }, h('strong', {}, cls.school || 'École'), h('div', {}, `Année scolaire ${year?.label || ''}`)),
     h('div', { class: 'livret-title' }, h('h1', {}, mat ? 'Carnet de suivi des apprentissages' : 'Livret scolaire'), h('div', { class: 'print-sub' }, `${per.label} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
-    h('div', { class: 'livret-student' }, h('strong', { class: 'livret-name' }, `${s.firstName} ${s.lastName}`), h('div', {}, `Classe : ${cls.name}`), teacher ? h('div', {}, `Enseignante${teacher.includes(' et ') ? 's' : ''} : ${teacher}`) : null));
+    h('div', { class: 'livret-student' }, h('strong', { class: 'livret-name' }, `${s.firstName} ${s.lastName}`), h('div', {}, `Classe : ${cls.name}`), teacher ? h('div', {}, `${Wcap} : ${teacher}`) : null));
   const legend = !mat && (o.niveaux || o.detail) ? h('p', { class: 'livret-legend' }, h('strong', {}, 'Positionnement : '), sc.map(([k, l]) => `${k} = ${l}`).join(' · ')) : null;
   const subBlock = (sub) => {
     const m = markOf(rep, sub); const rows = syn[sub] || [];
@@ -292,7 +304,7 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
       o.notes && notes.length > 1 ? h('p', { class: 'livret-avg' }, h('strong', {}, 'Moyenne générale indicative : '), `${String(Math.round(notes.reduce((a, b) => a + b, 0) / notes.length * 10) / 10).replace('.', ',')} / ${o.sur}`) : null],
     h('section', { class: 'livret-sub livret-general' }, h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, mat ? 'Synthèse des acquis' : 'Appréciation générale')), h('p', { class: 'livret-app pre' }, rep?.general || '')),
     o.absences ? h('p', { class: 'small' }, `Absences sur la période : ${abs} demi-journée(s).`) : null,
-    h('table', { class: 'print-table livret-sign' }, h('tbody', {}, h('tr', {}, ['L’enseignante', 'La direction', 'Les responsables légaux (vu et pris connaissance)'].map(t => h('td', {}, h('div', { class: 'livret-sign-label' }, t), h('div', { class: 'livret-sign-box' })))))));
+    o.signatures === false ? null : h('table', { class: 'print-table livret-sign' }, h('tbody', {}, h('tr', {}, [W, 'La direction', 'Les responsables légaux (vu et pris connaissance)'].map(t => h('td', {}, h('div', { class: 'livret-sign-label' }, t), h('div', { class: 'livret-sign-box' })))))));
 }
 
 /** Maîtrise d'un ensemble de compétences : moyenne des niveaux retenus (0 = premier niveau, 1 = dernier). */
@@ -309,7 +321,7 @@ function profile(syn, sc) {
   let star = null;
   if (axes.length >= 3) {
     const NS = 'http://www.w3.org/2000/svg'; const S = (t, at) => { const e = document.createElementNS(NS, t); for (const [k, v] of Object.entries(at)) e.setAttribute(k, v); return e; };
-    const W = 300, C = W / 2, R = 92; const svg = S('svg', { viewBox: `0 0 ${W} ${W - 40}`, class: 'lp-star', role: 'img', 'aria-label': `Profil : ${axes.map(a => `${a.sub} ${Math.round(a.v * 100)} %`).join(', ')}` });
+    const W = 300, C = W / 2, R = 92; const svg = S('svg', { viewBox: `-50 0 ${W + 100} ${W - 40}`, class: 'lp-star', role: 'img', 'aria-label': `Profil : ${axes.map(a => `${a.sub} ${Math.round(a.v * 100)} %`).join(', ')}` });
     const g = S('g', { transform: `translate(0,-20)` }); svg.append(g);
     const pt = (i, r) => { const ang = -Math.PI / 2 + i * 2 * Math.PI / axes.length; return [C + r * Math.cos(ang), C + r * Math.sin(ang)]; };
     for (const f of [0.25, 0.5, 0.75, 1]) g.append(S('polygon', { points: axes.map((_, i) => pt(i, R * f).join(',')).join(' '), fill: 'none', stroke: '#d9d0f2', 'stroke-width': f === 1 ? 1.2 : 0.7 }));
@@ -321,6 +333,26 @@ function profile(syn, sc) {
   }
   return h('section', { class: 'livret-profile', 'data-testid': 'livret-profile' }, star, h('div', { class: 'lp-gauges' }, h('div', { class: 'lp-title' }, 'Maîtrise par discipline'), axes.map(gauge),
     h('p', { class: 'lp-note' }, `Moyenne des niveaux retenus : 0 % = ${sc[0]?.[1] || ''}, 100 % = ${sc.at(-1)?.[1] || ''}.`)));
+}
+
+/** Statistiques de la classe sur la plage : répartition des niveaux retenus, maîtrise par élève, profil de la classe. */
+function classStats(cls, per, students) {
+  const sc = scale(); const keys = sc.map(([k]) => k);
+  const per_s = students.map(({ student: s }) => { const syn = compSynth(livretResults(cls, per, s.id), sc, reportOf(cls.id, per.id, s.id)); return { s, syn, rows: Object.values(syn).flat() }; }).filter(x => x.rows.length);
+  if (!per_s.length) return null;
+  const dist = Object.fromEntries(keys.map(k => [k, 0])); let ne = 0;
+  for (const x of per_s) for (const r of x.rows) { if (dist[r.level] != null) dist[r.level]++; else ne++; }
+  const total = Object.values(dist).reduce((a, b) => a + b, 0) + ne;
+  const subs = [...new Set(per_s.flatMap(x => Object.keys(x.syn)))];
+  const classSyn = Object.fromEntries(subs.map(sub => [sub, per_s.flatMap(x => x.syn[sub] || [])]));
+  const ranked = per_s.map(x => ({ s: x.s, v: mastery(x.rows, sc) })).filter(x => x.v != null).sort((a, b) => b.v - a.v);
+  return h('details', { class: 'card class-stats', 'data-testid': 'class-stats' }, h('summary', {}, h('strong', {}, 'Statistiques de la classe'), h('span', { class: 'muted small' }, ` — ${per_s.length} élève(s) évalué(s), ${total} niveau(x) retenu(s)`)),
+    h('div', { class: 'cs-dist', role: 'img', 'aria-label': `Répartition : ${keys.map(k => `${k} ${dist[k]}`).join(', ')}` },
+      [...keys.map(k => [k, dist[k]]), ['NE', ne]].filter(([, n]) => n).map(([k, n]) => h('span', { class: `cs-seg lv-${k}`, style: { flexGrow: String(n) }, title: `${k} : ${n}` }, `${k} ${Math.round(n / total * 100)} %`))),
+    h('div', { class: 'cs-grid' },
+      profile(classSyn, sc),
+      h('div', {}, h('div', { class: 'lp-title' }, 'Maîtrise par élève'), h('div', { class: 'cs-students' }, ranked.map(x => h('div', { class: 'lp-gauge' }, h('span', { class: 'lp-name' }, x.s.firstName), h('span', { class: 'lp-bar' }, h('span', { style: { width: `${Math.round(x.v * 100)}%` } })), h('span', { class: 'lp-pct' }, `${Math.round(x.v * 100)} %`)))))),
+    h('p', { class: 'muted small' }, 'Calculé sur les niveaux retenus des compétences évaluées de la plage choisie. À usage de l’enseignante : rien de tout cela n’apparaît dans les livrets des familles.'));
 }
 
 /** Choix des évaluations reliées au livret de la période. */
