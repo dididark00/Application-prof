@@ -701,6 +701,40 @@ await test('Évaluations : type (formative hors livret par défaut), interrupteu
   assert(await page.getByTestId('eval-group').count() >= 1, 'évaluations regroupées par discipline');
 });
 
+await test('108 h : anciens réglages gardés, profils PES / titulaire, compteur équipe fusionné, annulé non compté, durée réelle, doublon et projection', async () => {
+  const r = await S(`const O = await import('./js/orga.js');
+    const y = await store.create('year', { label: '2024-2025 (test 108)', start: '2024-09-01', end: '2025-07-04', periods: [{ id: 'p1', start: '2024-09-01', end: '2025-07-04' }] });
+    // anciens réglages : quotité 50 %, objectifs par catégorie
+    await store.update(y.id, { h108: { quotite: 50, targets: { apc: 18, besoins: 12, animations: 9, conseils: 12, conseil_ecole: 3 } } });
+    const legacy = O.h108GroupTargets(store.get(y.id));
+    await store.create('hours', { yearId: y.id, title: 'Projet d’école', date: '2024-10-02', cat: 'besoins', planned: 60, done: true });
+    await store.create('hours', { yearId: y.id, title: 'Conseil de cycle', date: '2024-10-03', cat: 'conseils', planned: 90, done: true });
+    await store.create('hours', { yearId: y.id, title: 'Conseil de cycle', date: '2024-10-03', cat: 'conseils', planned: 90, done: true });
+    await store.create('hours', { yearId: y.id, title: 'Animation annulée', date: '2024-11-05', cat: 'animations', planned: 180, done: true, cancelled: true });
+    await store.create('hours', { yearId: y.id, title: 'Animation à venir', date: '2025-03-05', cat: 'animations', planned: 180, done: false });
+    await store.create('meeting', { title: 'Conseil d’école', kind: 'conseil d’école', date: '2024-11-10', count108: true, cat108: 'conseil_ecole', duration: 120, realMinutes: 150 });
+    return { id: y.id, legacy };`);
+  eq(JSON.stringify(r.legacy), JSON.stringify({ equipe: 24, animations: 9, conseil_ecole: 3, apc: 18 }), 'anciens objectifs repris tels quels (12 + 12 = 24)');
+  const t = await S(`const O = await import('./js/orga.js'); const y = store.get(a); const L = O.h108Lines(a); const g = O.h108GroupTotals(L, O.h108GroupTargets(y)); return { equipe: g.equipe.done, sub: g.equipe.byCat, anim: g.animations.done, prog: g.animations.programmed, ce: g.conseil_ecole.done, dups: O.h108Duplicates(L).size, proj: g.animations.projection };`, r.id);
+  eq(t.equipe, 240, 'compteur équipe = besoins + conseils (60 + 90 + 90)');
+  eq(t.sub.besoins, 60, 'sous-catégorie gardée');
+  eq(t.anim, 0, 'activité annulée non comptée'); eq(t.prog, 180, 'programmé'); eq(t.proj, 180, 'projection');
+  eq(t.ce, 150, 'durée réelle de la réunion');
+  eq(t.dups, 2, 'doublon signalé (deux « Conseil de cycle » le même jour)');
+  const prev = await S(`const s = store.getSettings(); const p = { y: s.currentYearId, c: s.currentClassId }; await store.setSettings({ currentYearId: a }); return p;`, r.id);
+  await go('#/heures');
+  assert(await page.getByTestId('h108-alerts').isVisible(), 'alertes doublon / dépassement');
+  await page.getByTestId('h108-settings').click();
+  await page.getByTestId('h108-profile').selectOption('pes50');
+  eq(await page.getByTestId('target-apc').inputValue(), '0', 'PES : APC 0'); eq(await page.getByTestId('target-equipe').inputValue(), '24', 'PES : équipe 24');
+  await page.getByTestId('h108-save').click(); await page.waitForTimeout(300);
+  assert((await page.getByTestId('h108-cat-apc').innerText()).includes('Dispense'), 'dispense d’APC affichée');
+  const y2 = await S(`return store.get(a).h108;`, r.id);
+  eq(y2.targets.besoins, 12, 'anciens réglages conservés dans l’année'); eq(y2.profile, 'pes50', 'profil enregistré pour cette année');
+  await go('#/heures?t=apc'); assert(await page.getByTestId('apc-dispense').isVisible(), 'APC : dispense');
+  await S(`await store.setSettings({ currentYearId: a.y, currentClassId: a.c }); return true;`, prev); await go('#/');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

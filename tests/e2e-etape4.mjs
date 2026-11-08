@@ -88,7 +88,7 @@ await test('Réunion : 108 h, décision, tâche avec responsable, élève, agend
 await test('108 h : comptage unique (réunion + APC + activité), objectifs au prorata', async () => {
   await go('#/heures');
   await page.getByTestId('h108-settings').click();
-  await page.locator('.modal select').first().selectOption('50'); await page.waitForTimeout(50);
+  await page.getByTestId('h108-profile').selectOption('perso'); await page.getByTestId('h108-quotite').selectOption('50'); await page.waitForTimeout(50);
   eq(await page.getByTestId('target-apc').inputValue(), '18', 'APC à mi-temps = 18 h');
   await modalBtn('Enregistrer').click(); await page.waitForTimeout(200);
   await page.getByTestId('h108-add').click();

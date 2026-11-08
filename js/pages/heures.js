@@ -26,29 +26,51 @@ export function render({ query, rerender }) {
 // ───── 108 h
 function hoursView(y) {
   const lines = O.h108Lines(y.id);
-  const totals = O.h108Totals(lines);
-  const targets = O.h108Targets(y);
-  const sum = (k) => Object.values(totals).reduce((s, t) => s + t[k], 0);
+  const targets = O.h108GroupTargets(y);
+  const prof = O.h108Profile(y);
+  const g = O.h108GroupTotals(lines, targets);
+  const dups = O.h108Duplicates(lines);
+  const sum = (k) => Object.values(g).reduce((s, t) => s + t[k], 0);
   const target = Object.values(targets).reduce((s, v) => s + (Number(v) || 0), 0);
+  const apcDispense = !Number(targets.apc);
+  const overs = O.H108_GROUPS.filter(([k]) => g[k].over > 0);
+  const cell = (min) => h('td', { class: 'num' }, hm(min));
   return h('div', { class: 'stack' },
+    h('div', { class: 'row wrap' }, badge(O.H108_PROFILES[prof].label, 'info'), apcDispense ? badge('Dispense d’APC', 'muted') : null, h('span', { class: 'muted small' }, `${target} h attendues sur ${y.label}`)),
     h('div', { class: 'kpis', 'data-testid': 'h108-kpis' },
-      h('div', { class: 'kpi' }, h('strong', { 'data-testid': 'h108-done' }, hm(sum('done'))), h('span', {}, `réalisées sur ${target} h prévues au service`), progress(sum('done') / 60, target)),
-      h('div', { class: 'kpi' }, h('strong', {}, hm(sum('planned'))), h('span', {}, 'programmées au total (prévu)'))),
+      h('div', { class: 'kpi' }, h('strong', { 'data-testid': 'h108-done' }, hm(sum('done'))), h('span', {}, `réalisées sur ${target} h`), progress(sum('done') / 60, target)),
+      h('div', { class: 'kpi' }, h('strong', {}, hm(sum('programmed'))), h('span', {}, 'programmées (à venir)')),
+      h('div', { class: 'kpi' }, h('strong', { 'data-testid': 'h108-projection' }, hm(sum('projection'))), h('span', {}, 'projection de fin d’année')),
+      h('div', { class: 'kpi' }, h('strong', {}, hm(Math.max(0, target * 60 - sum('done')))), h('span', {}, 'restantes à faire'))),
+    overs.length || dups.size ? h('div', { class: 'banner warn', 'data-testid': 'h108-alerts' },
+      overs.length ? h('p', {}, h('strong', {}, 'Dépassement prévu : '), overs.map(([k, l]) => `${l.split(' (')[0]} +${hm(g[k].over)}`).join(' · '), ' (rien n’est bloqué).') : null,
+      dups.size ? h('p', {}, h('strong', {}, 'Doublon possible : '), `${dups.size} ligne(s) du même jour avec un titre presque identique, signalées ci-dessous. Vérifiez qu’une réunion n’est pas aussi saisie comme activité.`) : null) : null,
     h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Par catégorie'), h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'h108-settings', onclick: () => settingsDialog(y) }, 'Régler mon service')),
-      h('table', { class: 'table' }, h('thead', {}, h('tr', {}, h('th', {}, 'Catégorie'), h('th', { class: 'num' }, 'Objectif'), h('th', { class: 'num' }, 'Prévu'), h('th', { class: 'num' }, 'Réalisé'), h('th', {}, ''))),
-        h('tbody', {}, O.H108_CATS.map(([k, l]) => h('tr', { 'data-testid': `h108-cat-${k}` }, h('td', {}, l), h('td', { class: 'num' }, `${targets[k] ?? 0} h`), h('td', { class: 'num' }, hm(totals[k]?.planned)), h('td', { class: 'num' }, hm(totals[k]?.done)), h('td', { style: { width: '140px' } }, progress((totals[k]?.done || 0) / 60, Number(targets[k]) || 0)))))),
+      h('table', { class: 'table h108-table' }, h('thead', {}, h('tr', {}, ['Catégorie', 'Objectif', 'Réalisé', 'Programmé', 'Restant', 'Projection', ''].map((t, i) => h('th', { class: i && i < 6 ? 'num' : '' }, t)))),
+        h('tbody', {}, O.H108_GROUPS.map(([k, l, cats]) => {
+          const t = g[k]; const tg = Number(targets[k]) || 0;
+          const sub = cats.length > 1 ? h('div', { class: 'small muted' }, cats.map(c => `${catLabel(c)} : ${hm(t.byCat[c] || 0)}`).join(' · ')) : null;
+          return h('tr', { 'data-testid': `h108-cat-${k}` },
+            h('td', {}, l, sub),
+            h('td', { class: 'num' }, k === 'apc' && !tg ? badge('Dispense', 'muted') : `${tg} h`),
+            cell(t.done), cell(t.programmed), cell(t.remaining),
+            h('td', { class: 'num' }, hm(t.projection), t.over ? h('div', {}, badge(`+${hm(t.over)}`, 'warn')) : null),
+            h('td', { style: { width: '120px' } }, progress(t.done / 60, tg)));
+        }))),
       h('p', { class: 'muted small' }, y.h108?.note || O.H108_SOURCE)),
     h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Détail'),
       h('span', { class: 'row' }, h('button', { class: 'btn btn-small btn-primary', type: 'button', 'data-testid': 'h108-add', onclick: () => activityDialog(y) }, icon('plus', 14), 'Activité'),
         h('a', { class: 'btn btn-small', href: '#/reunions' }, 'Réunions'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => exportCsv(y, lines) }, icon('download', 14), 'CSV'),
-        h('button', { class: 'btn btn-small', type: 'button', onclick: () => printHours(y, lines, totals, targets) }, icon('print', 14), 'Imprimer'))),
+        h('button', { class: 'btn btn-small', type: 'button', onclick: () => printHours(y, lines, g, targets) }, icon('print', 14), 'Imprimer'))),
       lines.length ? h('table', { class: 'table' }, h('thead', {}, h('tr', {}, h('th', {}, 'Date'), h('th', {}, 'Activité'), h('th', {}, 'Catégorie'), h('th', {}, 'Source'), h('th', { class: 'num' }, 'Prévu'), h('th', { class: 'num' }, 'Réalisé'), h('th', {}, ''))),
-        h('tbody', {}, lines.map(l => h('tr', { 'data-testid': 'h108-line' },
-          h('td', { class: 'nowrap' }, l.date ? model.frShort(l.date) : '—'), h('td', {}, l.href ? h('a', { href: l.href }, l.title) : l.title, l.status === 'annulé' ? badge('annulé', 'warn') : null),
+        h('tbody', {}, lines.map(l => h('tr', { 'data-testid': 'h108-line', class: l.status === 'annulé' ? 'is-cancelled' : '' },
+          h('td', { class: 'nowrap' }, l.date ? model.frShort(l.date) : '—'),
+          h('td', {}, l.href ? h('a', { href: l.href }, l.title) : l.title, ' ', l.status === 'annulé' ? badge('annulé', 'warn') : null, dups.has(l.id) ? badge('doublon ?', 'warn') : null, l.estimated ? badge('durée estimée', 'muted') : null),
           h('td', { class: 'small' }, catLabel(l.cat)), h('td', {}, badge(l.kind, 'muted')), h('td', { class: 'num' }, hm(l.planned)), h('td', { class: 'num' }, l.done ? hm(l.done) : badge(l.status, l.status === 'réalisé' ? 'ok' : 'muted')),
           h('td', {}, l.kind === 'activité' ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => activityDialog(y, l.rec) }, 'Modifier') : null)))))
-        : h('p', { class: 'muted' }, 'Rien pour l’instant. Les réunions marquées « compte dans les 108 h » et les séances d’APC réalisées s’ajoutent ici automatiquement, sans double saisie.')));
+        : h('p', { class: 'muted' }, 'Rien pour l’instant. Les réunions marquées « compte dans les 108 h » et les séances d’APC réalisées s’ajoutent ici automatiquement, sans double saisie.')),
+    h('p', { class: 'muted small' }, 'Chaque année scolaire a son profil et ses compteurs : changez d’année en haut de l’écran pour retrouver l’historique.'));
 }
 
 function progress(doneH, targetH) {
@@ -57,19 +79,30 @@ function progress(doneH, targetH) {
 }
 
 function settingsDialog(y) {
-  const cur = O.h108Targets(y);
-  const q = h('select', { name: 'quotite' }, [100, 80, 75, 50].map(v => h('option', { value: v, selected: Number(y.h108?.quotite || 100) === v }, `${v} %`)));
-  const inputs = Object.fromEntries(O.H108_CATS.map(([k]) => [k, h('input', { type: 'number', step: '0.5', min: 0, value: cur[k] ?? 0, 'data-testid': `target-${k}` })]));
-  q.addEventListener('change', () => { for (const [k, v] of Object.entries(O.H108_FULL)) inputs[k].value = Math.round(v * Number(q.value) / 100 * 2) / 2; });
+  let prof = O.h108Profile(y);
+  const cur = O.h108GroupTargets(y);
+  const profSel = h('select', { name: 'profile', 'data-testid': 'h108-profile' }, Object.entries(O.H108_PROFILES).map(([k, p]) => h('option', { value: k, selected: prof === k }, p.label)));
+  const q = h('select', { name: 'quotite', 'data-testid': 'h108-quotite' }, [100, 80, 75, 50].map(v => h('option', { value: v, selected: Number(y.h108?.quotite || 100) === v }, `${v} % (d’après un temps plein titulaire)`)));
+  const inputs = Object.fromEntries(O.H108_GROUPS.map(([k]) => [k, h('input', { type: 'number', step: '0.5', min: 0, value: cur[k] ?? 0, 'data-testid': `target-${k}` })]));
+  const qField = field('Quotité (mode personnalisé)', q, 'Recalcule les objectifs au prorata d’un temps plein ; ajustez ensuite chaque ligne si besoin.');
+  const sync = () => {
+    prof = profSel.value; qField.hidden = prof !== 'perso';
+    if (prof !== 'perso') for (const [k, v] of Object.entries(O.H108_PROFILES[prof].targets)) inputs[k].value = v;
+  };
+  profSel.addEventListener('change', sync);
+  q.addEventListener('change', () => { for (const [k, v] of Object.entries(O.H108_PROFILES.titulaire.targets)) inputs[k].value = Math.round(v * Number(q.value) / 100 * 2) / 2; });
+  for (const i of Object.values(inputs)) i.addEventListener('input', () => { if (profSel.value !== 'perso') { profSel.value = 'perso'; prof = 'perso'; qField.hidden = false; } });
+  qField.hidden = prof !== 'perso';
   const note = h('textarea', { rows: 2 }, y.h108?.note || '');
-  modal({ title: 'Mon service (108 h)', body: h('div', { class: 'form' },
-    field('Quotité', q, 'Recalcule les objectifs au prorata ; vous pouvez ensuite les ajuster.'),
-    O.H108_CATS.map(([k, l]) => field(`${l} (heures)`, inputs[k])),
-    field('Source / consignes de la circonscription', note, 'Notez d’où viennent vos objectifs (ex. note de service, mail de la circonscription).'),
-    h('p', { class: 'muted small' }, O.H108_SOURCE)),
-  actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, onClick: async () => {
-    const targets = Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, Number(i.value) || 0]));
-    await store.update(y.id, { h108: { quotite: Number(q.value), targets, note: note.value } }, 'Objectifs 108 h');
+  modal({ title: `Mon service (108 h) — ${y.label}`, body: h('div', { class: 'form' },
+    field('Profil de service pour cette année', profSel, 'PES à 50 % : 24 + 9 + 3 h, dispense d’APC. Titulaire : 48 + 18 + 6 + 36 h. Vérifiez votre fiche de service : certaines circonscriptions demandent aux PES 54 h, APC comprises.'),
+    qField,
+    O.H108_GROUPS.map(([k, l]) => field(`${l} (heures)`, inputs[k])),
+    field('Source / consignes de la circonscription', note, 'Notez d’où viennent vos objectifs (fiche de service, note de la circonscription…).')),
+  actions: [{ label: 'Annuler' }, { label: 'Enregistrer', primary: true, testid: 'h108-save', onClick: async () => {
+    const groupTargets = Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, Number(i.value) || 0]));
+    // Les anciens réglages (quotité, objectifs par catégorie) sont gardés tels quels : rien n'est effacé.
+    await store.update(y.id, { h108: { ...(y.h108 || {}), profile: prof, groupTargets, quotite: Number(q.value), note: note.value } }, `108 h : profil ${O.H108_PROFILES[prof].label}`);
   } }] });
 }
 
@@ -77,16 +110,17 @@ function activityDialog(y, a = null) {
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
     field('Activité', h('input', { name: 'title', required: true, value: a?.title || '', 'data-testid': 'act-title' })),
     h('div', { class: 'grid-3' }, field('Date', h('input', { name: 'date', type: 'date', value: a?.date || model.todayIso() })),
-      field('Catégorie', h('select', { name: 'cat', 'data-testid': 'act-cat' }, O.H108_CATS.map(([k, l]) => h('option', { value: k, selected: a?.cat === k }, l)))),
+      field('Catégorie', h('select', { name: 'cat', 'data-testid': 'act-cat' }, O.H108_GROUPS.map(([g, gl, cats]) => h('optgroup', { label: gl }, cats.map(k => h('option', { value: k, selected: a?.cat === k }, catLabel(k))))))),
       field('Durée prévue (minutes)', h('input', { name: 'planned', type: 'number', min: 0, value: a?.planned || 60, 'data-testid': 'act-planned' }))),
-    h('div', { class: 'grid-2' }, h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: 'done', checked: !!a?.done, 'data-testid': 'act-done' }), 'Réalisée'),
+    h('div', { class: 'grid-3' }, h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: 'done', checked: !!a?.done, 'data-testid': 'act-done' }), 'Réalisée'),
+      h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: 'cancelled', checked: !!a?.cancelled, 'data-testid': 'act-cancelled' }), 'Annulée (ne compte pas)'),
       field('Durée réelle si différente (minutes)', h('input', { name: 'realMinutes', type: 'number', min: 0, value: a?.realMinutes || '' }))),
     field('Notes / justificatif', h('textarea', { name: 'notes', rows: 2 }, a?.notes || '')));
   const actions = [{ label: 'Annuler' }];
   if (a) actions.unshift({ label: 'Supprimer', danger: true, onClick: async () => { await store.remove(a.id, 'Activité 108 h mise à la corbeille'); toast('Activité mise à la corbeille', { action: 'Annuler', onAction: () => store.undo() }); } });
   actions.push({ label: 'Enregistrer', primary: true, onClick: async () => {
     const d = formData(form); if (!d.title.trim()) return false;
-    const data = { ...d, done: !!d.done, planned: Number(d.planned) || 0, realMinutes: d.realMinutes ? Number(d.realMinutes) : null, yearId: y.id };
+    const data = { ...d, done: !!d.done, cancelled: !!d.cancelled, planned: Number(d.planned) || 0, realMinutes: d.realMinutes ? Number(d.realMinutes) : null, yearId: y.id };
     if (a) await store.update(a.id, data, '108 h : activité modifiée'); else await store.create('hours', data, `108 h : ${d.title}`);
   } });
   modal({ title: a ? 'Activité (108 h)' : 'Nouvelle activité (108 h)', body: form, actions });
@@ -95,9 +129,10 @@ function activityDialog(y, a = null) {
 function exportCsv(y, lines) {
   download(`108h-${y.label}.csv`, toCsv([['Date', 'Activité', 'Catégorie', 'Source', 'Prévu (min)', 'Réalisé (min)', 'Statut'], ...lines.map(l => [l.date || '', l.title, catLabel(l.cat), l.kind, l.planned, l.done, l.status])]), 'text/csv;charset=utf-8');
 }
-function printHours(y, lines, totals, targets) {
+function printHours(y, lines, g, targets) {
   printDocument(h('div', {},
-    printTable({ title: `108 heures — ${y.label}`, subtitle: store.getSettings().userName || '', columns: ['Catégorie', 'Objectif', 'Prévu', 'Réalisé'].map(label => ({ label })), rows: O.H108_CATS.map(([k, l]) => [l, `${targets[k] ?? 0} h`, hm(totals[k]?.planned), hm(totals[k]?.done)]) }),
+    printTable({ title: `108 heures — ${y.label} — ${O.H108_PROFILES[O.h108Profile(y)].label}`, subtitle: store.getSettings().userName || '', columns: ['Catégorie', 'Objectif', 'Réalisé', 'Programmé', 'Restant', 'Projection'].map(label => ({ label })),
+      rows: O.H108_GROUPS.map(([k, l]) => [l, k === 'apc' && !Number(targets[k]) ? 'Dispense' : `${targets[k] ?? 0} h`, hm(g[k].done), hm(g[k].programmed), hm(g[k].remaining), `${hm(g[k].projection)}${g[k].over ? ` (+${hm(g[k].over)})` : ''}`]) }),
     printTable({ title: 'Détail', columns: ['Date', 'Activité', 'Catégorie', 'Prévu', 'Réalisé'].map(label => ({ label })), rows: lines.map(l => [l.date ? model.frShort(l.date) : '', l.title, catLabel(l.cat), hm(l.planned), l.done ? hm(l.done) : l.status]) })));
 }
 
@@ -105,7 +140,9 @@ function printHours(y, lines, totals, targets) {
 function apcView(y, openId, rerender) {
   const groups = store.all('apc').filter(g => g.yearId === y.id).sort((a, b) => (a.title || '').localeCompare(b.title || '', 'fr'));
   const cls = model.currentClass();
+  const dispense = !Number(O.h108GroupTargets(y).apc);
   return h('div', { class: 'stack' },
+    dispense ? h('p', { class: 'banner info', 'data-testid': 'apc-dispense' }, h('strong', {}, 'Dispense d’APC'), ` (profil ${O.H108_PROFILES[O.h108Profile(y)].label}). Vous pouvez quand même noter des séances : elles s’ajoutent au compteur APC.`) : null,
     h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-apc', onclick: () => apcDialog(y) }, icon('plus', 16), 'Nouveau groupe d’APC')),
     groups.length ? groups.map(g => {
       const open = openId === g.id || groups.length === 1;

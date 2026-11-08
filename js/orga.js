@@ -39,13 +39,64 @@ export const H108_CATS = [
   ['conseil_ecole', 'Conseils d’école'],
 ];
 export const H108_FULL = { apc: 36, besoins: 24, animations: 18, conseils: 24, conseil_ecole: 6 };
-export const H108_SOURCE = 'Répartition indicative d’un temps plein (108 h) ; adapter à la quotité de service et aux consignes de la circonscription (les stagiaires ont souvent un service spécifique).';
+export const H108_SOURCE = 'Objectifs selon le profil de l’année (Régler mon service). Vérifiez-les sur votre fiche de service ou la note de la circonscription : les PES ont un service spécifique. Seules les activités réalisées comptent ; les annulées jamais ; chaque réunion est comptée une seule fois, depuis sa fiche.';
 export function h108Targets(year) {
   const t = year?.h108?.targets;
   if (t) return t;
   const q = Number(year?.h108?.quotite) || 100;
   return Object.fromEntries(Object.entries(H108_FULL).map(([k, v]) => [k, Math.round(v * q / 100 * 2) / 2]));
 }
+// ───── Profils de service et compteurs regroupés (affichage seulement : chaque réunion ou activité garde sa catégorie d'origine)
+export const H108_GROUPS = [
+  ['equipe', 'Travail en équipe, suivi des élèves et relations avec les parents', ['besoins', 'conseils']],
+  ['animations', 'Animations pédagogiques et formation', ['animations']],
+  ['conseil_ecole', 'Conseils d’école', ['conseil_ecole']],
+  ['apc', 'APC (activités pédagogiques complémentaires)', ['apc']],
+];
+export const H108_PROFILES = {
+  pes50: { label: 'PES à 50 %', targets: { equipe: 24, animations: 9, conseil_ecole: 3, apc: 0 } },
+  titulaire: { label: 'Titulaire (temps plein)', targets: { equipe: 48, animations: 18, conseil_ecole: 6, apc: 36 } },
+  perso: { label: 'Personnalisé', targets: null },
+};
+export const groupOfCat = (cat) => (H108_GROUPS.find(g => g[2].includes(cat)) || H108_GROUPS[0])[0];
+/** Profil de l'année : choisi, sinon « personnalisé » si d'anciens objectifs existent (rien ne change), sinon titulaire. */
+export function h108Profile(year) { return year?.h108?.profile || (year?.h108?.targets || year?.h108?.quotite ? 'perso' : 'titulaire'); }
+export function h108GroupTargets(year) {
+  const p = h108Profile(year);
+  if (p !== 'perso') return { ...H108_PROFILES[p].targets };
+  if (year?.h108?.groupTargets) return { ...year.h108.groupTargets };
+  const t = h108Targets(year); // anciens objectifs par catégorie, additionnés par compteur
+  return Object.fromEntries(H108_GROUPS.map(([g, , cats]) => [g, cats.reduce((a, c) => a + (Number(t[c]) || 0), 0)]));
+}
+/** Totaux par compteur : réalisé, programmé (prévu pas encore fait), restant, projection, dépassement — à la minute. */
+export function h108GroupTotals(lines, targets) {
+  const t = Object.fromEntries(H108_GROUPS.map(([g]) => [g, { done: 0, programmed: 0, cancelled: 0, byCat: {} }]));
+  for (const l of lines) {
+    const g = t[groupOfCat(l.cat)];
+    if (l.status === 'annulé') { g.cancelled += l.planned; continue; }
+    g.done += l.done;
+    if (l.status === 'prévu') g.programmed += l.planned;
+    g.byCat[l.cat] = (g.byCat[l.cat] || 0) + l.done;
+  }
+  for (const [k, g] of Object.entries(t)) {
+    const target = (Number(targets?.[k]) || 0) * 60;
+    g.target = target; g.remaining = Math.max(0, target - g.done); g.projection = g.done + g.programmed;
+    g.over = target ? Math.max(0, g.projection - target) : 0;
+  }
+  return t;
+}
+/** Doublons possibles : même jour, même compteur, titres presque identiques (ex. réunion saisie aussi comme activité). */
+export function h108Duplicates(lines) {
+  const norm = (x) => (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 16);
+  const seen = new Map(); const dup = new Set();
+  for (const l of lines) {
+    if (l.status === 'annulé' || !l.date) continue;
+    const k = `${l.date}|${groupOfCat(l.cat)}|${norm(l.title.replace(/^APC — /, ''))}`;
+    if (seen.has(k)) { dup.add(seen.get(k)); dup.add(l.id); } else seen.set(k, l.id);
+  }
+  return dup;
+}
+
 /**
  * Lignes 108 h d'une année : activités saisies + réunions comptées + séances d'APC réalisées.
  * Chaque ligne garde sa source (kind/id) : rien n'est recopié, donc rien n'est compté deux fois.
@@ -54,11 +105,12 @@ export function h108Lines(yearId) {
   const y = store.get(yearId);
   const inYear = (d) => !y || ((!y.start || d >= y.start) && (!y.end || d <= y.end));
   const out = [];
-  for (const a of store.all('hours')) if (a.yearId === yearId) out.push({ kind: 'activité', id: a.id, date: a.date, title: a.title, cat: a.cat, planned: Number(a.planned) || 0, done: a.done ? (Number(a.realMinutes) || Number(a.planned) || 0) : 0, status: a.done ? 'réalisé' : 'prévu', href: null, rec: a });
+  for (const a of store.all('hours')) if (a.yearId === yearId) out.push({ kind: 'activité', id: a.id, date: a.date, title: a.title, cat: a.cat, planned: Number(a.planned) || 0, done: a.done && !a.cancelled ? (Number(a.realMinutes) || Number(a.planned) || 0) : 0, status: a.cancelled ? 'annulé' : a.done ? 'réalisé' : 'prévu', href: null, rec: a });
   for (const m of store.all('meeting')) if (m.count108 && inYear(m.date)) {
     const min = meetingMinutes(m);
     const past = m.date <= model.todayIso();
-    out.push({ kind: 'réunion', id: m.id, date: m.date, title: m.title, cat: m.cat108 || DEFAULT_108[m.kind] || 'conseils', planned: min, done: past && !m.cancelled ? min : 0, status: m.cancelled ? 'annulé' : past ? 'réalisé' : 'prévu', href: `#/reunions/${m.id}`, rec: m });
+    const real = Number(m.realMinutes) || 0; // durée réelle saisie après coup (sinon durée prévue ou estimée)
+    out.push({ kind: 'réunion', id: m.id, date: m.date, title: m.title, cat: m.cat108 || DEFAULT_108[m.kind] || 'conseils', planned: min, done: past && !m.cancelled ? (real || min) : 0, status: m.cancelled ? 'annulé' : past ? 'réalisé' : 'prévu', estimated: !(m.start && m.end) && !real, href: `#/reunions/${m.id}`, rec: m });
   }
   for (const g of store.all('apc')) if (g.yearId === yearId) for (const s of g.sessions || []) {
     out.push({ kind: 'APC', id: `${g.id}:${s.id}`, date: s.date, title: `APC — ${g.title}`, cat: 'apc', planned: Number(s.minutes) || 0, done: s.done ? (Number(s.minutes) || 0) : 0, status: s.done ? 'réalisé' : 'prévu', href: `#/heures?t=apc&g=${g.id}`, rec: g });

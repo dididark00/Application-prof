@@ -90,7 +90,8 @@ function detail(id, rerender) {
           bound({ label: 'Annulée', type: 'checkbox', value: m.cancelled, onSave: (v) => up({ cancelled: v }, 'Réunion annulée') }),
           bound({ label: 'Contenu confidentiel', type: 'checkbox', value: m.sensitive, onSave: (v) => up({ sensitive: v }, 'Confidentialité de la réunion') })),
         m.count108 ? bound({ label: 'Catégorie 108 h', type: 'select', value: m.cat108 || 'conseils', options: O.H108_CATS, onSave: (v) => up({ cat108: v }, 'Catégorie 108 h') }) : null,
-        m.count108 && !(m.start && m.end) ? bound({ label: 'Durée (minutes) si pas d’horaires', type: 'number', value: m.duration, onSave: (v) => up({ duration: v }, 'Durée de réunion') }) : null),
+        m.count108 && !(m.start && m.end) ? bound({ label: 'Durée estimée (minutes), pas d’heure de fin', type: 'number', value: m.duration, onSave: (v) => up({ duration: v }, 'Durée de réunion') }) : null,
+        m.count108 ? bound({ label: 'Durée réelle (minutes), si différente', type: 'number', value: m.realMinutes, testid: 'm-real', onSave: (v) => up({ realMinutes: v === '' ? null : Number(v) }, 'Durée réelle de réunion') }) : null),
       h('section', { class: 'card' }, h('h2', {}, 'Participants et élèves'),
         h('div', { class: 'linked-head' }, h('strong', {}, 'Participants'), h('span', { class: 'row' },
           h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
