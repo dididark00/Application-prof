@@ -182,7 +182,7 @@ export async function duplicateSequence(id) {
 /** Instantané de ce qui a été réellement fait : une modification future de la fiche ne réécrit pas le passé. */
 export function snapshotOf(session) {
   if (!session) return null;
-  const keep = ['title', 'subject', 'subdomain', 'objective', 'competencesText', 'criteres', 'trace', 'phases', 'fileIds', 'manualRefs', 'updatedAt'];
+  const keep = ['title', 'subject', 'subdomain', 'objective', 'competencesText', 'criteres', 'trace', 'phases', 'fileIds', 'fileRoles', 'manualRefs', 'updatedAt'];
   const snap = {};
   for (const k of keep) if (session[k] !== undefined) snap[k] = structuredClone(session[k]);
   snap.number = sessionNumber(session);

@@ -285,6 +285,8 @@ legend { font-weight: 600; font-size: .9rem; padding: 0 4px; }
 .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; gap: 8px; max-width: min(440px, calc(100vw - 32px)); }
 .toast { display: flex; align-items: center; gap: 10px; background: var(--toast-bg); color: var(--toast-ink); padding: 10px 10px 10px 14px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
 .toast span { flex: 1; }
+/* Fenêtre ouverte : les notifications passent en haut pour ne pas cacher ses boutons. */
+body:has(.modal-backdrop) .toasts { bottom: auto; top: 16px; }
 .toast .icon-btn { color: var(--toast-ink); opacity: .8; width: 30px; height: 30px; }
 .toast-error { background: var(--danger); }
 .toast-success { background: var(--toast-ok); }
@@ -1553,3 +1555,7 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .cycle-table td:first-child { font-size: .9rem; } .cycle-table select { min-width: 210px; }
 .moment-slot { display: contents; }
 .pass-card summary { cursor: pointer; } .passation .pass-cols ul { margin: 4px 0; padding-left: 20px; font-size: .9em; }
+
+.entry-files p { margin: 2px 0; }
+.entry-files .btn-link { padding: 0 4px; text-decoration: none; }
+.inline-select { width: auto; padding: 2px 6px; min-height: 0; }

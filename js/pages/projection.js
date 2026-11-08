@@ -2,6 +2,7 @@
 // L'écran ne reçoit qu'un contenu filtré : programme, consigne, devoirs collectifs, timer, support choisi.
 // Aucune donnée personnelle (bilans, notes, coordonnées, besoins particuliers) n'y est jamais envoyée.
 import * as store from '../store.js';
+import * as FL from '../file-links.js';
 import { embedOf, embedFrame } from '../embeds.js';
 import * as model from '../model.js';
 import * as P from '../pedago.js';
@@ -68,7 +69,7 @@ export function render({ query, rerender }) {
   const setPanel = (k, v) => set({ panels: { ...ctrl.panels, [k]: v } });
   publish(cls, date);
   const payload = buildPayload(cls, date);
-  const files = (entry?.session?.fileIds || []).map(id => store.get(id)).filter(f => f && !f.deletedAt);
+  const files = entry ? FL.entryFiles(entry).sort((a, b) => (b.role === 'projeter') - (a.role === 'projeter')).map(x => x.file) : [];
 
   return h('div', { class: 'page' },
     pageHeader('Projection', { favKey: 'aujourdhui/projection', subtitle: `${cls.name} · ${model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' })}`,

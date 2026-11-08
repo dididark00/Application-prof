@@ -119,7 +119,7 @@ function detail(id) {
         (s.notionIds || []).length ? h('div', { class: 'tags' }, s.notionIds.map(nid => store.get(nid)).filter(Boolean).map(n => badge(n.title, P.NOTION_KIND[P.notionStatus(n)]))) : h('p', { class: 'muted small' }, 'Aucune notion liée.'))),
     P.SEQUENCE_SECTIONS.slice(1).map((sec, i) => h('section', { class: 'card' }, h('h2', {}, sec.title), sectionFields(s.id, sec.fields),
       i === 0 ? competencyBlock(s.id, { levels: s.levels?.length ? s.levels : cls.levels }) : null,
-      i === 1 ? [filesBlock(s.id), manualRefsBlock(s.id)] : null)),
+      i === 1 ? [filesBlock(s.id, { roles: true }), manualRefsBlock(s.id)] : null)),
     h('section', { class: 'card' },
       h('div', { class: 'card-head' }, h('h2', {}, 'Déroulé de la séquence'),
         h('div', { class: 'row' },

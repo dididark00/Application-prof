@@ -927,6 +927,40 @@ await test('Texte à compléter en conjugaison : infinitif à côté du trou, co
   assert(!(await page.getByTestId('atelier-preview').textContent()).includes('grinçons'), 'fiche élève sans la réponse');
 });
 
+await test('Fichiers reliés avec un rôle : depuis Fichiers (fiche ou moment) et depuis le cahier journal', async () => {
+  const info = await S(`const PL = await import('./js/planning.js'); const cls = model.currentClass();
+    const f1 = await store.create('file', { kind: 'link', name: 'Diaporama test rôle', url: 'https://example.org/d', folderId: null, tags: [], subject: '', level: '', favorite: false, studentIds: [] });
+    const f2 = await store.create('file', { kind: 'link', name: 'Fiche test à imprimer', url: 'https://example.org/f', folderId: null, tags: [], subject: '', level: '', favorite: false, studentIds: [] });
+    let date = null, key = null;
+    for (let k = 0; k < 40 && !date; k++) { const d = model.addDays('2026-11-02', k); const e = PL.dayPlan(cls, d).entries.find(x => x.session && x.kind !== 'event'); if (e) { date = d; key = e.key; } }
+    return { f1: f1.id, f2: f2.id, date, key };`);
+  assert(info.date, 'un jour avec une séance');
+  // 1. Depuis Fichiers, vers une fiche de séance, « à projeter »
+  await go('#/fichiers'); await page.waitForTimeout(300);
+  await page.locator('.file-item', { hasText: 'Diaporama test rôle' }).getByTestId('file-link-to').click(); await page.waitForTimeout(200);
+  await page.getByTestId('role-projeter').click(); await page.getByTestId('link-go').click(); await page.waitForTimeout(300);
+  await page.locator('.pick-list input').first().check(); await page.getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(500);
+  const r1 = await S(`const s = store.all('session').find(x => (x.fileIds || []).includes(a)); return s ? s.fileRoles?.[a] : null;`, info.f1);
+  eq(r1, 'projeter', 'relié à la fiche, à projeter');
+  const clearToasts = () => page.evaluate(() => document.getElementById('toasts')?.replaceChildren());
+  await clearToasts();
+  // 2. Depuis Fichiers, vers un moment du cahier journal, « à imprimer »
+  await page.locator('.file-item', { hasText: 'Fiche test à imprimer' }).getByTestId('file-link-to').click(); await page.waitForTimeout(200);
+  await page.getByTestId('role-imprimer').click(); await page.getByTestId('link-target-moment').click(); await page.waitForTimeout(150);
+  await page.getByTestId('link-date').fill(info.date); await page.waitForTimeout(250);
+  await page.getByTestId('link-entry').first().check(); await clearToasts(); await page.getByTestId('link-go').click(); await page.waitForTimeout(500);
+  const mats = await S(`const PL = await import('./js/planning.js'); return PL.materials(model.currentClass(), [a]).map(r => r.label);`, info.date);
+  assert(mats.some(l => l === 'À imprimer : Fiche test à imprimer'), `liste du matériel : ${mats.join(' | ')}`);
+  // 3. Depuis le cahier journal : Plus › Joindre un fichier
+  await go(`#/cahier?d=${info.date}`); await page.waitForTimeout(400); await clearToasts();
+  const card = page.locator('[data-testid=entry-files]').first();
+  assert((await card.textContent()).includes('À imprimer'), 'fichiers affichés par rôle dans le cahier');
+  await page.getByTestId('entry-more').first().click(); await page.getByTestId('attach-entry-file').first().click(); await page.waitForTimeout(200);
+  await page.getByTestId('role-ressource').click(); await page.getByTestId('files-pick').click(); await page.waitForTimeout(300);
+  await page.locator('.pick-item', { hasText: 'Diaporama test rôle' }).locator('input').check(); await page.getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(500);
+  assert(await page.locator('[data-testid=entry-files]', { hasText: 'Ressource' }).count() > 0, 'ressource jointe depuis le cahier');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

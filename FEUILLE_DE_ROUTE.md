@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (228) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 240 entrées.
+Légende : ✅ Réalisé (229) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 241 entrées.
 
 ## Étape 1 — Socle
 
@@ -268,3 +268,4 @@ Légende : ✅ Réalisé (228) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §8 Élèves | Transmissions de fin d’année : un dossier par élève pour le ou la collègue suivant (maîtrise par discipline sur l’année, points forts, compétences à consolider, attestations, ce qui marche, vigilance, conseils), destinataire, dispositifs seulement si coché ; rappel en fin de dernière période | Document de liaison entre enseignants, jamais destiné aux familles. |
 | ✅ | §19 Sauvegarde | Rappels sur l’accueil : synchroniser avec Nuage (envoi ou récupération de plus de 3 jours, utile sur téléphone) et faire une sauvegarde (plus de 7 jours) | D’après l’état propre à chaque appareil. |
 | ✅ | §19 Atelier | Texte à compléter en conjugaison : verbe à l’infinitif entre crochets, affiché entre parenthèses à côté du trou ; version corrigée conjuguée automatiquement d’après le pronom (présent, imparfait, futur, passé composé ; 1er et 2e groupes, verbes en -dre et irréguliers fréquents) ; [infinitif=forme] pour forcer une réponse, [verbe:futur] pour un autre temps ; sujets devinés signalés à vérifier ; retours à la ligne respectés et espaces mesurés | Aussi [indice=réponse] en mode mots (ex. pluriels). |
+| ✅ | §11 Fichiers | Fichiers reliés avec un rôle (à projeter, à imprimer, ressource) : bouton « Relier… » dans Fichiers (vers une fiche de séance ou un moment du cahier journal d’un jour choisi), proposé juste après un dépôt ; « Joindre un fichier » dans la fiche de séance et dans le menu Plus d’un moment du cahier journal ; fichiers affichés par rôle dans le cahier, ajoutés à la liste du matériel (à imprimer, à projeter) et proposés en premier à la projection | Le fichier n’est jamais copié : une nouvelle version se voit partout. |

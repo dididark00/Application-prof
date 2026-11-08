@@ -6,6 +6,7 @@ import { bound, pickMany } from './forms.js';
 import { competencyIndex, competencyLabel, competencySource, pickCompetencies } from './pages/referentiels.js';
 import { addFiles } from './pages/files.js';
 import { methodHint } from './pages/methodes.js';
+import * as FL from './file-links.js';
 
 /** Rubriques d'une fiche, enregistrées automatiquement. */
 export function sectionFields(recId, fields, { hideEmpty = false, prefix = '' } = {}) {
@@ -30,32 +31,36 @@ export function competencyBlock(recId, { levels = [] } = {}) {
       : h('p', { class: 'muted small' }, 'Aucune. La rubrique texte ci-dessus reste utilisable seule.'));
 }
 
-/** Fichiers et liens rattachés par référence (aucune copie). */
-export function filesBlock(recId, { title = 'Fichiers et liens', key = 'fileIds' } = {}) {
+/** Fichiers et liens rattachés par référence (aucune copie). Avec roles : à projeter / à imprimer / ressource. */
+export function filesBlock(recId, { title = 'Fichiers et liens', key = 'fileIds', roles = false } = {}) {
   const rec = store.get(recId);
   const ids = (rec[key] || []).filter(id => { const f = store.get(id); return f && !f.deletedAt; });
   const setIds = (next, label) => store.update(recId, { [key]: next }, label);
-  return h('div', { class: 'linked' },
-    h('div', { class: 'linked-head' }, h('strong', {}, title),
-      h('span', { class: 'row' },
-        h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
-          const items = store.all('file').map(f => ({ id: f.id, label: f.name, detail: [f.kind === 'link' ? 'lien' : 'fichier', f.subject, f.level, (f.tags || []).join(', ')].filter(Boolean).join(' · ') }));
-          const sel = await pickMany({ title: 'Lier des fichiers existants', items, selected: ids, emptyText: 'Aucun fichier dans Préparer › Fichiers.' });
-          if (sel) await setIds(sel, 'Fichiers liés');
-        } }, 'Lier un fichier'),
-        h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
-          const files = await pickFiles();
-          if (!files.length) return;
-          const created = await addFiles(files, null, { subject: rec.subject || '' });
-          await setIds([...ids, ...created.map(c => c.id)], 'Nouveaux fichiers liés');
-        } }, 'Déposer'))),
-    ids.length ? h('ul', { class: 'linked-list' }, ids.map(id => {
-      const f = store.get(id);
-      const url = f.kind === 'link' ? safeUrl(f.url) : null;
-      return h('li', {}, icon(f.kind === 'link' ? 'link' : 'file', 14), ' ',
-        url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, f.name) : h('a', { href: `#/fichiers?open=${f.id}` }, f.name),
-        h('button', { class: 'btn btn-link small', type: 'button', onclick: () => setIds(ids.filter(x => x !== id), 'Fichier délié') }, 'délier'));
-    })) : h('p', { class: 'muted small' }, 'Aucun. Lier un fichier ne le copie pas : sa mise à jour se voit partout.'));
+  const fileLink = (f) => { const url = f.kind === 'link' ? safeUrl(f.url) : null; return url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, f.name) : h('a', { href: `#/fichiers?open=${f.id}` }, f.name); };
+  const row = (id) => {
+    const f = store.get(id);
+    return h('li', {}, icon(f.kind === 'link' ? 'link' : 'file', 14), ' ', fileLink(f), ' ',
+      roles ? h('select', { class: 'inline-select small', 'aria-label': `Rôle de ${f.name}`, 'data-testid': 'file-role', onchange: (e) => FL.setRole(recId, id, e.target.value) }, FL.ROLES.map(([r, l, ico]) => h('option', { value: r, selected: FL.roleOf(rec, id) === r }, `${ico} ${l}`))) : null,
+      h('button', { class: 'btn btn-link small', type: 'button', onclick: () => (roles ? FL.detach(recId, id) : setIds(ids.filter(x => x !== id), 'Fichier délié')) }, 'délier'));
+  };
+  const buttons = roles
+    ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'attach-file', onclick: async () => { const got = await FL.chooseFiles({ subject: rec.subject || '' }); if (got) await FL.attach(recId, got.ids, got.role, `Fichier relié (${FL.roleLabel(got.role).toLowerCase()})`); } }, icon('plus', 14), 'Joindre un fichier')
+    : h('span', { class: 'row' },
+      h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
+        const items = store.all('file').map(f => ({ id: f.id, label: f.name, detail: [f.kind === 'link' ? 'lien' : 'fichier', f.subject, f.level, (f.tags || []).join(', ')].filter(Boolean).join(' · ') }));
+        const sel = await pickMany({ title: 'Lier des fichiers existants', items, selected: ids, emptyText: 'Aucun fichier dans Préparer › Fichiers.' });
+        if (sel) await setIds(sel, 'Fichiers liés');
+      } }, 'Lier un fichier'),
+      h('button', { class: 'btn btn-small', type: 'button', onclick: async () => {
+        const files = await pickFiles();
+        if (!files.length) return;
+        const created = await addFiles(files, null, { subject: rec.subject || '' });
+        await setIds([...ids, ...created.map(c => c.id)], 'Nouveaux fichiers liés');
+      } }, 'Déposer'));
+  const list = !ids.length ? h('p', { class: 'muted small' }, 'Aucun. Lier un fichier ne le copie pas : sa mise à jour se voit partout.')
+    : roles ? h('div', { class: 'stack-sm' }, FL.ROLES.map(([r, l, ico]) => { const xs = ids.filter(id => FL.roleOf(rec, id) === r); return xs.length ? h('div', {}, h('p', { class: 'small muted' }, `${ico} ${l}`), h('ul', { class: 'linked-list' }, xs.map(row))) : null; }))
+      : h('ul', { class: 'linked-list' }, ids.map(row));
+  return h('div', { class: 'linked' }, h('div', { class: 'linked-head' }, h('strong', {}, title), buttons), list);
 }
 
 /** Références aux manuels : pages et exercices vérifiés. */

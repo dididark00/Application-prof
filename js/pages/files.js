@@ -4,6 +4,7 @@ import { embedOf, previewLink } from '../embeds.js';
 import { h, icon, toast, modal, field, formData, confirmDialog, pickFiles, download, formatSize, badge, emptyState, safeUrl } from '../ui.js';
 import { pageHeader, subTabs, demoBadge } from '../components.js';
 import { toCsv } from '../csv.js';
+import * as FL from '../file-links.js';
 
 const filt = { q: '', tag: '', subject: '', level: '', kind: '', fav: false };
 export const MATIERES = ['Français', 'Mathématiques', 'Questionner le monde', 'Histoire-géographie', 'Sciences', 'Langues vivantes', 'Arts plastiques', 'Éducation musicale', 'EPS', 'EMC', 'Autre'];
@@ -35,13 +36,13 @@ export function render({ query, rerender }) {
   const drop = h('div', { class: 'dropzone', 'data-testid': 'dropzone',
     ondragover: (e) => { e.preventDefault(); drop.classList.add('over'); },
     ondragleave: () => drop.classList.remove('over'),
-    ondrop: async (e) => { e.preventDefault(); drop.classList.remove('over'); await addFiles([...e.dataTransfer.files], folderId); } },
+    ondrop: async (e) => { e.preventDefault(); drop.classList.remove('over'); offerLink(await addFiles([...e.dataTransfer.files], folderId)); } },
     'Glissez des fichiers ici ou utilisez « Déposer des fichiers ».');
 
   const page = h('div', { class: 'page' },
     pageHeader('Fichiers et ressources', { favKey: 'preparer/fichiers', subtitle: 'Stockés sur cet appareil et inclus dans la sauvegarde exportée.',
       actions: [
-        h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'upload-files', onclick: async () => addFiles(await pickFiles(), folderId) }, icon('upload', 16), 'Déposer des fichiers'),
+        h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'upload-files', onclick: async () => offerLink(await addFiles(await pickFiles(), folderId)) }, icon('upload', 16), 'Déposer des fichiers'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'add-link', onclick: () => linkDialog(null, folderId) }, icon('link', 16), 'Ajouter un lien'),
         h('button', { class: 'btn', type: 'button', onclick: () => folderDialog(null, folderId) }, icon('folder', 16), 'Nouveau dossier'),
         h('button', { class: 'btn', type: 'button', onclick: () => exportIndex(all) }, icon('download', 16), 'Index CSV'),
@@ -82,6 +83,12 @@ export function render({ query, rerender }) {
   return page;
 }
 
+/** Après un dépôt : proposer de relier tout de suite à une séance ou au cahier journal. */
+function offerLink(created) {
+  if (!created?.length) return;
+  toast(`${created.length} fichier(s) déposé(s)`, { action: 'Relier à une séance…', onAction: () => FL.linkFromFiles(created.map(c => c.id)) });
+}
+
 function sel(label, options, value, onChange) {
   return h('select', { 'aria-label': label, onchange: (e) => onChange(e.target.value) }, h('option', { value: '' }, `${label} : tous`), options.map(o => h('option', { value: o, selected: value === o }, o)));
 }
@@ -101,12 +108,14 @@ function fileRow(f) {
         cur ? h('span', {}, `${formatSize(cur.size)} · ${model.frShort(cur.at)}${f.versions.length > 1 ? ` · ${f.versions.length} versions` : ''}`) : null,
         f.subject ? badge(f.subject) : null, f.level ? badge(f.level) : null,
         (f.tags || []).map(t => badge(`#${t}`, 'muted')),
-        (f.studentIds || []).length ? badge(`${f.studentIds.length} élève(s)`, 'info') : null)),
+        (f.studentIds || []).length ? badge(`${f.studentIds.length} élève(s)`, 'info') : null,
+        FL.usesOf(f.id) ? badge(`relié à ${FL.usesOf(f.id)} séance(s) ou moment(s)`, 'ok') : null)),
     h('div', { class: 'file-actions' },
       h('button', { class: `icon-btn fav ${f.favorite ? 'on' : ''}`, type: 'button', 'aria-label': f.favorite ? 'Retirer des favoris' : 'Mettre en favori', 'aria-pressed': f.favorite ? 'true' : 'false',
         onclick: () => store.update(f.id, { favorite: !f.favorite }, f.favorite ? 'Retrait des favoris' : 'Mise en favori') }, icon('star', 16)),
       f.kind === 'blob' ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => preview(f) }, 'Aperçu') : null,
       f.kind === 'link' && embedOf(f.url) ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'link-preview', onclick: () => previewLink(f) }, 'Aperçu') : null,
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'file-link-to', title: 'Relier à une fiche de séance ou à un moment du cahier journal (à projeter, à imprimer, ressource)', onclick: () => FL.linkFromFiles([f.id]) }, 'Relier…'),
       h('button', { class: 'btn btn-small', type: 'button', onclick: () => (f.kind === 'link' ? linkDialog(f) : metaDialog(f)) }, 'Modifier'),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Mettre ${f.name} à la corbeille`, onclick: async () => {
         await store.remove(f.id, `${f.name} mis à la corbeille`);

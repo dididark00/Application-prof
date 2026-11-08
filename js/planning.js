@@ -276,6 +276,11 @@ export function materials(cls, dates) {
       const n = model.studentsOfClass(cls.id, { date: d }).filter(x => lv.includes(x.enrollment.level)).length;
       for (const c of s.copies || []) rows.push({ date: d, entry: e, kind: 'copie', id: c.id, label: c.label || 'Photocopie', count: n * (Number(c.perStudent) || 0) + (Number(c.extra) || 0), status: e.occ?.copyStatus?.[c.id] || 'à faire', fileId: c.fileId });
       for (const [k, l] of [['avant', 'À préparer'], ['imprimer', 'À imprimer'], ['projeter', 'À projeter']]) if (s[k]) rows.push({ date: d, entry: e, kind: k, label: `${l} : ${s[k]}`, status: null });
+      for (const fid of s.fileIds || []) { const role = s.fileRoles?.[fid]; const f = store.get(fid); if (f && !f.deletedAt && (role === 'imprimer' || role === 'projeter')) rows.push({ date: d, entry: e, kind: role, label: `${role === 'imprimer' ? 'À imprimer' : 'À projeter'} : ${f.name}`, status: null, fileId: fid }); }
+    }
+    for (const e of plan.entries.filter(x => !x.session && !['reportée', 'annulée'].includes(x.status))) {
+      const rec = e.occ || e.event; if (!rec) continue;
+      for (const fid of rec.fileIds || []) { const role = rec.fileRoles?.[fid]; const f = store.get(fid); if (f && !f.deletedAt && (role === 'imprimer' || role === 'projeter')) rows.push({ date: d, entry: e, kind: role, label: `${role === 'imprimer' ? 'À imprimer' : 'À projeter'} : ${f.name}`, status: null, fileId: fid }); }
     }
   }
   return rows;

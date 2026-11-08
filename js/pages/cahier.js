@@ -21,6 +21,7 @@ import { duplicateDialog, activityDialog, activityDetails, durLabel } from './ca
 import { competencyIndex, competencyLabel } from './referentiels.js';
 import { download } from '../ui.js';
 import * as JD from '../journal-detail.js';
+import * as FL from '../file-links.js';
 
 let rerender = () => {};
 
@@ -344,8 +345,6 @@ function entryCard(cls, e, inConflict) {
     if (changedSince) body.push(h('p', { class: 'small muted' }, 'Version réalisée affichée. La fiche a été modifiée depuis : ', h('a', { href: `#/seance/${s.id}` }, 'voir la version actuelle'), '.'));
     if (shown.objective && !detailed) body.push(h('p', { class: 'small' }, h('strong', {}, 'Objectif : '), shown.objective));
     if ((shown.phases || []).length && !detailed) body.push(h('ol', { class: 'phase-mini' }, shown.phases.map(ph => h('li', {}, `${ph.title || P.PHASE_KINDS[ph.kind]?.label || 'Phase'}${ph.duration ? ` · ${ph.duration} min` : ''}`))));
-    const files = (shown.fileIds || []).map(id => store.get(id)).filter(f => f && !f.deletedAt);
-    if (files.length) body.push(h('p', { class: 'small' }, icon('file', 14), ' ', files.map(f => f.kind === 'link' && safeUrl(f.url) ? h('a', { href: safeUrl(f.url), target: '_blank', rel: 'noopener noreferrer' }, f.name) : h('a', { href: `#/fichiers?open=${f.id}` }, f.name)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])));
   } else if (e.kind === 'intervention' || e.intervention) {
     const iv = e.intervention;
     body.push(h('p', { class: 'small' }, [iv?.contact, iv?.place, iv?.travelMin ? `déplacement ${iv.travelMin} min` : '', iv?.prepMin ? `préparation ${iv.prepMin} min` : ''].filter(Boolean).join(' · '), ' ', h('a', { href: '#/interventions' }, 'détails')));
@@ -358,6 +357,7 @@ function entryCard(cls, e, inConflict) {
       } }, 'Nouvelle fiche')));
   }
 
+  if (e.status !== 'reportée') { const fv = FL.entryFilesView(e); if (fv) body.push(fv); }
   if (e.occ?.groups) body.push(h('div', { class: 'small entry-groups' }, h('strong', {}, `Groupes « ${e.occ.groups.name} » : `),
     e.occ.groups.groups.map(g => h('span', { class: 'gchip', style: { borderColor: g.color } }, `${g.name} (${g.memberIds.map(id => store.get(id)?.firstName).filter(Boolean).join(', ')})`))));
   const active = e.status !== 'reportée';
@@ -367,6 +367,7 @@ function entryCard(cls, e, inConflict) {
     active && e.status === 'prévue' && e.session?.sequenceId ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'shift-sequence', title: 'Cette séance prend la place de la suivante de la séquence, et ainsi de suite', onclick: () => shiftDialog(cls, e) }, 'Décaler la séquence…') : null,
     active ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => PL.setStatus(e, cls, e.status === 'annulée' ? 'prévue' : 'annulée') }, e.status === 'annulée' ? 'Rétablir' : 'Annuler') : null,
     h('details', { class: 'more' }, h('summary', { class: 'btn btn-small', 'data-testid': 'entry-more' }, 'Plus'), h('div', { class: 'more-menu', onclick: (ev) => { if (ev.target.closest('button')) ev.currentTarget.parentElement.open = false; } },
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'attach-entry-file', onclick: () => FL.attachToEntry(cls, e) }, '📎 Joindre un fichier (à projeter, à imprimer, ressource)…'),
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'edit-activity', onclick: () => activityDialog(cls, e) }, 'Modifier l’activité (objectif, déroulement…)'),
       h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'duplicate-activity', title: 'Autre jour, ou au même moment pour une autre classe (côte à côte)', onclick: () => duplicateDialog(cls, e) }, 'Dupliquer…'),
       s && (e.slot?.id || e.occ?.slotId) ? (() => { const slotId = e.slot?.id || e.occ.slotId; const isHab = store.get(cls.id).habitual?.[slotId] === s.id;

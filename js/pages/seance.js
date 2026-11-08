@@ -104,7 +104,7 @@ function detail(id) {
         : h('p', { class: 'muted small' }, 'Pas encore programmée.')));
 
   const objectifs = h('section', { class: 'card', id: 'etape-objectifs' }, h('h2', {}, 'Objectifs et compétences'), sectionFields(s.id, P.SESSION_SECTIONS[0].fields), competencyBlock(s.id, { levels: s.levels?.length ? s.levels : cls.levels }));
-  const materiel = h('section', { class: 'card', id: 'etape-materiel' }, h('h2', {}, 'Préparation matérielle'), sectionFields(s.id, P.SESSION_SECTIONS[1].fields), copiesBlock(s, cls), filesBlock(s.id, { title: 'Supports liés (fichiers, diaporamas, liens)' }), manualRefsBlock(s.id));
+  const materiel = h('section', { class: 'card', id: 'etape-materiel' }, h('h2', {}, 'Préparation matérielle'), sectionFields(s.id, P.SESSION_SECTIONS[1].fields), copiesBlock(s, cls), filesBlock(s.id, { title: 'Supports liés (à projeter, à imprimer, ressources)', roles: true }), manualRefsBlock(s.id));
 
   const variants = multi ? h('section', { class: 'card', id: 'etape-niveaux' }, h('h2', {}, 'Multiniveau : objectifs, consignes et supports par niveau'),
     h('p', { class: 'muted small' }, 'Pour une séance commune à plusieurs niveaux, précisez ce qui diffère.'),
