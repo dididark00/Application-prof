@@ -525,7 +525,8 @@ await test('Livret v2 : dates libres, une ligne par compétence avec ses résult
   assert((await page.getByTestId('class-stats').textContent()).includes('Maîtrise par élève'), 'maîtrise par élève');
   assert(html.includes('Du 01/09/2026 au 31/10/2026') || html.includes('Périodes'), 'dates du livret imprimées');
   await page.getByTestId('livret-range').click(); await page.getByTestId('range-quick').last().click(); await page.waitForTimeout(300);
-  assert((await page.getByTestId('livret-range').innerText()).includes('Année'), 'raccourci « Toute l’année »');
+  assert((await page.getByTestId('livret-annual').getAttribute('class')).includes('on'), 'raccourci « Toute l’année » = bilan annuel');
+  await page.reload(); await page.waitForTimeout(900); await page.evaluate(() => { window.print = () => { window.__p = document.getElementById('print-root').textContent; window.__n = document.querySelectorAll('#print-root .livret-page').length; }; }); // retour à la période en cours
 });
 
 await test('Évaluations : saisie rapide (un clic, clavier 1-4 puis élève suivant, « Vides → A », élève par élève), séquence reprise', async () => {
@@ -749,6 +750,39 @@ await test('Livret : noms et accords sur les documents, signatures en option', a
   assert(!t.includes('Les responsables légaux'), 'sans signatures');
   await page.getByTestId('livrets-generate').click(); await page.getByTestId('gen-signatures').check(); await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
   assert((await page.evaluate(() => window.__p || '')).includes('Les enseignantes'), 'cadre de signature accordé');
+});
+
+await test('Attestations : savoir rouler à vélo, cases à faire → en cours → acquis, obtenue, attestation individuelle et livret', async () => {
+  await go('#/attestations');
+  await page.getByTestId('att-add').click();
+  await page.getByTestId('att-template').selectOption('srav');
+  await page.getByTestId('att-add-go').click(); await page.waitForTimeout(400);
+  const card = page.getByTestId('att-card').first();
+  const cells = card.getByTestId('att-cell');
+  for (let i = 0; i < 3; i++) { await cells.nth(i).click(); await page.waitForTimeout(150); await cells.nth(i).click(); await page.waitForTimeout(150); }
+  assert((await card.innerText()).includes('1/'), 'une attestation obtenue');
+  await card.getByTestId('att-certs').click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => window.__p || '')).includes('est délivrée à'), 'attestation individuelle imprimée');
+  await go('#/livrets');
+  await page.getByTestId('report-card').first().getByRole('button', { name: /Imprimer le bilan/ }).click(); await page.waitForTimeout(150);
+  await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => window.__p || '')).includes('Attestations obtenues'), 'dans le livret');
+});
+
+await test('Bilan annuel et bilan de fin de cycle (8 composantes, degré proposé d’après l’année, modifiable, imprimé)', async () => {
+  await go('#/livrets');
+  await page.getByTestId('livret-annual').click(); await page.waitForTimeout(300);
+  await page.getByTestId('report-card').first().getByRole('button', { name: /Imprimer le bilan/ }).click(); await page.waitForTimeout(150);
+  await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
+  assert((await page.evaluate(() => window.__p || '')).includes('Bilan annuel'), 'bilan annuel imprimé');
+  await page.getByTestId('livret-cycle').click(); await page.waitForTimeout(400);
+  const card = page.getByTestId('cycle-card').first();
+  eq(await card.getByTestId('cycle-level').count(), 8, 'les 8 composantes du socle');
+  await card.getByTestId('cycle-level').nth(4).selectOption('3'); await page.waitForTimeout(400);
+  await page.getByTestId('cycle-print').click(); await page.waitForTimeout(300);
+  const t = await page.evaluate(() => window.__p || '');
+  assert(t.includes('Bilan de fin de cycle') && t.includes('Les méthodes et outils pour apprendre') && t.includes('Maîtrise satisfaisante'), 'bilan de fin de cycle imprimé');
+  await page.reload(); await page.waitForTimeout(900); await page.evaluate(() => { window.print = () => { window.__p = document.getElementById('print-root').textContent; window.__n = document.querySelectorAll('#print-root .livret-page').length; }; });
 });
 
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {

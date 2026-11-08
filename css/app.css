@@ -1540,3 +1540,14 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .cs-grid .livret-profile { flex-direction: column; align-items: stretch; }
 .cs-grid .lp-star { width: 100%; max-width: 360px; align-self: center; }
 .lp-star { width: 300px; }
+
+/* ───────── Attestations */
+.att-grid th.att-item { font-size: .75rem; font-weight: 600; text-transform: none; letter-spacing: 0; min-width: 110px; vertical-align: bottom; }
+.att-cell { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); font: inherit; font-weight: 800; cursor: pointer; }
+.att-cell.st-en-cours { background: #f7dc8e; border-color: #f7dc8e; color: #4a3a05; }
+.att-cell.st-acquis { background: #a9dfc3; border-color: #a9dfc3; color: #0f3d27; }
+.attest-cert { text-align: center; border: 3px double #6a4fc4; border-radius: 14px; padding: 30px; margin-top: 30px; }
+.attest-cert h1 { color: #4b3596; }
+.attest-who { font-size: 1.2em; line-height: 1.8; }
+.attest-cert ul { list-style: none; padding: 0; text-align: left; display: inline-block; }
+.cycle-table td:first-child { font-size: .9rem; } .cycle-table select { min-width: 210px; }

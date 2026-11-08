@@ -11,6 +11,7 @@ import { h, icon, toast, badge, emptyState, download, modal, field } from '../ui
 import { pageHeader, subTabs, needClass, avatar } from '../components.js';
 import { bound } from '../forms.js';
 import { resultsOf, scale, levelKind, inLivret, EVAL_KINDS } from './evaluations.js';
+import { attestationsOf, obtained } from './attestations.js';
 import { toCsv } from '../csv.js';
 import { printDocument } from '../print.js';
 import { appreciationDialog } from './redaction.js';
@@ -116,7 +117,7 @@ function draft(sub, sm, sc) {
 }
 
 // ───── Notes et niveaux par discipline (proposés d'après les évaluations, modifiables)
-const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, profil: true, detail: true, dates: true, absences: true, signatures: true, names: '', accord: '', ...(store.get(cls.id)?.livretOptions || {}) });
+const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, profil: true, detail: true, dates: true, absences: true, signatures: true, attestations: true, names: '', accord: '', ...(store.get(cls.id)?.livretOptions || {}) });
 /** Proposition : note sur « sur » (points des évaluations retenues) et niveau le plus représentatif. */
 export function suggestMark(sm, sc, sur = 20) {
   if (!sm) return { note: '', level: '' };
@@ -128,11 +129,12 @@ export function suggestMark(sm, sc, sur = 20) {
 }
 const markOf = (rep, sub) => rep?.marks?.[sub] || {};
 
-export function render({ rerender }) {
+export function render({ rerender, query = {} }) {
   const cls = model.currentClass();
   const missing = needClass();
   if (missing) return h('div', { class: 'page' }, pageHeader('Livrets et bilans'), subTabs(), missing);
   const mat = (cls.levels || []).every(l => MATERNELLE.includes(l));
+  if (query.v === 'cycle' && !mat) return cycleView(cls, rerender);
   const year = store.get(cls.yearId); const periods = model.periodsOf(year);
   const basePer = periods.find(p => p.id === selPeriod) || model.periodOfDate(year, model.todayIso()) || periods[0];
   if (!basePer) return h('div', { class: 'page' }, pageHeader('Livrets et bilans'), subTabs(), emptyState('Aucune période définie'));
@@ -182,7 +184,9 @@ export function render({ rerender }) {
     subTabs(),
     h('div', { class: 'row wrap' },
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Période' }, periods.map((p, i) => h('button', { type: 'button', class: !custom && p.id === per.id ? 'on' : '', onclick: () => { selPeriod = p.id; selRange = null; rerender(); } }, `P${i + 1}`)),
-        h('button', { type: 'button', class: custom ? 'on' : '', 'data-testid': 'livret-range', onclick: () => rangeDialog(periods, rerender) }, custom ? `${custom.label} ✎` : 'Autres dates…')),
+        h('button', { type: 'button', class: custom?.label === 'Année' ? 'on' : '', 'data-testid': 'livret-annual', title: 'Toute l’année : bilan annuel', onclick: () => { selRange = { start: periods[0].start, end: periods.at(-1).end }; rerender(); } }, 'Bilan annuel'),
+        h('button', { type: 'button', class: custom && custom.label !== 'Année' ? 'on' : '', 'data-testid': 'livret-range', onclick: () => rangeDialog(periods, rerender) }, custom && custom.label !== 'Année' ? `${custom.label} ✎` : 'Autres dates…')),
+      mat ? null : h('a', { class: 'btn btn-small', href: '#/livrets?v=cycle', 'data-testid': 'livret-cycle' }, 'Bilan de fin de cycle'),
       h('span', { class: 'muted small' }, `Du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
     evalPanel(cls, per, rerender, mat),
     mat ? null : classStats(cls, per, students),
@@ -240,7 +244,7 @@ function generateDialog(cls, per, pi, students, mat) {
   const box = (k, l) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: k, checked: !!o[k], 'data-testid': `gen-${k}` }), l);
   const sur = h('select', { name: 'sur', 'data-testid': 'gen-sur' }, [10, 20, 100].map(v => h('option', { value: v, selected: Number(o.sur) === v }, `/${v}`)));
   const form = h('div', { class: 'form' },
-    mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('profil', 'Profil en étoile et jauge de maîtrise par discipline'), box('detail', 'Tableau des compétences (une ligne par compétence, niveau retenu coché)'), box('dates', 'Dates et résultats de chaque évaluation sous la compétence'), box('absences', 'Absences de la période')),
+    mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('profil', 'Profil en étoile et jauge de maîtrise par discipline'), box('detail', 'Tableau des compétences (une ligne par compétence, niveau retenu coché)'), box('dates', 'Dates et résultats de chaque évaluation sous la compétence'), box('absences', 'Absences de la période'), box('attestations', 'Attestations obtenues (vélo, natation, APER, premiers secours…)')),
     h('div', { class: 'grid-2' },
       field('Nom(s) sur les documents', h('input', { name: 'names', value: o.names || defaultNames(cls), 'data-testid': 'gen-names', placeholder: 'ex. Julia T. et Elena E.' })),
       field('Accords', h('select', { name: 'accord', 'data-testid': 'gen-accord' }, ACCORDS.map(([v, l]) => h('option', { value: v, selected: (o.accord || defaultAccord(cls)) === v }, l))))),
@@ -249,7 +253,7 @@ function generateDialog(cls, per, pi, students, mat) {
   modal({ title: mat ? 'Générer les carnets de suivi' : `Générer ${students.length > 1 ? 'les livrets' : 'le livret'} — ${per.label.toLowerCase()}`, body: form,
   actions: [{ label: 'Annuler' }, { label: 'Générer', primary: true, testid: 'gen-go', onClick: async (ev) => {
     const next = { ...o, sur: Number(form.querySelector('[name=sur]')?.value || o.sur), names: form.querySelector('[name=names]').value.trim(), accord: form.querySelector('[name=accord]').value };
-    for (const k of ['niveaux', 'notes', 'profil', 'detail', 'dates', 'absences', 'signatures']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
+    for (const k of ['niveaux', 'notes', 'profil', 'detail', 'dates', 'absences', 'signatures', 'attestations']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
     if (JSON.stringify(next) !== JSON.stringify(o)) await store.update(cls.id, { livretOptions: next }, 'Options du livret', { quiet: true });
     printDocument(h('div', {}, students.map(s => h('div', { class: 'livret-page' }, printReport(cls, per, pi, s, mat, next)))));
     void ev;
@@ -277,7 +281,7 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
   const syn = mat ? {} : compSynth(res, sc, rep, idx);
   const head = h('header', { class: 'livret-head' },
     h('div', { class: 'livret-school' }, h('strong', {}, cls.school || 'École'), h('div', {}, `Année scolaire ${year?.label || ''}`)),
-    h('div', { class: 'livret-title' }, h('h1', {}, mat ? 'Carnet de suivi des apprentissages' : 'Livret scolaire'), h('div', { class: 'print-sub' }, `${per.label} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
+    h('div', { class: 'livret-title' }, h('h1', {}, mat ? 'Carnet de suivi des apprentissages' : per.label === 'Année' ? 'Bilan annuel' : 'Livret scolaire'), h('div', { class: 'print-sub' }, `${per.label} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
     h('div', { class: 'livret-student' }, h('strong', { class: 'livret-name' }, `${s.firstName} ${s.lastName}`), h('div', {}, `Classe : ${cls.name}`), teacher ? h('div', {}, `${Wcap} : ${teacher}`) : null));
   const legend = !mat && (o.niveaux || o.detail) ? h('p', { class: 'livret-legend' }, h('strong', {}, 'Positionnement : '), sc.map(([k, l]) => `${k} = ${l}`).join(' · ')) : null;
   const subBlock = (sub) => {
@@ -303,6 +307,7 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
     : [legend, o.profil ? profile(syn, sc) : null, subs.length ? subs.map(subBlock) : h('p', { class: 'muted' }, 'Aucun résultat ni appréciation pour cette période.'),
       o.notes && notes.length > 1 ? h('p', { class: 'livret-avg' }, h('strong', {}, 'Moyenne générale indicative : '), `${String(Math.round(notes.reduce((a, b) => a + b, 0) / notes.length * 10) / 10).replace('.', ',')} / ${o.sur}`) : null],
     h('section', { class: 'livret-sub livret-general' }, h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, mat ? 'Synthèse des acquis' : 'Appréciation générale')), h('p', { class: 'livret-app pre' }, rep?.general || '')),
+    (() => { const got = o.attestations === false ? [] : attestationsOf(cls.id).map(a => [a, obtained(a, s.id)]).filter(([, d]) => d && d <= per.end); return got.length ? h('p', { class: 'small livret-attest' }, h('strong', {}, 'Attestations obtenues : '), got.map(([a, d]) => `${a.title} (${model.frShort(d)})`).join(' · ')) : null; })(),
     o.absences ? h('p', { class: 'small' }, `Absences sur la période : ${abs} demi-journée(s).`) : null,
     o.signatures === false ? null : h('table', { class: 'print-table livret-sign' }, h('tbody', {}, h('tr', {}, [W, 'La direction', 'Les responsables légaux (vu et pris connaissance)'].map(t => h('td', {}, h('div', { class: 'livret-sign-label' }, t), h('div', { class: 'livret-sign-box' })))))));
 }
@@ -353,6 +358,62 @@ function classStats(cls, per, students) {
       profile(classSyn, sc),
       h('div', {}, h('div', { class: 'lp-title' }, 'Maîtrise par élève'), h('div', { class: 'cs-students' }, ranked.map(x => h('div', { class: 'lp-gauge' }, h('span', { class: 'lp-name' }, x.s.firstName), h('span', { class: 'lp-bar' }, h('span', { style: { width: `${Math.round(x.v * 100)}%` } })), h('span', { class: 'lp-pct' }, `${Math.round(x.v * 100)} %`)))))),
     h('p', { class: 'muted small' }, 'Calculé sur les niveaux retenus des compétences évaluées de la plage choisie. À usage de l’enseignante : rien de tout cela n’apparaît dans les livrets des familles.'));
+}
+
+// ───── Bilan de fin de cycle : les 8 composantes du socle, 4 degrés de maîtrise, une proposition d'après l'année
+export const SOCLE = [
+  ['c1', 'Comprendre, s’exprimer en utilisant la langue française à l’oral et à l’écrit', ['Français']],
+  ['c2', 'Comprendre, s’exprimer en utilisant une langue étrangère et, le cas échéant, une langue régionale', ['Anglais', 'Langues vivantes', 'Langue vivante', 'Allemand', 'Espagnol', 'Italien']],
+  ['c3', 'Comprendre, s’exprimer en utilisant les langages mathématiques, scientifiques et informatiques', ['Mathématiques', 'Sciences', 'Sciences et technologie']],
+  ['c4', 'Comprendre, s’exprimer en utilisant les langages des arts et du corps', ['Arts plastiques', 'Éducation musicale', 'EPS', 'Éducation physique et sportive', 'Arts']],
+  ['c5', 'Les méthodes et outils pour apprendre', []],
+  ['c6', 'La formation de la personne et du citoyen', ['EMC', 'Enseignement moral et civique']],
+  ['c7', 'Les systèmes naturels et les systèmes techniques', ['Questionner le monde', 'Sciences', 'Sciences et technologie']],
+  ['c8', 'Les représentations du monde et l’activité humaine', ['Questionner le monde', 'Histoire', 'Géographie', 'Histoire-géographie']],
+];
+export const SOCLE_LEVELS = [['1', 'Maîtrise insuffisante'], ['2', 'Maîtrise fragile'], ['3', 'Maîtrise satisfaisante'], ['4', 'Très bonne maîtrise']];
+const CYCLE_OF = { PS: 1, MS: 1, GS: 1, CP: 2, CE1: 2, CE2: 2, CM1: 3, CM2: 3, '6e': 3 };
+const LAST_OF_CYCLE = ['GS', 'CE2', 'CM2', '6e'];
+/** Proposition de degré pour une composante : maîtrise moyenne des disciplines rattachées, sur l'année. */
+function socleSuggest(syn, subjects, sc) {
+  const rows = Object.entries(syn).filter(([sub]) => subjects.some(x => sub.toLowerCase().startsWith(x.toLowerCase()))).flatMap(([, r]) => r);
+  const v = mastery(rows, sc);
+  return v == null ? '' : v < 0.25 ? '1' : v < 0.5 ? '2' : v < 0.75 ? '3' : '4';
+}
+function cycleView(cls, rerender) {
+  const year = store.get(cls.yearId); const periods = model.periodsOf(year);
+  const per = { id: `cycle:${year.id}`, start: periods[0]?.start || model.todayIso(), end: periods.at(-1)?.end || model.todayIso(), label: 'Bilan de fin de cycle' };
+  const yearPer = { id: `dates:${per.start}:${per.end}`, start: per.start, end: per.end };
+  const sc = scale();
+  const students = model.studentsOfClass(cls.id, { includeLeft: false });
+  const levels = cls.levels || []; const cyc = Math.max(...levels.map(l => CYCLE_OF[l] || 0));
+  const ends = levels.some(l => LAST_OF_CYCLE.includes(l));
+  const data = students.map(({ student: s }) => {
+    const syn = compSynth(livretResults(cls, yearPer, s.id), sc, null);
+    const rep = reportOf(cls.id, per.id, s.id);
+    return { s, rep, sug: Object.fromEntries(SOCLE.map(([k, , subs]) => [k, socleSuggest(syn, subs, sc)])) };
+  });
+  const lvlOf = (d, k) => d.rep?.socle?.[k] || d.sug[k] || '';
+  const setLv = async (d, k, v) => { const cur = { ...(reportOf(cls.id, per.id, d.s.id)?.socle || {}) }; cur[k] = v; await saveReport(cls, per, d.s, { socle: cur }, 'Bilan de fin de cycle'); rerender(); };
+  const print = () => printDocument(h('div', {}, data.map(d => h('div', { class: 'livret-page' }, h('div', { class: 'print-doc livret' },
+    h('header', { class: 'livret-head' }, h('div', { class: 'livret-school' }, h('strong', {}, cls.school || 'École'), h('div', {}, `Année scolaire ${year?.label || ''}`)),
+      h('div', { class: 'livret-title' }, h('h1', {}, `Bilan de fin de cycle ${cyc || ''}`), h('div', { class: 'print-sub' }, 'Maîtrise des composantes du socle commun')),
+      h('div', { class: 'livret-student' }, h('strong', { class: 'livret-name' }, `${d.s.firstName} ${d.s.lastName}`), h('div', {}, `Classe : ${cls.name}`))),
+    h('table', { class: 'print-table livret-items' }, h('thead', {}, h('tr', {}, h('th', { class: 'livret-comp' }, 'Composantes du socle commun'), SOCLE_LEVELS.map(([, l]) => h('th', { class: 'livret-pos' }, l)))),
+      h('tbody', {}, SOCLE.map(([k, l]) => h('tr', {}, h('td', { class: 'livret-comp' }, l), SOCLE_LEVELS.map(([v]) => h('td', { class: `livret-pos ${lvlOf(d, k) === v ? `on lv-${['NA', 'ECA', 'A', 'D'][Number(v) - 1]}` : ''}` }, lvlOf(d, k) === v ? '●' : '')))))),
+    h('section', { class: 'livret-sub livret-general' }, h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, 'Synthèse des acquis')), h('p', { class: 'livret-app pre' }, d.rep?.general || '')),
+    h('table', { class: 'print-table livret-sign' }, h('tbody', {}, h('tr', {}, ['L’enseignante', 'La direction', 'Les responsables légaux'].map(t => h('td', {}, h('div', { class: 'livret-sign-label' }, t), h('div', { class: 'livret-sign-box' })))))))))));
+  return h('div', { class: 'page' },
+    pageHeader(`Bilan de fin de cycle${cyc ? ` ${cyc}` : ''}`, { subtitle: `${cls.name} · ${year?.label || ''}`, actions: [h('a', { class: 'btn', href: '#/livrets' }, '← Livrets'), h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'cycle-print', onclick: print }, icon('print', 16), 'Imprimer les bilans')] }),
+    subTabs(),
+    ends ? null : h('p', { class: 'banner info' }, 'Votre classe n’est pas en fin de cycle (GS, CE2, CM2) : ce bilan est normalement rempli l’année de fin de cycle. Vous pouvez quand même le préparer.'),
+    h('p', { class: 'muted small' }, 'Pour chaque composante, un degré est proposé d’après les niveaux retenus de l’année dans les disciplines rattachées (en gris) ; choisissez-le vous-même si besoin. « Les méthodes et outils pour apprendre » n’a pas de proposition automatique. Le bilan officiel se saisit dans le LSU : ce document vous aide à le préparer.'),
+    h('div', { class: 'stack' }, data.map(d => h('section', { class: 'card', 'data-testid': 'cycle-card' }, h('h2', {}, `${d.s.firstName} ${d.s.lastName}`),
+      h('table', { class: 'table cycle-table' }, h('tbody', {}, SOCLE.map(([k, l]) => h('tr', {}, h('td', {}, l),
+        h('td', {}, h('select', { 'aria-label': l, 'data-testid': 'cycle-level', onchange: (e) => setLv(d, k, e.target.value) },
+          h('option', { value: '' }, d.sug[k] ? `proposé : ${SOCLE_LEVELS[Number(d.sug[k]) - 1][1]}` : '—'),
+          SOCLE_LEVELS.map(([v, lab]) => h('option', { value: v, selected: d.rep?.socle?.[k] === v }, lab)))))))),
+      h('div', { class: 'field' }, h('label', {}, 'Synthèse des acquis'), h('textarea', { rows: 2, value: d.rep?.general || '', onchange: (e) => saveReport(cls, per, d.s, { general: e.target.value }, 'Synthèse de fin de cycle') }, d.rep?.general || ''))))));
 }
 
 /** Choix des évaluations reliées au livret de la période. */

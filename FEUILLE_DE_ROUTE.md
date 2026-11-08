@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (222) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 234 entrées.
+Légende : ✅ Réalisé (224) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 236 entrées.
 
 ## Étape 1 — Socle
 
@@ -262,3 +262,5 @@ Légende : ✅ Réalisé (222) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §12 108 h | 108 h : profil par année (PES à 50 % : 24 + 9 + 3 h et dispense d’APC ; titulaire : 48 + 18 + 6 + 36 h ; personnalisé avec quotité) ; compteur « Travail en équipe, suivi des élèves et relations avec les parents » regroupant les deux anciennes catégories (sous-catégories gardées) ; réalisé, programmé, restant, projection et dépassement par compteur ; activités annulées non comptées ; durée réelle des réunions après une durée estimée ; alertes doublon et dépassement sans rien bloquer | Aucune donnée réécrite : regroupement à l’affichage, anciens objectifs repris tels quels tant qu’aucun profil n’est choisi. |
 | ✅ | §9 Livrets | Noms sur les documents et accords (une enseignante, des enseignantes, un enseignant, des enseignants), repris dans l’en-tête et le cadre de signature ; cadre de signatures en option | Retenus pour la prochaine génération. |
 | ✅ | §9 Livrets | Statistiques de la classe (plage choisie) : répartition NA / ECA / A / D / NE, maîtrise par élève, profil en étoile et jauges par discipline de la classe | Pour l’enseignante seulement : jamais dans les livrets des familles. |
+| ✅ | §9 Attestations | Attestations suivies (savoir rouler à vélo, aisance aquatique, savoir nager en sécurité, APER, apprendre à porter secours, ou personnalisée) : tableau élèves × étapes (à faire → en cours → acquis daté), obtenue quand tout est acquis, tableau de suivi et attestations individuelles imprimables, attestations obtenues dans le livret | Étapes proposées modifiables : à vérifier sur la grille de la circonscription. |
+| ✅ | §9 Livrets | Bilan annuel (toute l’année, titre « Bilan annuel ») et bilan de fin de cycle : 8 composantes du socle, 4 degrés de maîtrise, degré proposé d’après les niveaux de l’année (modifiable), synthèse, impression | Prépare la saisie officielle dans le LSU, sans la remplacer. |
