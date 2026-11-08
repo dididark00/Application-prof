@@ -155,6 +155,12 @@ function officialMeta(r) {
   return { name: `${r.subject} — ${r.levels.length > 2 ? cycleOf(r.levels) : r.levels.join(', ')}`, source: `${r.t.title}, ${r.t.bo}${r.pdf ? ` — ${r.pdf}` : ''}`,
     key: `${r.text}|${r.pack || ''}|${r.domain || ''}|${r.sub || ''}|${r.levels.join(',')}` };
 }
+/** Importe (validé) le référentiel officiel d'un programme pour les niveaux de la classe, s'il ne l'est pas déjà. */
+export async function ensureOfficialPack(cls, pack) {
+  const row = PR.forLevels(model.sortLevels(cls?.levels || [])).find(r => r.pack === pack); if (!row) return null;
+  const m = officialMeta(row);
+  return store.all('referential').find(x => !x.deletedAt && x.officialKey === m.key) || importOfficial(row, m.name, m.source, m.key, null, { status: 'validé', quiet: true });
+}
 /** Importe d'un coup toutes les disciplines de la classe (celles qui ne le sont pas déjà). */
 function importAllDialog() {
   const cls = model.currentClass(); const levels = model.sortLevels(cls?.levels || []);

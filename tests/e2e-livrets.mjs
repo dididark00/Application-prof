@@ -985,6 +985,28 @@ await test('Rendez-vous parents : modifier (date, heure, famille), visio avec li
   assert(clip.includes('17:15') && clip.includes('https://visio-agents.education.fr/test') && clip.includes('Objet : Point sur les apprentissages'), `invitation : ${clip}`);
 });
 
+await test('Proposer une programmation CE2 (français, maths) : tous les objectifs placés, repères officiels cités, compétences reliées', async () => {
+  const cov = await page.evaluate(async () => { const { MODELES } = await import('./js/prog-modeles.js'); const out = [];
+    for (const m of MODELES) { const pack = await (await fetch(`./data/programmes/${m.pack}.json`)).json(); const codes = pack.items.filter(i => i.levels.includes(m.level)).map(i => i.code); const used = new Set(m.notions.flatMap(n => n.codes)); out.push(codes.filter(c => !used.has(c)).length); }
+    return out; });
+  eq(cov.join(','), '0,0', 'aucun objectif CE2 oublié');
+  await go('#/programmations'); await page.waitForTimeout(300);
+  await page.getByTestId('propose-prog').click(); await page.waitForTimeout(300);
+  await page.getByTestId('propose-model').selectOption({ label: 'Français CE2' }); await page.waitForTimeout(200);
+  assert((await page.getByTestId('propose-preview').textContent()).includes('Dès la période 1') === false, 'citation au survol, pas dans le texte');
+  assert((await page.getByTestId('propose-preview').textContent()).includes('Passé composé'), 'aperçu');
+  await page.getByTestId('propose-go').click(); await page.waitForTimeout(400);
+  if (await page.getByTestId('propose-merge').count()) await page.getByTestId('propose-merge').click();
+  await page.waitForTimeout(900);
+  const r = await S(`const P = await import('./js/pedago.js'); const id = location.hash.split('/')[2]; const p = store.get(id); const ns = P.notionsOf(id).filter(n => n.origin);
+    const cursive = ns.find(n => n.title.startsWith('Écriture cursive'));
+    return { subject: p.subject, n: ns.length, linked: ns.filter(n => n.competencyIds.length).length, year: ns.filter(n => n.allYear).length, cursiveP1: cursive.periodId === model.periodsOf(store.get(model.currentClass().yearId))[0].id, quote: cursive.officialQuote };`);
+  eq(r.subject, 'Français', 'programmation de français');
+  eq(r.n, 35, '35 notions proposées'); eq(r.linked, 35, 'toutes reliées au référentiel officiel'); eq(r.year, 8, '8 notions toute l’année');
+  assert(r.cursiveP1 && r.quote === 'Dès la période 1', 'cursive en P1, repère officiel cité');
+  assert(await page.locator('.notion-off').count() > 0, 'repères officiels marqués dans la grille');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

@@ -11,6 +11,8 @@ import { sectionFields, ownerBadge, ownerSelect } from '../pedago-ui.js';
 import { competencyIndex, competencyLabel } from './referentiels.js';
 import { parseCsv } from '../csv.js';
 import { printDocument } from '../print.js';
+import { MODELES } from '../prog-modeles.js';
+import * as PR from '../programmes.js';
 
 const view = { mode: 'sous-domaines' };
 let rerender = () => {};
@@ -25,6 +27,7 @@ export function render({ params, rerender: rr }) {
   return h('div', { class: 'page' },
     pageHeader('Programmations annuelles', { favKey: 'preparer/programmations', subtitle: `${cls.name} · une fiche par discipline`,
       actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-prog', onclick: () => newDialog(cls) }, icon('plus', 16), 'Nouvelle programmation'),
+        MODELES.some(m => (cls.levels || []).includes(m.level)) ? h('button', { class: 'btn', type: 'button', 'data-testid': 'propose-prog', onclick: () => proposeDialog(cls) }, '✨ Proposer une programmation') : null,
         list.length ? h('button', { class: 'btn', type: 'button', 'data-testid': 'bulk-open', onclick: () => bulkDelete({ title: 'Supprimer des programmations', childAlways: true, items: list.map(p => ({ id: p.id, group: p.subject || 'Autre', label: `${p.subject} ${p.level || ''}`, detail: `${P.notionsOf(p.id).length} notion(s)`, children: P.notionsOf(p.id).map(n => n.id) })) }) }, icon('trash', 16), 'Supprimer…') : null] }),
     subTabs(),
     list.length ? h('div', { class: 'dash' }, list.map(p => {
@@ -35,6 +38,65 @@ export function render({ params, rerender: rr }) {
         h('p', { class: 'muted' }, (p.subdomains || []).join(' · ') || 'Sous-domaines à compléter'),
         h('p', {}, `${notions.length} notion(s) · ${done} terminée(s)`, p.validated?.date ? h('span', {}, ' · ', badge('version validée', 'ok')) : null));
     })) : emptyState('Aucune programmation', 'Créez une programmation par discipline : les notions réparties sur P1 à P5 alimenteront les progressions, les séquences et les bilans de période.'));
+}
+
+// ───────── Proposition de programmation (à partir du programme officiel)
+const perLabel = (k) => (k ? `P${k}` : 'Toute l’année');
+function proposeDialog(cls) {
+  const models = MODELES.filter(m => (cls.levels || []).includes(m.level));
+  let cur = models[0];
+  const body = h('div', { class: 'form' });
+  const hasRef = (m) => store.all('referential').some(r => !r.deletedAt && (r.items || []).some(i => i.code === m.notions.find(n => n.codes.length).codes[0]));
+  const importRef = h('input', { type: 'checkbox', checked: true, 'data-testid': 'propose-import-ref' });
+  const draw = () => {
+    const rows = [0, 1, 2, 3, 4, 5].map(k => [k, cur.notions.filter(n => n.period === k)]).filter(([, xs]) => xs.length);
+    const off = cur.notions.filter(n => n.quote).length;
+    body.replaceChildren(
+      field('Programmation', h('select', { 'data-testid': 'propose-model', onchange: (e) => { cur = models[Number(e.target.value)]; draw(); } }, models.map((m, i) => h('option', { value: i, selected: m === cur }, `${m.subject} ${m.level}`)))),
+      h('p', { class: 'muted small' }, `D’après le ${cur.source}. Tous les objectifs d’apprentissage du ${cur.level} y sont placés et reliés à leurs codes officiels. `,
+        h('strong', {}, `${off} placement(s) viennent du programme lui-même`), ' (badge « repère officiel », citation au survol) ; les autres sont une proposition de l’application, à adapter à votre méthode, à votre manuel et à votre binôme. Rien n’est enregistré avant « Créer ».'),
+      h('div', { class: 'table-wrap prop-preview' }, h('table', { class: 'table', 'data-testid': 'propose-preview' }, h('tbody', {}, rows.map(([k, xs]) => h('tr', {}, h('th', { scope: 'row' }, perLabel(k)),
+        h('td', {}, h('ul', { class: 'plain' }, xs.map(n => h('li', {}, h('span', { class: 'muted small' }, `${n.subdomain} · `), n.title, ' ', n.quote ? h('span', { class: 'badge badge-ok', title: `« ${n.quote} »` }, 'repère officiel') : null))))))))),
+      hasRef(cur) ? h('p', { class: 'small' }, '✓ Chaque notion sera reliée à ses compétences du référentiel officiel déjà importé (évaluations, livret, cahier journal).')
+        : h('label', { class: 'inline small' }, importRef, `Importer aussi le référentiel officiel ${cur.subject} pour relier chaque notion à ses compétences (évaluations, livret, cahier journal)`));
+  };
+  draw();
+  modal({ title: 'Proposer une programmation annuelle', wide: true, body, actions: [{ label: 'Annuler' }, { label: 'Créer la programmation', primary: true, testid: 'propose-go', onClick: async () => {
+    const existing = P.ofClass('programmation', cls.id).find(p => p.subject === cur.subject && p.level === cur.level);
+    let target = null;
+    if (existing) {
+      const choice = await new Promise((res) => { let done = false; const ans = (v) => () => { done = true; res(v); };
+        modal({ title: 'Une programmation existe déjà', body: h('p', {}, `Vous avez déjà une programmation ${cur.subject} ${cur.level}. Ajouter les notions proposées dedans (vos notions sont gardées), ou créer une seconde programmation à côté ?`), onClose: () => { if (!done) res(null); },
+          actions: [{ label: 'Annuler', onClick: ans(null) }, { label: 'Créer à côté', onClick: ans('new') }, { label: 'Ajouter dedans', primary: true, testid: 'propose-merge', onClick: ans('add') }] }); });
+      if (!choice) return false;
+      if (choice === 'add') target = existing;
+    }
+    if (!hasRef(cur) && importRef.checked) { const { ensureOfficialPack } = await import('./referentiels.js'); await ensureOfficialPack(cls, cur.pack); }
+    const p = await applyModel(cls, cur, target);
+    toast(`Programmation ${cur.subject} ${cur.level} proposée : ${cur.notions.length} notions, à adapter`, { action: 'Annuler', onAction: () => store.undo() });
+    location.hash = `#/programmation/${p.id}`;
+  } }] });
+}
+
+/** Crée (ou complète) une programmation à partir d'un modèle ; relie les compétences officielles déjà importées. */
+export async function applyModel(cls, m, target = null) {
+  const year = store.get(cls.yearId); const periods = model.periodsOf(year);
+  const items = await (async () => { try { const row = PR.forLevels([m.level]).find(r => r.pack === m.pack); return row ? await PR.packItems(row, [m.level]) : []; } catch { return []; } })();
+  const byCode = new Map(items.map(i => [i.code, i]));
+  const refItems = new Map(); for (const r of store.all('referential').filter(x => !x.deletedAt)) for (const i of r.items || []) if (i.code && (i.levels || []).includes(m.level) && (!refItems.has(i.code) || r.status === 'validé')) refItems.set(i.code, i.id);
+  const pid = target?.id || store.uid();
+  const ops = [];
+  if (target) ops.push({ id: target.id, patch: { subdomains: [...new Set([...(target.subdomains || []), ...m.subdomains])] } });
+  else ops.push({ create: { type: 'programmation', data: { id: pid, classId: cls.id, subject: m.subject, level: m.level, subdomains: m.subdomains, references: m.source, owner: '', fromModel: `${m.subject}|${m.level}` } } });
+  let order = target ? (P.notionsOf(target.id).at(-1)?.order ?? 0) : 0;
+  for (const n of m.notions) {
+    const per = n.period ? periods[Math.min(n.period, periods.length) - 1] : null;
+    const competences = [...n.codes.map(c => `${c} — ${byCode.get(c)?.label || ''}`.replace(/ — $/, '')), n.quote ? `Repère officiel : « ${n.quote} »` : ''].filter(Boolean).join('\n');
+    ops.push({ create: { type: 'notion', data: { programmationId: pid, periodId: per?.id || null, allYear: !n.period, subdomain: n.subdomain, title: n.title, competences, resources: '',
+      competencyIds: n.codes.map(c => refItems.get(c)).filter(Boolean), origin: n.quote ? 'officiel' : 'proposition', officialQuote: n.quote || '', order: (order += 10) } } });
+  }
+  await store.batch(ops, `Programmation ${m.subject} ${m.level} proposée`);
+  return store.get(pid);
 }
 
 function newDialog(cls) {
@@ -111,7 +173,7 @@ export async function createProgression(p, period, extra = {}) {
 
 function notionChip(n, onClick) {
   const st = P.notionStatus(n);
-  return h('button', { class: `notion notion-${st.replace(' ', '-')}`, type: 'button', title: `Statut : ${st}`, onclick: onClick, 'data-testid': 'notion' }, n.title || 'Sans titre');
+  return h('button', { class: `notion notion-${st.replace(' ', '-')}${n.origin === 'officiel' ? ' notion-off' : ''}`, type: 'button', title: `Statut : ${st}${n.officialQuote ? `\nRepère officiel : « ${n.officialQuote} »` : n.origin === 'proposition' ? '\nProposition de l’application (modifiable)' : ''}`, onclick: onClick, 'data-testid': 'notion' }, n.origin === 'officiel' ? '★ ' : '', n.title || 'Sans titre');
 }
 
 function subdomainGrid(p, periods, notions) {
@@ -126,7 +188,7 @@ function subdomainGrid(p, periods, notions) {
         return h('td', {}, h('div', { class: 'cell-notions' }, cell.map(n => notionChip(n, () => notionDialog(p, n, periods))),
           h('button', { class: 'add-mini', type: 'button', 'aria-label': `Ajouter une notion en P${i + 1}${c ? ' — ' + c : ''}`, onclick: () => notionDialog(p, { periodId: per.id, subdomain: c }, periods) }, '+')));
       })))),
-    notions.some(n => !n.periodId) ? h('tfoot', {}, h('tr', {}, h('th', {}, 'Sans période'), h('td', { colspan: cols.length }, notions.filter(n => !n.periodId).map(n => notionChip(n, () => notionDialog(p, n, periods)))))) : null));
+    notions.some(n => !n.periodId) ? h('tfoot', {}, h('tr', {}, h('th', {}, notions.some(n => !n.periodId && n.allYear) ? 'Toute l’année' : 'Sans période'), h('td', { colspan: cols.length }, notions.filter(n => !n.periodId).map(n => notionChip(n, () => notionDialog(p, n, periods)))))) : null));
 }
 
 function detailedGrid(p, periods, notions, sequences) {
@@ -151,10 +213,11 @@ function notionDialog(p, n, periods) {
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
     field('Notion – apprentissage', h('input', { name: 'title', required: true, value: n.title || '' })),
     h('div', { class: 'grid-2' },
-      field('Période', h('select', { name: 'periodId' }, h('option', { value: '' }, 'Sans période'), periods.map((per, i) => h('option', { value: per.id, selected: per.id === n.periodId }, `P${i + 1}`)))),
+      field('Période', h('select', { name: 'periodId' }, h('option', { value: '' }, 'Toute l’année / sans période'), periods.map((per, i) => h('option', { value: per.id, selected: per.id === n.periodId }, `P${i + 1}`)))),
       field('Sous-domaine', h('select', { name: 'subdomain' }, h('option', { value: '' }, '—'), (p.subdomains || []).map(s => h('option', { value: s, selected: s === n.subdomain }, s))))),
     field('Compétences / repères (texte)', h('textarea', { name: 'competences', rows: 2 }, n.competences || '')),
     field('Ressources', h('input', { name: 'resources', value: n.resources || '', placeholder: 'manuel / pages vérifiées' })),
+    n.officialQuote ? h('p', { class: 'small banner' }, '★ Repère officiel : « ', n.officialQuote, ' »') : n.origin === 'proposition' ? h('p', { class: 'muted small' }, 'Placement proposé par l’application : déplacez-le librement.') : null,
     editing ? h('p', { class: 'muted small' }, `Statut déduit des progressions : ${P.notionStatus(n)}.`) : null);
   const actions = [{ label: 'Annuler' }];
   if (editing) {

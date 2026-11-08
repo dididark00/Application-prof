@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (230) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 242 entrées.
+Légende : ✅ Réalisé (231) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 243 entrées.
 
 ## Étape 1 — Socle
 
@@ -270,3 +270,4 @@ Légende : ✅ Réalisé (230) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §19 Atelier | Texte à compléter en conjugaison : verbe à l’infinitif entre crochets, affiché entre parenthèses à côté du trou ; version corrigée conjuguée automatiquement d’après le pronom (présent, imparfait, futur, passé composé ; 1er et 2e groupes, verbes en -dre et irréguliers fréquents) ; [infinitif=forme] pour forcer une réponse, [verbe:futur] pour un autre temps ; sujets devinés signalés à vérifier ; retours à la ligne respectés et espaces mesurés | Aussi [indice=réponse] en mode mots (ex. pluriels). |
 | ✅ | §11 Fichiers | Fichiers reliés avec un rôle (à projeter, à imprimer, ressource) : bouton « Relier… » dans Fichiers (vers une fiche de séance ou un moment du cahier journal d’un jour choisi), proposé juste après un dépôt ; « Joindre un fichier » dans la fiche de séance et dans le menu Plus d’un moment du cahier journal ; fichiers affichés par rôle dans le cahier, ajoutés à la liste du matériel (à imprimer, à projeter) et proposés en premier à la projection | Le fichier n’est jamais copié : une nouvelle version se voit partout. |
 | ✅ | §13 Familles | Rendez-vous parents : bouton « Modifier » (date, heures, famille, avec qui, annuler ou rétablir, note privée, alerte si le créneau chevauche un autre) ; en présentiel, en visio (lien https, bouton « Rejoindre ») ou par téléphone ; motif du rendez-vous (liste proposée ou texte libre) ; « Invitation » copie un texte de confirmation avec la date, l’heure, le lien et le motif ; planning imprimé avec le motif | Le lien de la visio apparaît aussi dans l’aperçu parent ; le motif et la note restent privés. |
+| ✅ | §5 Préparation | Proposer une programmation annuelle (français et mathématiques CE2) : tous les objectifs d’apprentissage du programme (BO n° 41 du 31 octobre 2024) répartis de P1 à P5 ou sur toute l’année, reliés à leurs codes officiels ; les placements datés par le programme sont marqués « repère officiel » avec la citation exacte, les autres sont une proposition modifiable ; aperçu avant création, ajout dans une programmation existante possible, import du référentiel officiel au passage pour relier les compétences | Autres disciplines et niveaux à venir, dans le même esprit. |

@@ -1559,3 +1559,7 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .entry-files p { margin: 2px 0; }
 .entry-files .btn-link { padding: 0 4px; text-decoration: none; }
 .inline-select { width: auto; padding: 2px 6px; min-height: 0; }
+.notion-off { border-left: 3px solid var(--accent, #7b6cd9); }
+.prop-preview { max-height: 52vh; overflow: auto; }
+.prop-preview th { white-space: nowrap; vertical-align: top; }
+.prop-preview li { margin: 2px 0; }
