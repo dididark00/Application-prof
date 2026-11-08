@@ -27,7 +27,7 @@ export async function recordLevel(cls, date, { compId, subject, level, student, 
   const label = competencyLabel(compId, idx);
   const title = `Observations en classe — ${model.frShort(date)}${subject ? ` · ${subject}` : ''}`;
   let ev = store.all('evaluation').find(x => !x.deletedAt && x.classId === cls.id && x.source === 'observation' && x.date === date && (x.subject || '') === (subject || ''));
-  if (!ev) ev = await store.create('evaluation', { classId: cls.id, title, subject: subject || '', date, mode: 'maîtrise', items: [], results: {}, versions: [], conditions: 'observation en classe', source: 'observation' }, title);
+  if (!ev) ev = await store.create('evaluation', { classId: cls.id, title, subject: subject || '', date, mode: 'maîtrise', kind: 'continu', inLivret: true, items: [], results: {}, versions: [], conditions: 'observation en classe', source: 'observation' }, title);
   ev = store.get(ev.id);
   let item = ev.items.find(i => i.competencyId === compId);
   const items = item ? ev.items : [...ev.items, (item = { id: store.uid(), label, maxPoints: null, competencyId: compId })];

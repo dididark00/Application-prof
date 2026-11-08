@@ -195,7 +195,7 @@ await test('Évaluations : non évalué ≠ non acquis, aucune conversion des po
   const evId = await S(`return store.all('evaluation')[0].id`);
   await go(`#/evaluations/${evId}`);
   const foot = await page.getByTestId('eval-grid').locator('tfoot').innerText();
-  assert(foot.includes('NA 1') && foot.includes('non évalués'), `répartition : ${foot}`);
+  assert(foot.includes('NA 1') && foot.includes('vides'), `répartition : ${foot}`);
   await S(`await store.update(a, { mode: 'les deux' })`, evId); await go('#/evaluations'); await go(`#/evaluations/${evId}`);
   const pts = page.locator('[data-testid=eval-grid] tbody tr', { hasText: 'Lou' }).locator('input.pts').first();
   await pts.fill('3'); await pts.blur(); await page.waitForTimeout(250);

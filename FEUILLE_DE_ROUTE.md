@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (217) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 229 entrées.
+Légende : ✅ Réalisé (218) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 230 entrées.
 
 ## Étape 1 — Socle
 
@@ -257,3 +257,4 @@ Légende : ✅ Réalisé (217) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §20 Apparence | Mode léger : masquer d’un clic les pages jamais ouvertes sur cet appareil, tout réafficher d’un clic | Réglages › Modules et mode léger ; aucune donnée effacée. |
 | ✅ | §19 Sauvegarde | Correctif : boutons rouges (« Remplacer et restaurer », « Supprimer »…) invisibles dans le thème Lavande clair (texte blanc sur fond blanc) ; indicateur « en cours » et boutons grisés pendant une action longue dans toutes les fenêtres ; liste de la sauvegarde en français, sur plusieurs colonnes | Restauration de 1 400+ éléments vérifiée en moins d’une seconde. |
 | ✅ | §16 Étiquettes | Correctif : noms qui dépassaient du cadre avec les écritures attachées (boucles et jambages de Marelle) ; taille calculée sur la hauteur réelle des lettres (mesure au pixel), centrage dans chaque bande ; à l’impression, attente du chargement des polices avant d’ajuster | Vérifié automatiquement : aucun texte ne sort de sa bande ni du cadre. |
+| ✅ | §9 Évaluations | Type d’évaluation (sommative, contrôle continu, formative, diagnostique) et interrupteur « Dans le livret » (formatives et diagnostiques hors livret par défaut) ; NE (non évalué) et Abs (absent à l’exercice) dans chaque case, touches N et X, comptés à part et jamais comme « non acquis » ; liste des évaluations regroupée par discipline | Les évaluations déjà saisies restent dans le livret (type sommatif par défaut). |

@@ -1514,3 +1514,8 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .modal-foot .btn.busy::after { content: ""; display: inline-block; width: 14px; height: 14px; margin-left: 8px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; vertical-align: -2px; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .restore-list { columns: 3 200px; column-gap: 24px; padding-left: 18px; } .restore-list li { break-inside: avoid; }
+.lvl-btn.lvl-extra { font-size: .68rem; min-width: 30px; color: var(--ink-3, var(--ink-2)); }
+.lvl-seg .lvl-btn.on.lvl-NE.lvl-extra { background: #e4e1ea; color: #3c3846; }
+.lvl-seg .lvl-btn.on.lvl-ABS.lvl-extra { background: #3c3846; color: #fff; }
+.eval-group { margin-bottom: 18px; }
+.eval-group-title { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 12px 0 8px; }

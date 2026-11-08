@@ -677,6 +677,29 @@ await test('Étiquettes : les noms longs et les écritures attachées (grandes b
   eq(JSON.stringify(bad), '[]', 'aucun texte ne sort de sa bande ni du cadre');
 });
 
+await test('Évaluations : type (formative hors livret par défaut), interrupteur « Dans le livret », NE et Abs par case (ne comptent pas comme non acquis)', async () => {
+  await go('#/evaluations'); await page.getByTestId('new-eval').click();
+  await page.locator('.modal [name=title]').fill('Formative (test type)');
+  await page.locator('.modal [name=items]').fill('Item formatif');
+  await page.getByTestId('eval-kind').selectOption('formative');
+  assert(!(await page.getByTestId('eval-inlivret').isChecked()), 'formative : hors livret par défaut');
+  await page.locator('.modal').getByRole('button', { name: 'Créer' }).click(); await page.waitForTimeout(500);
+  const id = await page.evaluate(() => location.hash.split('/').pop());
+  const seg = page.getByTestId('eval-seg').first();
+  await seg.locator('[data-k=NE]').click(); await page.waitForTimeout(200);
+  await page.getByTestId('eval-seg').nth(1).locator('[data-k=ABS]').click(); await page.waitForTimeout(200);
+  const r = await S(`const ev = store.get(a); return Object.values(ev.results).map(x => Object.values(x.items || {})[0]).map(x => x.status + ':' + (x.level || ''));`, id);
+  assert(r.includes('ne:') && r.includes('abs:'), `NE et Abs enregistrés (${r.join(', ')})`);
+  assert((await page.getByTestId('eval-grid').locator('tfoot').innerText()).includes('NE 1'), 'NE compté à part');
+  const inL = await S(`const L = await import('./js/pages/livrets.js'); const cls = store.get(store.getSettings().currentClassId); return L.livretEvals(cls, { id: 'x', start: '2000-01-01', end: '2100-01-01' }).some(e => e.id === a);`, id);
+  eq(inL, false, 'formative absente du livret');
+  await page.getByTestId('eval-inlivret-toggle').check(); await page.waitForTimeout(300);
+  const inL2 = await S(`const L = await import('./js/pages/livrets.js'); const cls = store.get(store.getSettings().currentClassId); return L.livretEvals(cls, { id: 'x', start: '2000-01-01', end: '2100-01-01' }).some(e => e.id === a);`, id);
+  eq(inL2, true, 'mise dans le livret');
+  await go('#/evaluations');
+  assert(await page.getByTestId('eval-group').count() >= 1, 'évaluations regroupées par discipline');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

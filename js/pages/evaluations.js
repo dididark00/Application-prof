@@ -24,12 +24,17 @@ export function render({ params, rerender }) {
   return h('div', { class: 'page' },
     pageHeader('Évaluations', { favKey: 'classe/evaluations', subtitle: cls.name, actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'new-eval', onclick: () => newEval(cls) }, icon('plus', 16), 'Nouvelle évaluation')] }),
     subTabs(),
-    list.length ? h('div', { class: 'dash' }, list.map(ev => {
-      const st = stats(ev, cls);
-      return h('a', { class: 'card card-link', href: `#/evaluations/${ev.id}` }, h('h2', {}, ev.title),
-        h('p', { class: 'muted' }, [model.frShort(ev.date), ev.subject, ev.sequenceId ? P.sequenceTitle(store.get(ev.sequenceId)) : ''].filter(Boolean).join(' · ')),
-        h('p', {}, `${st.done}/${st.total} élève(s) saisis`, st.absent ? ` · ${st.absent} absent(s)` : '', st.toCatch ? ` · ${st.toCatch} à rattraper` : ''));
-    })) : emptyState('Aucune évaluation', 'Créez une grille : compétences en lignes de colonnes, élèves en lignes, maîtrise et/ou points.'));
+    list.length ? [...new Set(list.map(ev => ev.subject || 'Autre'))].sort((a, b) => a.localeCompare(b, 'fr')).map(sub => {
+      const evs = list.filter(ev => (ev.subject || 'Autre') === sub);
+      return h('section', { class: 'eval-group', 'data-testid': 'eval-group' }, h('h2', { class: 'eval-group-title' }, sub, ' ', h('span', { class: 'badge' }, String(evs.length))),
+        h('div', { class: 'dash' }, evs.map(ev => {
+          const st = stats(ev, cls);
+          return h('a', { class: 'card card-link', href: `#/evaluations/${ev.id}` }, h('h2', {}, ev.title),
+            h('p', { class: 'muted' }, [model.frShort(ev.date), ev.sequenceId ? P.sequenceTitle(store.get(ev.sequenceId)) : ''].filter(Boolean).join(' · ')),
+            h('p', { class: 'row wrap' }, badge(kindLabel(ev.kind || 'sommative'), 'muted'), inLivret(ev) ? badge('livret', 'ok') : badge('hors livret', 'muted')),
+            h('p', {}, `${st.done}/${st.total} élève(s) saisis`, st.absent ? ` · ${st.absent} absent(s)` : '', st.toCatch ? ` · ${st.toCatch} à rattraper` : ''));
+        })));
+    }) : emptyState('Aucune évaluation', 'Créez une grille : compétences en lignes de colonnes, élèves en lignes, maîtrise et/ou points.'));
 }
 
 function stats(ev, cls) {
@@ -42,6 +47,11 @@ function stats(ev, cls) {
   return { total: students.length, done, absent, toCatch };
 }
 
+// Type d'évaluation : seules les sommatives et le contrôle continu vont au livret par défaut (modifiable sur chaque évaluation).
+export const EVAL_KINDS = [['sommative', 'Sommative (bilan)'], ['continu', 'Contrôle continu'], ['formative', 'Formative'], ['diagnostique', 'Diagnostique']];
+export const inLivret = (ev) => ev.inLivret ?? (!ev.kind || ev.kind === 'sommative' || ev.kind === 'continu');
+const kindLabel = (k) => (EVAL_KINDS.find(x => x[0] === k) || [null, ''])[1];
+
 function newEval(cls) {
   const seqs = P.ofClass('sequence', cls.id);
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
@@ -50,6 +60,9 @@ function newEval(cls) {
       field('Discipline', h('select', { name: 'subject' }, model.subjects().map(s => h('option', { value: s }, s)))),
       field('Séquence', h('select', { name: 'sequenceId' }, h('option', { value: '' }, '—'), seqs.map(s => h('option', { value: s.id }, P.sequenceTitle(s))))),
       field('Mode', h('select', { name: 'mode' }, [['maîtrise', 'Niveaux de maîtrise'], ['notes', 'Points / barème'], ['les deux', 'Les deux (saisis séparément)']].map(([v, l]) => h('option', { value: v }, l))))),
+    h('div', { class: 'grid-2' },
+      field('Type', h('select', { name: 'kind', 'data-testid': 'eval-kind', onchange: (e) => { const c = e.target.form.querySelector('[name=inLivret]'); c.checked = e.target.value === 'sommative' || e.target.value === 'continu'; } }, EVAL_KINDS.map(([v, l]) => h('option', { value: v }, l)))),
+      h('label', { class: 'inline', style: { alignSelf: 'end' } }, h('input', { type: 'checkbox', name: 'inLivret', checked: true, 'data-testid': 'eval-inlivret' }), 'Dans le livret')),
     h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: 'fromSeq', checked: true, 'data-testid': 'eval-from-seq' }), 'Reprendre les compétences de la séquence choisie (une ligne par compétence, déjà liée au livret)'),
     field('Autres items (un par ligne, facultatif)', h('textarea', { name: 'items', rows: 4, placeholder: 'Lire, écrire et représenter des nombres jusqu’à 10 000\nPoser et effectuer une addition' }), 'Vous pourrez aussi lier des compétences des référentiels validés.'));
   modal({ title: 'Nouvelle évaluation', wide: true, body: form, actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, onClick: async () => {
@@ -58,7 +71,7 @@ function newEval(cls) {
     const fromSeq = form.querySelector('[name=fromSeq]').checked && seq ? (seq.competencyIds || []).map(cid => ({ id: store.uid(), label: competencyLabel(cid), maxPoints: null, competencyId: cid })) : [];
     const items = [...fromSeq, ...d.items.split('\n').map(x => x.trim()).filter(Boolean).map(label => ({ id: store.uid(), label, maxPoints: null, competencyId: null }))];
     if (!items.length) { toast('Ajoutez au moins un item, ou choisissez une séquence qui a des compétences.'); return false; }
-    const ev = await store.create('evaluation', { classId: cls.id, title: d.title, date: d.date, subject: d.subject, sequenceId: d.sequenceId || null, mode: d.mode, items, results: {}, versions: [], conditions: '' }, `Évaluation « ${d.title} »`);
+    const ev = await store.create('evaluation', { classId: cls.id, title: d.title, date: d.date, subject: d.subject, sequenceId: d.sequenceId || null, mode: d.mode, kind: d.kind, inLivret: form.querySelector('[name=inLivret]').checked, items, results: {}, versions: [], conditions: '' }, `Évaluation « ${d.title} »`);
     location.hash = `#/evaluations/${ev.id}`;
   } }] });
 }
@@ -76,10 +89,12 @@ function detail(id, rerender) {
 
   const levelKeys = sc.map(([k]) => k);
   const fillKey = levelKeys.includes('A') ? 'A' : levelKeys[Math.max(0, levelKeys.length - 2)];
-  const footTxt = (it) => { const c = colStats(it); return [...sc.map(([k]) => c[k] ? `${k} ${c[k]}` : ''), c['—'] ? `non évalués ${c['—']}` : ''].filter(Boolean).join(' · '); };
+  const footTxt = (it) => { const c = colStats(it); return [...sc.map(([k]) => c[k] ? `${k} ${c[k]}` : ''), c.NE ? `NE ${c.NE}` : '', c.Abs ? `Abs ${c.Abs}` : '', c['—'] ? `vides ${c['—']}` : ''].filter(Boolean).join(' · '); };
   const refreshFoot = (it) => { const el = document.querySelector(`[data-foot="${it.id}"]`); if (el) el.textContent = footTxt(it); };
+  // val : un niveau de l'échelle, '' (effacer), 'NE' (non évalué) ou 'ABS' (absent à cet exercice).
   const setLevel = async (sid, it, val, seg) => {
-    await saveItem(sid, it.id, { level: val });
+    const special = val === 'NE' || val === 'ABS';
+    await saveItem(sid, it.id, special ? { level: '', status: val === 'NE' ? 'ne' : 'abs' } : { level: val, status: null });
     ev.results = store.get(ev.id).results; // pour la répartition affichée
     seg.querySelectorAll('button').forEach(b => { const on = b.dataset.k === val; b.setAttribute('aria-checked', String(on)); b.classList.toggle('on', on); });
     seg.dataset.val = val; refreshFoot(it);
@@ -87,14 +102,18 @@ function detail(id, rerender) {
   const focusCell = (row, col) => { const el = document.querySelector(`.lvl-seg[data-row="${row}"][data-col="${col}"]`); (el?.querySelector('button.on') || el?.querySelector('button'))?.focus(); return !!el; };
   /** Une case = des boutons NA / ECA / A / D : un clic (re-cliquer efface), ou au clavier 1-4, 0 pour effacer, puis élève suivant. */
   const levelSeg = (s, it, v, row, col) => {
-    const seg = h('div', { class: 'lvl-seg', role: 'radiogroup', 'aria-label': `${s.firstName} — ${it.label}`, 'data-testid': 'eval-seg', 'data-row': row, 'data-col': col, 'data-val': v.level || '' },
-      sc.map(([k, l], i) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${v.level === k ? 'on' : ''}`, role: 'radio', 'aria-checked': String(v.level === k), 'data-k': k, title: `${l} (touche ${i + 1})`, tabindex: (v.level ? v.level === k : i === 0) ? 0 : -1,
-        onclick: () => setLevel(s.id, it, seg.dataset.val === k ? '' : k, seg) }, k)));
+    const cur = v.status === 'ne' ? 'NE' : v.status === 'abs' ? 'ABS' : (v.level || '');
+    const keys = [...sc.map(([k, l], i) => [k, k, `${l} (touche ${i + 1})`]), ['NE', 'NE', 'Non évalué (touche N)'], ['ABS', 'Abs', 'Absent à cet exercice (touche X)']];
+    const seg = h('div', { class: 'lvl-seg', role: 'radiogroup', 'aria-label': `${s.firstName} — ${it.label}`, 'data-testid': 'eval-seg', 'data-row': row, 'data-col': col, 'data-val': cur },
+      keys.map(([k, txt, title], i) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${cur === k ? 'on' : ''} ${k === 'NE' || k === 'ABS' ? 'lvl-extra' : ''}`, role: 'radio', 'aria-checked': String(cur === k), 'data-k': k, title, tabindex: (cur ? cur === k : i === 0) ? 0 : -1,
+        onclick: () => setLevel(s.id, it, seg.dataset.val === k ? '' : k, seg) }, txt)));
     seg.addEventListener('keydown', async (e) => {
       const n = Number(e.key);
       let val = null;
       if (n >= 1 && n <= sc.length) val = sc[n - 1][0];
       else if (e.key === '0' || e.key === 'Delete' || e.key === 'Backspace') val = '';
+      else if (e.key.toLowerCase() === 'n') val = 'NE';
+      else if (e.key.toLowerCase() === 'x') val = 'ABS';
       else { const up = e.key.toUpperCase(); if (levelKeys.includes(up)) val = up; }
       if (val !== null) { e.preventDefault(); await setLevel(s.id, it, val, seg); if (!focusCell(row + 1, col)) focusCell(0, col + 1); return; }
       if (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); focusCell(row + 1, col); }
@@ -107,13 +126,13 @@ function detail(id, rerender) {
   };
   const fillColumn = async (it) => {
     const cur = structuredClone(store.get(ev.id).results || {}); let n = 0;
-    for (const { student: s } of students) { const r = cur[s.id] || {}; if (r.absent || r.items?.[it.id]?.level) continue; r.items = { ...(r.items || {}), [it.id]: { ...(r.items?.[it.id] || {}), level: fillKey } }; cur[s.id] = r; n++; }
+    for (const { student: s } of students) { const r = cur[s.id] || {}; if (r.absent || r.items?.[it.id]?.level || r.items?.[it.id]?.status) continue; r.items = { ...(r.items || {}), [it.id]: { ...(r.items?.[it.id] || {}), level: fillKey } }; cur[s.id] = r; n++; }
     if (!n) return toast('Aucune case vide dans cette colonne.');
     await store.update(ev.id, { results: cur }, `${ev.title} : cases vides → ${fillKey}`);
     toast(`${n} case(s) vide(s) → ${fillKey}. Corrigez ensuite les exceptions (la flèche Annuler défait tout).`);
   };
 
-  const colStats = (it) => { const c = {}; for (const { student: s } of students) { const r = ev.results?.[s.id]; if (r?.absent) continue; const l = r?.items?.[it.id]?.level; c[l || '—'] = (c[l || '—'] || 0) + 1; } return c; };
+  const colStats = (it) => { const c = {}; for (const { student: s } of students) { const r = ev.results?.[s.id]; if (r?.absent) continue; const x = r?.items?.[it.id]; const l = x?.status === 'ne' ? 'NE' : x?.status === 'abs' ? 'Abs' : x?.level; c[l || '—'] = (c[l || '—'] || 0) + 1; } return c; };
 
   const grid = h('div', { class: 'table-wrap' }, h('table', { class: 'table eval-grid', 'data-testid': 'eval-grid' },
     h('thead', {}, h('tr', {}, h('th', {}, 'Élève'), h('th', {}, 'Absent'), ev.items.map(it => h('th', { class: 'eval-item' }, h('button', { class: 'linklike', type: 'button', onclick: () => itemDialog(ev, it) }, it.label), it.competencyId && competencyLabel(it.competencyId, idx) !== it.label ? h('div', { class: 'small muted' }, competencyLabel(it.competencyId, idx)) : null, showPts && it.maxPoints ? h('div', { class: 'small muted' }, `/ ${it.maxPoints}`) : null,
@@ -159,7 +178,9 @@ function detail(id, rerender) {
     h('section', { class: 'card' }, h('div', { class: 'grid-3' },
       bound({ label: 'Conditions de passation', type: 'text', value: ev.conditions, placeholder: 'ex. individuel, 30 min, consignes lues', onSave: (v) => store.update(ev.id, { conditions: v }, 'Conditions', { quiet: true }) }),
       bound({ label: 'Mode', type: 'select', value: ev.mode, options: [['maîtrise', 'Niveaux de maîtrise'], ['notes', 'Points'], ['les deux', 'Les deux']], onSave: (v) => store.update(ev.id, { mode: v }, 'Mode de l’évaluation') }),
-      h('div', { class: 'field' }, h('label', {}, 'Légende'), h('p', { class: 'small' }, sc.map(([k, l]) => `${k} : ${l}`).join(' · '), h('br'), 'Vide : non évalué (différent de « non acquis »).'))),
+      bound({ label: 'Type', type: 'select', value: ev.kind || 'sommative', options: EVAL_KINDS, onSave: (v) => store.update(ev.id, { kind: v }, 'Type d’évaluation') }),
+      h('label', { class: 'inline', style: { alignSelf: 'end' } }, h('input', { type: 'checkbox', checked: inLivret(ev), 'data-testid': 'eval-inlivret-toggle', onchange: (e) => store.update(ev.id, { inLivret: e.target.checked }, e.target.checked ? 'Évaluation dans le livret' : 'Évaluation hors livret') }), 'Dans le livret'),
+      h('div', { class: 'field' }, h('label', {}, 'Légende'), h('p', { class: 'small' }, sc.map(([k, l]) => `${k} : ${l}`).join(' · '), h('br'), 'NE : non évalué · Abs : absent à cet exercice (ni l’un ni l’autre ne compte comme « non acquis »).'))),
       (ev.versions || []).length ? h('p', { class: 'small' }, 'Versions : ', ev.versions.map(v => `${v.label}${v.note ? ` (${v.note})` : ''}`).join(' ; ')) : null),
     ev.items.length ? h('section', { class: 'card' }, grid) : emptyState('Aucun item', 'Ajoutez des items ou des compétences à évaluer.'),
     h('p', { class: 'muted small' }, 'Saisie rapide : un clic par case (re-cliquer efface), ou au clavier les touches 1 à ', String(sc.length), ' puis l’élève suivant (0 efface, flèches pour se déplacer). « Vides → ', fillKey, ' » remplit une colonne, il ne reste qu’à corriger les exceptions. Aucune note n’est convertie en niveau de maîtrise (ni l’inverse). Les absents sont signalés au rattrapage.'));

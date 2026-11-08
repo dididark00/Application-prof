@@ -10,7 +10,7 @@ import { competencyIndex, competencyLabel } from './referentiels.js';
 import { h, icon, toast, badge, emptyState, download, modal, field } from '../ui.js';
 import { pageHeader, subTabs, needClass, avatar } from '../components.js';
 import { bound } from '../forms.js';
-import { resultsOf, scale, levelKind } from './evaluations.js';
+import { resultsOf, scale, levelKind, inLivret, EVAL_KINDS } from './evaluations.js';
 import { toCsv } from '../csv.js';
 import { printDocument } from '../print.js';
 import { appreciationDialog } from './redaction.js';
@@ -78,7 +78,8 @@ const MATERNELLE = ['TPS', 'PS', 'MS', 'GS'];
 export function livretEvals(cls, per) {
   const conf = store.get(cls.id)?.livretEvals?.[per.id] || {};
   const ex = new Set(conf.excluded || []), add = new Set(conf.added || []);
-  return P.ofClass('evaluation', cls.id).filter(ev => (ev.date >= per.start && ev.date <= per.end && !ex.has(ev.id)) || add.has(ev.id)).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  // Par défaut : les évaluations « dans le livret » de la période (sommatives, contrôle continu) ; cases à cocher pour retirer ou ajouter.
+  return P.ofClass('evaluation', cls.id).filter(ev => (ev.date >= per.start && ev.date <= per.end && !ex.has(ev.id) && inLivret(ev)) || add.has(ev.id)).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 }
 async function setLivretEvals(cls, per, patch) {
   const cur = { ...(store.get(cls.id).livretEvals || {}) }; cur[per.id] = { excluded: [], added: [], ...(cur[per.id] || {}), ...patch };
@@ -304,12 +305,12 @@ function evalPanel(cls, per, rerender, mat) {
   return h('details', { class: 'card', 'data-testid': 'livret-evals', open: !inPeriod.length && !add.size ? false : undefined },
     h('summary', {}, h('strong', {}, `Évaluations reliées au ${mat ? 'carnet' : 'livret'} : ${kept}`), h('span', { class: 'muted small' }, ' — cochez celles qui comptent ; les résultats alimentent les bilans et le document généré')),
     inPeriod.length || add.size ? h('ul', { class: 'plain' }, [...inPeriod, ...others.filter(ev => add.has(ev.id))].map(ev => h('li', {}, h('label', { class: 'inline' },
-      h('input', { type: 'checkbox', checked: add.has(ev.id) || !ex.has(ev.id), 'data-testid': 'livret-eval', onchange: async (e) => {
+      h('input', { type: 'checkbox', checked: add.has(ev.id) || (!ex.has(ev.id) && inLivret(ev)), 'data-testid': 'livret-eval', onchange: async (e) => {
         const inP = ev.date >= per.start && ev.date <= per.end;
         const nEx = new Set(conf.excluded || []), nAdd = new Set(conf.added || []);
-        if (inP) { e.target.checked ? nEx.delete(ev.id) : nEx.add(ev.id); } else { e.target.checked ? nAdd.add(ev.id) : nAdd.delete(ev.id); }
+        if (e.target.checked) { nEx.delete(ev.id); if (!inP || !inLivret(ev)) nAdd.add(ev.id); } else { nAdd.delete(ev.id); if (inP) nEx.add(ev.id); }
         await setLivretEvals(cls, per, { excluded: [...nEx], added: [...nAdd] });
-      } }), `${ev.title}`, h('span', { class: 'muted small' }, ` · ${ev.subject || ''} · ${model.frShort(ev.date)} · ${(ev.items || []).length} item(s)`))))) : h('p', { class: 'muted small' }, 'Aucune évaluation sur cette période : créez-les dans Ma classe › Évaluations (une ligne par compétence ou item).'),
+      } }), `${ev.title}`, h('span', { class: 'muted small' }, ` · ${ev.subject || ''} · ${model.frShort(ev.date)} · ${(EVAL_KINDS.find(k => k[0] === (ev.kind || 'sommative')) || ['', ''])[1].toLowerCase()} · ${(ev.items || []).length} item(s)`))))) : h('p', { class: 'muted small' }, 'Aucune évaluation sur cette période : créez-les dans Ma classe › Évaluations (une ligne par compétence ou item).'),
     others.filter(ev => !add.has(ev.id)).length ? h('select', { 'aria-label': 'Ajouter une évaluation d’une autre date', 'data-testid': 'livret-eval-add', onchange: async (e) => { if (!e.target.value) return; await setLivretEvals(cls, per, { added: [...add, e.target.value] }); } },
       h('option', { value: '' }, '+ Ajouter une évaluation d’une autre date…'), others.filter(ev => !add.has(ev.id)).map(ev => h('option', { value: ev.id }, `${ev.title} (${model.frShort(ev.date)})`))) : null);
 }
