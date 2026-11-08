@@ -1519,3 +1519,12 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .lvl-seg .lvl-btn.on.lvl-ABS.lvl-extra { background: #3c3846; color: #fff; }
 .eval-group { margin-bottom: 18px; }
 .eval-group-title { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 12px 0 8px; }
+.livret-profile { display: flex; gap: 14px; align-items: center; margin: 8px 0 12px; padding: 8px 12px; border: 1px solid #d9d0f2; border-radius: 10px; break-inside: avoid; }
+.lp-star { width: 250px; flex: none; overflow: visible; }
+.lp-gauges { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.lp-title { font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6a4fc4; }
+.lp-gauge { display: grid; grid-template-columns: 9.5em 1fr 3.2em; gap: 8px; align-items: center; font-size: .85em; }
+.lp-bar { height: 9px; border-radius: 999px; background: #efe9fd; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.lp-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f2b8a6, #f7dc8e 35%, #a9dfc3 70%, #9fc6f0); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.lp-pct { text-align: right; font-weight: 700; }
+.lp-note { font-size: .7em; color: #777; margin: 2px 0 0; }

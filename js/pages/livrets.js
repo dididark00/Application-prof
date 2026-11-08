@@ -116,7 +116,7 @@ function draft(sub, sm, sc) {
 }
 
 // ───── Notes et niveaux par discipline (proposés d'après les évaluations, modifiables)
-const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, detail: true, dates: true, absences: true, ...(store.get(cls.id)?.livretOptions || {}) });
+const optsOf = (cls) => ({ sur: 20, notes: true, niveaux: true, profil: true, detail: true, dates: true, absences: true, ...(store.get(cls.id)?.livretOptions || {}) });
 /** Proposition : note sur « sur » (points des évaluations retenues) et niveau le plus représentatif. */
 export function suggestMark(sm, sc, sur = 20) {
   if (!sm) return { note: '', level: '' };
@@ -233,12 +233,12 @@ function generateDialog(cls, per, pi, students, mat) {
   const box = (k, l) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', name: k, checked: !!o[k], 'data-testid': `gen-${k}` }), l);
   const sur = h('select', { name: 'sur', 'data-testid': 'gen-sur' }, [10, 20, 100].map(v => h('option', { value: v, selected: Number(o.sur) === v }, `/${v}`)));
   const form = h('div', { class: 'form' },
-    mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('detail', 'Tableau des compétences (une ligne par compétence, niveau retenu coché)'), box('dates', 'Dates et résultats de chaque évaluation sous la compétence'), box('absences', 'Absences de la période')),
+    mat ? null : h('div', { class: 'stack-sm' }, box('niveaux', 'Niveaux d’acquisition par discipline'), h('div', { class: 'row' }, box('notes', 'Notes'), sur), box('profil', 'Profil en étoile et jauge de maîtrise par discipline'), box('detail', 'Tableau des compétences (une ligne par compétence, niveau retenu coché)'), box('dates', 'Dates et résultats de chaque évaluation sous la compétence'), box('absences', 'Absences de la période')),
     h('p', { class: 'muted small' }, 'Appréciations, légende de l’échelle et cadre de signatures (enseignante, direction, famille) figurent toujours. Pour un PDF : « Enregistrer au format PDF » dans la fenêtre d’impression.'));
   modal({ title: mat ? 'Générer les carnets de suivi' : `Générer ${students.length > 1 ? 'les livrets' : 'le livret'} — ${per.label.toLowerCase()}`, body: form,
   actions: [{ label: 'Annuler' }, { label: 'Générer', primary: true, testid: 'gen-go', onClick: async (ev) => {
     const next = { ...o, sur: Number(form.querySelector('[name=sur]')?.value || o.sur) };
-    for (const k of ['niveaux', 'notes', 'detail', 'dates', 'absences']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
+    for (const k of ['niveaux', 'notes', 'profil', 'detail', 'dates', 'absences']) { const i = form.querySelector(`[name=${k}]`); if (i) next[k] = i.checked; }
     if (JSON.stringify(next) !== JSON.stringify(o)) await store.update(cls.id, { livretOptions: next }, 'Options du livret', { quiet: true });
     printDocument(h('div', {}, students.map(s => h('div', { class: 'livret-page' }, printReport(cls, per, pi, s, mat, next)))));
     void ev;
@@ -288,11 +288,39 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
       h('h2', { class: 'print-h2' }, 'Réussites observées'),
       obs.length || port.length ? h('ul', {}, obs.map(x => h('li', {}, `${model.frShort(x.date)} — ${x.text}`)), port.map(p => h('li', {}, `${p.date ? model.frShort(p.date) + ' — ' : ''}${p.title}${(p.competencyIds || []).length ? ` (${p.competencyIds.map(c => idx.get(c)?.label || '').filter(Boolean).join(' ; ')})` : ''}`))) : h('p', { class: 'muted' }, '—'),
       subs.map(sub => rep?.subjects?.[sub] ? h('section', { class: 'livret-sub' }, h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, sub)), h('p', { class: 'livret-app pre' }, rep.subjects[sub])) : null)]
-    : [legend, subs.length ? subs.map(subBlock) : h('p', { class: 'muted' }, 'Aucun résultat ni appréciation pour cette période.'),
+    : [legend, o.profil ? profile(syn, sc) : null, subs.length ? subs.map(subBlock) : h('p', { class: 'muted' }, 'Aucun résultat ni appréciation pour cette période.'),
       o.notes && notes.length > 1 ? h('p', { class: 'livret-avg' }, h('strong', {}, 'Moyenne générale indicative : '), `${String(Math.round(notes.reduce((a, b) => a + b, 0) / notes.length * 10) / 10).replace('.', ',')} / ${o.sur}`) : null],
     h('section', { class: 'livret-sub livret-general' }, h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, mat ? 'Synthèse des acquis' : 'Appréciation générale')), h('p', { class: 'livret-app pre' }, rep?.general || '')),
     o.absences ? h('p', { class: 'small' }, `Absences sur la période : ${abs} demi-journée(s).`) : null,
     h('table', { class: 'print-table livret-sign' }, h('tbody', {}, h('tr', {}, ['L’enseignante', 'La direction', 'Les responsables légaux (vu et pris connaissance)'].map(t => h('td', {}, h('div', { class: 'livret-sign-label' }, t), h('div', { class: 'livret-sign-box' })))))));
+}
+
+/** Maîtrise d'un ensemble de compétences : moyenne des niveaux retenus (0 = premier niveau, 1 = dernier). */
+export function mastery(rows, sc) {
+  const keys = sc.map(([k]) => k); const xs = rows.map(r => keys.indexOf(r.level)).filter(i => i >= 0);
+  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length / Math.max(1, keys.length - 1) : null;
+}
+const short = (t, n = 18) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+/** Profil de l'élève : étoile par discipline (3 disciplines ou plus), sinon jauges ; une jauge par discipline. */
+function profile(syn, sc) {
+  const axes = Object.entries(syn).map(([sub, rows]) => ({ sub, v: mastery(rows, sc), n: rows.length })).filter(a => a.v != null);
+  if (!axes.length) return null;
+  const gauge = (a) => h('div', { class: 'lp-gauge' }, h('span', { class: 'lp-name' }, a.sub), h('span', { class: 'lp-bar' }, h('span', { style: { width: `${Math.round(a.v * 100)}%` } })), h('span', { class: 'lp-pct' }, `${Math.round(a.v * 100)} %`));
+  let star = null;
+  if (axes.length >= 3) {
+    const NS = 'http://www.w3.org/2000/svg'; const S = (t, at) => { const e = document.createElementNS(NS, t); for (const [k, v] of Object.entries(at)) e.setAttribute(k, v); return e; };
+    const W = 300, C = W / 2, R = 92; const svg = S('svg', { viewBox: `0 0 ${W} ${W - 40}`, class: 'lp-star', role: 'img', 'aria-label': `Profil : ${axes.map(a => `${a.sub} ${Math.round(a.v * 100)} %`).join(', ')}` });
+    const g = S('g', { transform: `translate(0,-20)` }); svg.append(g);
+    const pt = (i, r) => { const ang = -Math.PI / 2 + i * 2 * Math.PI / axes.length; return [C + r * Math.cos(ang), C + r * Math.sin(ang)]; };
+    for (const f of [0.25, 0.5, 0.75, 1]) g.append(S('polygon', { points: axes.map((_, i) => pt(i, R * f).join(',')).join(' '), fill: 'none', stroke: '#d9d0f2', 'stroke-width': f === 1 ? 1.2 : 0.7 }));
+    axes.forEach((a, i) => { const [x, y] = pt(i, R); g.append(S('line', { x1: C, y1: C, x2: x, y2: y, stroke: '#e3dbfa', 'stroke-width': 0.7 }));
+      const [lx, ly] = pt(i, R + 16); const t = S('text', { x: lx, y: ly + 3, 'text-anchor': lx < C - 5 ? 'end' : lx > C + 5 ? 'start' : 'middle', 'font-size': 11, 'font-weight': 600, fill: '#4b3596' }); t.textContent = short(a.sub); g.append(t); });
+    g.append(S('polygon', { points: axes.map((a, i) => pt(i, R * Math.max(0.04, a.v)).join(',')).join(' '), fill: 'rgba(106,79,196,.28)', stroke: '#6a4fc4', 'stroke-width': 1.6 }));
+    axes.forEach((a, i) => { const [x, y] = pt(i, R * Math.max(0.04, a.v)); g.append(S('circle', { cx: x, cy: y, r: 2.6, fill: '#6a4fc4' })); });
+    star = svg;
+  }
+  return h('section', { class: 'livret-profile', 'data-testid': 'livret-profile' }, star, h('div', { class: 'lp-gauges' }, h('div', { class: 'lp-title' }, 'Maîtrise par discipline'), axes.map(gauge),
+    h('p', { class: 'lp-note' }, `Moyenne des niveaux retenus : 0 % = ${sc[0]?.[1] || ''}, 100 % = ${sc.at(-1)?.[1] || ''}.`)));
 }
 
 /** Choix des évaluations reliées au livret de la période. */

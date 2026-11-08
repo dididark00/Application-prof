@@ -519,6 +519,7 @@ await test('Livret v2 : dates libres, une ligne par compétence avec ses résult
   await page.getByTestId('gen-go').click(); await page.waitForTimeout(300);
   const html = await page.evaluate(() => document.getElementById('print-root').innerHTML);
   assert(html.includes('Décrire le vivant (test v2)') && /livret-pos on lv-A/.test(html), 'niveau retenu coché dans la bonne colonne');
+  assert(html.includes('livret-profile') && html.includes('Maîtrise par discipline'), 'profil et jauges de maîtrise imprimés');
   assert(html.includes('Du 01/09/2026 au 31/10/2026') || html.includes('Périodes'), 'dates du livret imprimées');
   await page.getByTestId('livret-range').click(); await page.getByTestId('range-quick').last().click(); await page.waitForTimeout(300);
   assert((await page.getByTestId('livret-range').innerText()).includes('Année'), 'raccourci « Toute l’année »');
