@@ -357,15 +357,21 @@ async function sauvegarde() {
     let parsed;
     try { parsed = await backup.readBackup(file); }
     catch (e) { modal({ title: 'Restauration impossible', body: h('p', {}, e.message), actions: [{ label: 'Fermer', primary: true }] }); return; }
-    const labels = { year: 'année(s)', class: 'classe(s)', student: 'élève(s)', enrollment: 'inscription(s)', file: 'fichier(s) / lien(s)', folder: 'dossier(s)', inbox: 'élément(s) à classer' };
+    const labels = { year: 'année(s)', class: 'classe(s)', student: 'élève(s)', enrollment: 'inscription(s)', file: 'fichier(s) / lien(s)', folder: 'dossier(s)', inbox: 'élément(s) à classer',
+      session: 'fiche(s) de séance', sequence: 'séquence(s)', occurrence: 'activité(s) du cahier journal', notion: 'notion(s) de programme', progression: 'progression(s)', programmation: 'programmation(s)',
+      homework: 'devoir(s)', studentdoc: 'document(s) d’élève', book: 'livre(s)', loan: 'prêt(s)', meeting: 'réunion(s)', contact: 'contact(s)', task: 'tâche(s)', slideshow: 'diaporama(s)', manual: 'manuel(s)',
+      jobs: 'responsabilités', plan: 'plan(s) d’accompagnement', event: 'événement(s)', need: 'besoin(s)', attendance: 'appel(s)', declo: 'décloisonnement(s)', evaluation: 'évaluation(s)', report: 'bilan(s) de livret',
+      observation: 'observation(s)', timetable: 'emploi(s) du temps', referential: 'référentiel(s)', lesson: 'leçon(s)', movement: 'mouvement(s) d’argent', account: 'compte(s)', material: 'matériel', list: 'liste(s)',
+      serviceplan: 'semaine(s) type cantine', intervention: 'intervention(s)', project: 'projet(s)', carnet: 'mot(s) du carnet', drill: 'exercice(s) de sécurité', repartition: 'répartition(s)', levelmark: 'niveau(x) d’élève' };
     modal({ title: 'Restaurer cette sauvegarde ?', wide: true, body: h('div', {},
       h('p', {}, `Sauvegarde du ${model.frDateTime(parsed.header.exportedAt)} (format ${parsed.header.schemaVersion}, application ${parsed.header.appVersion}). Empreinte de contrôle vérifiée.`),
-      h('ul', {}, Object.entries(parsed.byType).map(([t, n]) => h('li', {}, `${n} ${labels[t] || t}`)), h('li', {}, `${parsed.counts.blobs} contenu(s) de fichier`)),
+      h('ul', { class: 'restore-list' }, Object.entries(parsed.byType).sort((a, b) => b[1] - a[1]).map(([t, n]) => h('li', {}, `${n} ${labels[t] || t}`)), h('li', {}, `${parsed.counts.blobs} contenu(s) de fichier`)),
       h('p', { class: 'warn' }, 'Toutes les données actuelles de cet appareil seront remplacées. Si vous voulez les garder, exportez d’abord une sauvegarde.')),
     actions: [
       { label: 'Annuler' },
       { label: 'Exporter l’état actuel d’abord', onClick: async () => { const b = await backup.buildBackup(); download(backup.backupFilename(), JSON.stringify(b), 'application/json'); return false; } },
-      { label: 'Remplacer et restaurer', danger: true, onClick: async () => {
+      { label: 'Remplacer et restaurer', danger: true, testid: 'restore-go', onClick: async () => {
+        toast('Restauration en cours… ne fermez pas la page.', { timeout: 4000 });
         try {
           const r = await backup.restoreBackup(parsed);
           toast(`Restauration vérifiée : ${r.records} éléments et ${r.blobs} fichier(s) relus correctement.`, { kind: 'success', timeout: 9000 });

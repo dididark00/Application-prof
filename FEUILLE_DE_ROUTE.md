@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (215) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 227 entrées.
+Légende : ✅ Réalisé (216) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 228 entrées.
 
 ## Étape 1 — Socle
 
@@ -255,3 +255,4 @@ Légende : ✅ Réalisé (215) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §8 Élèves | Observation éclair (téléphone, en classe) : compétence des séances du jour → niveau → toucher l’élève ; le niveau va dans l’évaluation « Observations en classe » du jour (donc le livret) et une observation datée dans le suivi ; sans compétence : réussite, difficulté, comportement, remarque | Aujourd’hui › En classe › Observation éclair ; la flèche Annuler défait chaque geste. |
 | ✅ | §2 Aujourd’hui | Anniversaires des élèves sur l’accueil (7 jours, âge) ; jours sans classe : l’accueil garde « Avant » et « Après » (séances à cocher, bilan de la semaine, rappels) | D’après la date de naissance de la fiche élève. |
 | ✅ | §20 Apparence | Mode léger : masquer d’un clic les pages jamais ouvertes sur cet appareil, tout réafficher d’un clic | Réglages › Modules et mode léger ; aucune donnée effacée. |
+| ✅ | §19 Sauvegarde | Correctif : boutons rouges (« Remplacer et restaurer », « Supprimer »…) invisibles dans le thème Lavande clair (texte blanc sur fond blanc) ; indicateur « en cours » et boutons grisés pendant une action longue dans toutes les fenêtres ; liste de la sauvegarde en français, sur plusieurs colonnes | Restauration de 1 400+ éléments vérifiée en moins d’une seconde. |

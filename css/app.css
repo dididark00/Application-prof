@@ -1256,7 +1256,7 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 [data-theme="lavande"] .card { border: 0; border-radius: 22px; box-shadow: var(--shadow); }
 [data-theme="lavande"] .btn { border-radius: 999px; min-height: 42px; padding: 8px 16px; border-color: transparent; box-shadow: 0 2px 6px rgba(60, 40, 110, .08); }
 [data-theme="lavande"] .btn-small { min-height: 34px; padding: 4px 12px; }
-[data-theme="lavande"]:not([data-mode="sombre"]) .btn:not(.btn-primary):not(.btn-link):not(.btn-ghost-danger) { background: #ffffff; }
+[data-theme="lavande"]:not([data-mode="sombre"]) .btn:not(.btn-primary):not(.btn-link):not(.btn-ghost-danger):not(.btn-danger) { background: #ffffff; }
 [data-theme="lavande"] .btn-primary { background: var(--ink-btn, var(--accent)); border-color: transparent; color: #fffdf9; box-shadow: 0 8px 18px rgba(30, 27, 36, .24), inset 0 1px 0 rgba(255, 255, 255, .18); }
 [data-theme="lavande"] .btn-primary:hover { filter: brightness(1.15); background: var(--ink-btn, var(--accent-hover)); }
 [data-theme="lavande"] .btn-link { box-shadow: none; }
@@ -1505,3 +1505,12 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .obs-name { font-weight: 700; }
 .obs-last { font-size: .72rem; color: var(--ink-2); }
 .moments-off { grid-template-columns: repeat(2, minmax(0, 1fr)); } .moments-off > .moment-off { grid-column: 1 / -1; margin: 0; } @media (max-width: 760px) { .moments-off { grid-template-columns: 1fr; } }
+
+/* Bouton « danger » (supprimer, remplacer et restaurer…) toujours lisible, dans tous les thèmes */
+[data-theme="lavande"] .btn-danger { background: #b4372e; color: #ffffff; box-shadow: 0 6px 14px rgba(163, 50, 42, .25); }
+[data-theme="lavande"][data-mode="sombre"] .btn-danger { background: #f08a80; color: #1e1b24; }
+/* Action en cours dans une fenêtre */
+.modal-foot .btn.busy { position: relative; cursor: progress; }
+.modal-foot .btn.busy::after { content: ""; display: inline-block; width: 14px; height: 14px; margin-left: 8px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; vertical-align: -2px; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.restore-list { columns: 3 200px; column-gap: 24px; padding-left: 18px; } .restore-list li { break-inside: avoid; }

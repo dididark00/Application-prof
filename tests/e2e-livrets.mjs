@@ -642,6 +642,25 @@ await test('Observation éclair (compétence → niveau → élève, vers l’é
   }
 });
 
+await test('Restaurer une sauvegarde : bouton « Remplacer et restaurer » lisible (thème Lavande, clair et sombre), restauration vérifiée', async () => {
+  const json = await S(`return JSON.stringify(await (await import('./js/backup.js')).buildBackup());`);
+  const fs = await import('node:fs'); const path = await import('node:path'); const os = await import('node:os');
+  const f = path.join(os.tmpdir(), `classeur-test-${Date.now()}.json`); fs.writeFileSync(f, json);
+  for (const mode of ['clair', 'sombre']) {
+    await go('#/reglages/sauvegarde');
+    await page.evaluate((m) => { document.documentElement.dataset.mode = m; }, mode);
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('restore-backup').click()]);
+    await chooser.setFiles(f); await page.waitForTimeout(500);
+    const [bg, fg] = await page.getByTestId('restore-go').evaluate(e => { const c = getComputedStyle(e); return [c.backgroundColor, c.color]; });
+    assert(bg !== fg && bg !== 'rgb(255, 255, 255)', `bouton lisible en mode ${mode} (${bg} / ${fg})`);
+    if (mode === 'clair') { await page.keyboard.press('Escape'); continue; }
+    await page.getByTestId('restore-go').click();
+    await page.waitForFunction(() => /Restauration vérifiée/.test(document.querySelector('.toasts')?.textContent || ''), null, { timeout: 30000 });
+  }
+  await page.evaluate(() => { document.documentElement.dataset.mode = 'clair'; });
+  fs.unlinkSync(f);
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

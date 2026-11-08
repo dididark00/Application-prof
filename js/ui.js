@@ -132,7 +132,14 @@ export function modal({ title, body, actions = [], wide = false, onClose }) {
     h('div', { class: 'modal-body' }, body),
     actions.length ? h('footer', { class: 'modal-foot' }, actions.map(a =>
       h('button', { class: `btn ${a.primary ? 'btn-primary' : ''} ${a.danger ? 'btn-danger' : ''}`, type: 'button', 'data-testid': a.testid || null,
-        onclick: async () => { const r = await a.onClick?.(); if (r !== false) close(); } }, a.label))) : null);
+        onclick: async (ev) => {
+          const btn = ev.currentTarget; const all = [...box.querySelectorAll('.modal-foot .btn')];
+          // Pendant une action longue (restauration, import…) : boutons grisés et indicateur, pour ne pas croire que rien ne se passe.
+          const t = setTimeout(() => { btn.classList.add('busy'); all.forEach(b => { b.disabled = true; }); box.setAttribute('aria-busy', 'true'); }, 150);
+          let r;
+          try { r = await a.onClick?.(); } finally { clearTimeout(t); btn.classList.remove('busy'); all.forEach(b => { b.disabled = false; }); box.removeAttribute('aria-busy'); }
+          if (r !== false) close();
+        } }, a.label))) : null);
   backdrop.append(box);
   backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(); });
   document.addEventListener('keydown', onKey);

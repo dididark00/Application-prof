@@ -149,8 +149,9 @@ await test('OCR : texte d’une image des Fichiers enregistré et retrouvé par 
   await page.locator('tr, .card, li').filter({ hasText: 'affiche.png' }).getByRole('button', { name: 'Aperçu' }).first().click();
   await page.getByTestId('file-ocr').click();
   await page.waitForFunction(() => (document.querySelector('[data-testid=file-ocr-text]')?.value || '').length > 5, null, { timeout: 60000 });
+  // l'enregistrement du texte suit son affichage : on l'attend (jusqu'à 10 s) au lieu de le lire aussitôt
+  let saved; for (let k = 0; k < 40 && !(saved = await S(`return store.get(a).ocrText;`, fid)); k++) await page.waitForTimeout(250);
   await page.keyboard.press('Escape');
-  const saved = await S(`return store.get(a).ocrText;`, fid);
   assert(/Photosynth/.test(saved), `texte enregistré : ${saved}`);
   await go('#/recherche?q=photosynthèse');
   assert((await page.locator('.page').innerText()).includes('affiche.png'), 'retrouvé par la recherche');
