@@ -274,6 +274,7 @@ export const ROADMAP = [
   R(5, '§2 Aujourd’hui', 'Anniversaires des élèves sur l’accueil (7 jours, âge) ; jours sans classe : l’accueil garde « Avant » et « Après » (séances à cocher, bilan de la semaine, rappels)', 'fait', 'D’après la date de naissance de la fiche élève.'),
   R(5, '§20 Apparence', 'Mode léger : masquer d’un clic les pages jamais ouvertes sur cet appareil, tout réafficher d’un clic', 'fait', 'Réglages › Modules et mode léger ; aucune donnée effacée.'),
   R(5, '§19 Sauvegarde', 'Correctif : boutons rouges (« Remplacer et restaurer », « Supprimer »…) invisibles dans le thème Lavande clair (texte blanc sur fond blanc) ; indicateur « en cours » et boutons grisés pendant une action longue dans toutes les fenêtres ; liste de la sauvegarde en français, sur plusieurs colonnes', 'fait', 'Restauration de 1 400+ éléments vérifiée en moins d’une seconde.'),
+  R(5, '§16 Étiquettes', 'Correctif : noms qui dépassaient du cadre avec les écritures attachées (boucles et jambages de Marelle) ; taille calculée sur la hauteur réelle des lettres (mesure au pixel), centrage dans chaque bande ; à l’impression, attente du chargement des polices avant d’ajuster', 'fait', 'Vérifié automatiquement : aucun texte ne sort de sa bande ni du cadre.'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

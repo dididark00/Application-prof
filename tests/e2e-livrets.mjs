@@ -661,6 +661,22 @@ await test('Restaurer une sauvegarde : bouton « Remplacer et restaurer » lisib
   fs.unlinkSync(f);
 });
 
+await test('Étiquettes : les noms longs et les écritures attachées (grandes boucles) restent dans leur cadre', async () => {
+  await S(`const cls = store.get(store.getSettings().currentClassId); const st = model.studentsOfClass(cls.id)[0].student; await store.update(st.id, { firstName: 'Marie-Antoinette', lastName: 'DE LA ROCHEFOUCAULD' }); return true;`);
+  await go('#/etiquettes'); await page.waitForTimeout(1200);
+  const bad = await page.evaluate(async () => {
+    const L = await import('./js/labels.js'); await document.fonts.ready; await new Promise(r => setTimeout(r, 300));
+    const out = [];
+    for (const t of document.querySelectorAll('[data-testid=labels-preview] text[data-band]')) {
+      const [top, lh] = t.getAttribute('data-band').split(' ').map(Number); const fs = Number(t.getAttribute('font-size')); const y = Number(t.getAttribute('y'));
+      const m = L.measure(t.textContent, t.getAttribute('font-family'));
+      if (y - m.asc * fs < top - 0.3 || y + m.desc * fs > top + lh + 0.3 || t.getComputedTextLength() > Number(t.getAttribute('data-maxw')) + 0.3) out.push(t.textContent);
+    }
+    return out;
+  });
+  eq(JSON.stringify(bad), '[]', 'aucun texte ne sort de sa bande ni du cadre');
+});
+
 await test('Programmes : tout importer pour la classe, relier les compétences aux séquences, compétences et phases dans le cahier journal imprimé', async () => {
   await go('#/referentiels');
   await page.getByTestId('import-all').click(); await page.waitForTimeout(150);

@@ -106,10 +106,12 @@ function printPages(svgs, fmt) {
   document.head.append(h('style', { id: 'page-style' }, `@page { size: A4 ${lay.landscape ? 'landscape' : 'portrait'}; margin: 0; }`));
   root.replaceChildren(h('div', { class: 'labels-print' }, svgs.map(s => { s.querySelectorAll('.cut').forEach(c => c.setAttribute('stroke', '#bbb')); return s; })));
   document.body.classList.add('printing');
-  L.fitTexts(root);
   const cleanup = () => { document.body.classList.remove('printing'); root.replaceChildren(); window.removeEventListener('afterprint', cleanup); };
   window.addEventListener('afterprint', cleanup);
-  window.print();
+  // On attend que les polices des étiquettes soient chargées, puis on ajuste chaque texte avant d'imprimer.
+  const fams = [...new Set([...root.querySelectorAll('text[font-family]')].map(t => t.getAttribute('font-family')))];
+  Promise.race([Promise.all(fams.map(f => document.fonts?.load(`20px ${f}`))).then(() => document.fonts?.ready), new Promise(r => setTimeout(r, 2500))])
+    .catch(() => {}).then(() => requestAnimationFrame(() => { L.fitTexts(root); window.print(); }));
 }
 
 // ───────── Séries enregistrées (retouche individuelle, versions)

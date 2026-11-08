@@ -77,16 +77,37 @@ export function layout(fmt) {
   return { ...best, w, h, perPage, ox: (best.pw - usedW) / 2, oy: (best.ph - usedH) / 2, landscape: best === l };
 }
 
-/** Taille de police (mm) pour que le texte tienne dans la largeur donnée. */
-export function fitSize(text, font, maxW, maxSize) {
+/** Mesure du texte (pour 1 mm de police) : largeur, hauteur au-dessus et au-dessous de la ligne de base. */
+export function measure(text, font) {
   try {
     // Police pas encore chargée : on la charge pour les prochains dessins ; fitTexts() corrige ensuite à l'écran.
     try { if (document.fonts && !document.fonts.check(`20px ${F.family(font)}`)) document.fonts.load(`20px ${F.family(font)}`); } catch { /* */ }
-    const c = document.createElement('canvas').getContext('2d');
-    c.font = `100px ${F.family(font)}`;
-    const w = c.measureText(text || ' ').width / 100;
-    return Math.max(2, Math.min(maxSize, w ? maxW / w : maxSize));
-  } catch { return maxSize; }
+    const fam = String(font).includes(',') ? font : F.family(font);
+    const key = `${fam}|${text}|${document.fonts?.check?.(`20px ${fam}`) ? 1 : 0}`;
+    if (MEASURES.has(key)) return MEASURES.get(key);
+    // Mesure au pixel près : certaines polices d'écriture (Marelle) annoncent des dimensions fausses,
+    // leurs boucles montent bien au-dessus. On dessine le mot et on cherche les pixels réellement encrés.
+    const S = 40, W = Math.ceil(S * Math.max(4, String(text).length * 1.6)), H = S * 5, BASE = S * 3;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const c = cv.getContext('2d', { willReadFrequently: true });
+    c.font = `${S}px ${fam}`; c.textBaseline = 'alphabetic';
+    const width = c.measureText(text || ' ').width / S;
+    c.fillText(text || ' ', 4, BASE);
+    const d = c.getImageData(0, 0, W, H).data;
+    let top = BASE, bot = BASE;
+    for (let y = 0; y < H; y++) { const row = y * W * 4; for (let x = 3; x < W * 4; x += 4) if (d[row + x] > 16) { if (y < top) top = y; if (y > bot) bot = y; break; } }
+    const r = { w: width, asc: Math.max(0.3, (BASE - top) / S), desc: Math.max(0, (bot - BASE) / S) };
+    MEASURES.set(key, r);
+    return r;
+  } catch { return { w: 0, asc: 0.72, desc: 0.2 }; }
+}
+const MEASURES = new Map();
+/** Taille de police (mm) pour que le texte tienne dans la largeur ET la hauteur données (les écritures attachées ont de grandes boucles). */
+export function fitSize(text, font, maxW, maxSize, maxH = Infinity) {
+  const m = measure(text, font);
+  const byW = m.w ? (maxW * 0.97) / m.w : maxSize;
+  const byH = (m.asc + m.desc) ? maxH / (m.asc + m.desc) : maxSize;
+  return Math.max(2, Math.min(maxSize, byW, byH));
 }
 
 /** Dessine une étiquette (coordonnées mm) dans le groupe g. */
@@ -114,19 +135,34 @@ export function drawLabel(g, item, w, h, style, urls = {}) {
   let y = pad;
   const cx = item.emblem ? tx + availW / 2 : w / 2;
   lines.forEach((t, i) => {
-    const maxSize = availH * ratios[i] * (i === 0 ? 0.78 : 0.7);
-    const size = fitSize(String(t), i === 0 ? font : style.font2 || font, availW, maxSize);
+    const f = i === 0 ? font : style.font2 || font;
     const lh = availH * ratios[i];
-    g.append(S('text', { x: cx, y: y + lh / 2 + size * 0.33, 'font-size': size, 'font-family': F.family(i === 0 ? font : style.font2 || font), 'text-anchor': 'middle', fill: i === 0 ? (style.ink || ch.ink) : '#444', 'data-line': i, 'data-maxw': availW }, String(t)));
+    const maxSize = lh * (i === 0 ? 0.78 : 0.7);
+    // Hauteur réelle des lettres (boucles, jambages) : elles restent dans leur bande, sans toucher le cadre ni la ligne voisine.
+    const size = fitSize(String(t), f, availW, maxSize, lh * 0.94);
+    const m = measure(String(t), f);
+    const base = y + (lh - (m.asc + m.desc) * size) / 2 + m.asc * size;
+    g.append(S('text', { x: cx, y: base, 'font-size': size, 'font-family': F.family(f), 'text-anchor': 'middle', fill: i === 0 ? (style.ink || ch.ink) : '#444', 'data-line': i, 'data-maxw': availW, 'data-band': `${y} ${lh}` }, String(t)));
     y += lh;
   });
 }
 /** Une fois les étiquettes affichées : réduit tout texte qui déborde encore (mesure réelle, police chargée). */
 export function fitTexts(root) {
   for (const t of root.querySelectorAll('text[data-maxw]')) {
-    let w = 0; try { w = t.getComputedTextLength(); } catch { continue; }
+    let w = 0, bb = null; try { w = t.getComputedTextLength(); bb = t.getBBox(); } catch { continue; }
+    if (!w) continue; // pas encore affiché
     const max = Number(t.getAttribute('data-maxw'));
-    if (w > max && w > 0) { const fs = Number(t.getAttribute('font-size')); const nfs = fs * (max / w) * 0.98; t.setAttribute('font-size', nfs); t.setAttribute('y', Number(t.getAttribute('y')) - (fs - nfs) * 0.33); }
+    const [top, lh] = (t.getAttribute('data-band') || '').split(' ').map(Number);
+    let fs = Number(t.getAttribute('font-size'));
+    // Mesure réelle, police chargée : largeur, puis hauteur de la bande.
+    const m = measure(t.textContent, t.getAttribute('font-family'));
+    let nfs = fs;
+    if (w > max * 0.97) nfs = fs * (max * 0.97 / w);
+    if (lh && (m.asc + m.desc) * nfs > lh * 0.94) nfs = (lh * 0.94) / (m.asc + m.desc);
+    if (nfs !== fs || (lh && bb && (bb.y < top - 0.01 || bb.y + bb.height > top + lh + 0.01))) {
+      t.setAttribute('font-size', nfs);
+      if (lh) t.setAttribute('y', top + (lh - (m.asc + m.desc) * nfs) / 2 + m.asc * nfs);
+    }
   }
 }
 /** Réajuste maintenant puis quand les polices ont fini de se charger. */
