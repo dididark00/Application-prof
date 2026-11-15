@@ -78,7 +78,7 @@ export async function setWeekMode(cls, monday, mode) {
   const cur = { ...(store.get(cls.id).weekMode || {}) }; cur[monday] = mode;
   return store.update(cls.id, { weekMode: cur }, mode === 'vierge' ? 'Semaine partie de zéro' : 'Semaine construite depuis l’emploi du temps');
 }
-export function dayPlan(cls, date, { ignoreBlank = false } = {}) {
+export function dayPlan(cls, date, { ignoreBlank = false, withRemoved = false } = {}) {
   const school = isSchoolDay(cls, date);
   const wd = model.weekday(date);
   const occs = store.all('occurrence').filter(o => o.classId === cls.id && o.date === date);
@@ -90,7 +90,7 @@ export function dayPlan(cls, date, { ignoreBlank = false } = {}) {
     const blank = !ignoreBlank && isBlankWeek(cls, date);
     for (const slot of (blank ? [] : version?.slots || []).filter(s => s.day === wd)) {
       const o = occs.find(x => x.slotId === slot.id);
-      if (o) { usedOcc.add(o.id); entries.push(entryFromOcc(o, slot)); }
+      if (o) { usedOcc.add(o.id); if (!o.removed || withRemoved) entries.push(entryFromOcc(o, slot)); } // removed : créneau retiré ce jour-là (import)
       else entries.push({ key: `s:${date}:${slot.id}`, kind: 'slot', date, start: slot.start, end: slot.end, subject: slot.subject, title: slot.label || slot.subject || 'Créneau',
         levels: slot.levels || [], mode: slot.mode || 'dirigé', status: 'prévue', slot, session: null, sessionId: null });
     }
@@ -101,7 +101,7 @@ export function dayPlan(cls, date, { ignoreBlank = false } = {}) {
         levels: iv.levels || [], mode: 'intervention', status: 'prévue', intervention: iv, interventionSlot: sl, session: null, sessionId: null });
     }
   }
-  for (const o of occs) if (!usedOcc.has(o.id)) entries.push(entryFromOcc(o));
+  for (const o of occs) if (!usedOcc.has(o.id) && (!o.removed || withRemoved)) entries.push(entryFromOcc(o));
   for (const e of eventsOn(date, { classId: cls.id, includePersonal: false }).filter(e => e.classId === cls.id)) {
     entries.push({ key: `e:${e.id}`, kind: 'event', date, start: e.start || '00:00', end: e.end || '23:59', allDay: !e.start, subject: '', title: e.title, levels: e.levels || [],
       mode: e.blocksClass ? 'dirigé' : 'autonomie', status: 'prévue', event: e, blocks: !!e.blocksClass });

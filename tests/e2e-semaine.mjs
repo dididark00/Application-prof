@@ -191,6 +191,30 @@ await test('Réimport CSV : on compare, on remplace ce qui a changé (même une 
   if (r.hasSeq) { eq(r.sq.updated, 1, 'séance existante mise à jour'); eq(r.after, r.before, 'aucune séance en double'); eq(r.obj, 'Objectif réimporté (essai)', 'objectif remplacé'); }
 });
 
+await test('Réimport CSV du cahier journal : disciplines « Maths — Géométrie » reconnues, journées remplacées, second import sans effet', async () => {
+  const r = await S(`const cls = store.get(a.cls);
+    const sp = IC.subjectSplit; const s1 = sp('Mathématiques — Géométrie'), s2 = sp('Français : production d’écrits'), s3 = sp('EMC / Français'), s4 = sp('Vie de classe');
+    const day = '2026-12-01';
+    const slots = PL.dayPlan(cls, day).entries.filter(e => e.kind === 'slot');
+    // Ancien import : une activité à 13:45 qui sera remplacée par une ligne à 13:30
+    await store.create('occurrence', { classId: cls.id, date: day, start: '13:45', end: '14:25', subject: 'Français', title: 'Ancienne version (essai)', status: 'prévue', levels: [], mode: 'dirigé' }, 'essai');
+    const head = 'Date,Début,Fin,Discipline,Séance,Statut,Bilan\\n';
+    const csv = head + day + ',13:30,14:15,Français : production d’écrits,Nouvelle version (essai),prévue,\\n' + day + ',' + (slots[0]?.start || '08:30') + ',' + (slots[0]?.end || '09:00') + ',Mathématiques — Géométrie,Figures (essai),prévue,';
+    const imp = () => IC.importRows('cahier', IC.analyse('cahier', csv, cls).rows, cls, { replaceDays: true });
+    const r1 = await imp(); const r2 = await imp();
+    const es = PL.dayPlan(cls, day).entries;
+    const old = es.some(e => e.title === 'Ancienne version (essai)');
+    const nw = es.find(e => e.title === 'Nouvelle version (essai)');
+    const fig = es.find(e => e.title === 'Figures (essai)');
+    const overl = es.filter(e => e !== nw && e.kind !== 'event' && e.start < nw.end && nw.start < e.end).map(e => e.title);
+    return { s1, s2, s3, s4, r1, r2, old, nwSubject: nw?.subject, nwDomain: nw?.occ?.domain, figSubject: fig?.subject, overl };`, ids);
+  eq(`${r.s1.subject}|${r.s1.rest}`, 'Mathématiques|Géométrie', 'Maths — Géométrie');
+  eq(r.s2.subject, 'Français', 'Français : …'); eq(r.s3.subject, 'EMC', 'EMC / Français'); eq(r.s4.subject, 'Autre', 'discipline inconnue → Autre');
+  assert(!r.old, 'ancienne activité au mauvais horaire retirée'); eq(r.overl.length, 0, `plus rien ne chevauche (${r.overl.join(', ')})`);
+  eq(r.nwSubject, 'Français', 'discipline reconnue'); eq(r.nwDomain, 'production d’écrits', 'précision gardée'); eq(r.figSubject, 'Mathématiques', 'maths reconnues');
+  eq(r.r2.created + r.r2.updated + r.r2.removed, 0, 'second import identique : aucun changement'); eq(r.r2.unchanged, 2, 'deux lignes identiques');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-semaine.txt`, results.join('\n'));

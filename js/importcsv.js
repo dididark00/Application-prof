@@ -41,8 +41,20 @@ export function periodFrom(year, v) {
   const ps = model.periodsOf(year); const m = String(v || '').match(/(\d+)/);
   return m ? ps[Number(m[1]) - 1] || null : null;
 }
-const ALIASES = { maths: 'Mathématiques', math: 'Mathématiques', mathematique: 'Mathématiques', francais: 'Français', qlm: 'Questionner le monde', 'questionner le monde': 'Questionner le monde', lv: 'Langues vivantes', lve: 'Langues vivantes', anglais: 'Langues vivantes', 'arts visuels': 'Arts plastiques', arts: 'Arts plastiques', musique: 'Éducation musicale', chant: 'Éducation musicale', sport: 'EPS' };
-const subjectFrom = (v) => { const a = ALIASES[norm(v)]; if (a && model.subjects().includes(a)) return a; const n = norm(v); return model.subjects().find(s => norm(s) === n) || model.subjects().find(s => norm(s).startsWith(n) && n.length > 2) || String(v || '').trim(); };
+const ALIASES = { maths: 'Mathématiques', math: 'Mathématiques', mathematique: 'Mathématiques', francais: 'Français', qlm: 'Questionner le monde', 'questionner le monde': 'Questionner le monde', lv: 'Langues vivantes', lve: 'Langues vivantes', anglais: 'Langues vivantes', 'arts visuels': 'Arts plastiques', arts: 'Arts plastiques', musique: 'Éducation musicale', chant: 'Éducation musicale', sport: 'EPS', 'histoire des arts': 'Arts plastiques', hda: 'Arts plastiques', 'education physique et sportive': 'EPS', 'education morale et civique': 'EMC', 'langue vivante': 'Langues vivantes', 'langues vivantes': 'Langues vivantes' };
+const exactSubject = (v) => { const n = norm(v); const a = ALIASES[n]; if (a && model.subjects().includes(a)) return a; return model.subjects().find(s => norm(s) === n) || model.subjects().find(s => norm(s).startsWith(n) && n.length > 2) || null; };
+/** « Mathématiques — Géométrie », « Français : production d'écrits », « EMC / Français » → discipline reconnue + précision (sous-domaine).
+ * Une discipline inconnue (« Vie de classe », « Organisation scolaire ») va dans « Autre » et garde son intitulé comme précision. */
+export function subjectSplit(v) {
+  const raw = String(v || '').trim(); if (!raw) return { subject: '', rest: '' };
+  const whole = exactSubject(raw); if (whole) return { subject: whole, rest: '' };
+  const parts = raw.split(/\s*(?:—|–|:|\/|,|\s-\s)\s*/).filter(Boolean);
+  const first = exactSubject(parts[0]);
+  if (first) return { subject: first, rest: parts.slice(1).join(' · ') || (norm(parts[0]) !== norm(first) ? parts[0] : '') };
+  for (const p of parts.slice(1)) { const m = exactSubject(p); if (m) return { subject: m, rest: raw }; }
+  return { subject: model.subjects().includes('Autre') ? 'Autre' : raw, rest: model.subjects().includes('Autre') ? raw : '' };
+}
+const subjectFrom = (v) => subjectSplit(v).subject;
 const levelFrom = (cls, v) => { const l = String(v || '').trim().toUpperCase(); return model.NIVEAUX.includes(l) ? l : (cls.levels?.length === 1 ? cls.levels[0] : ''); };
 const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const dayFrom = (v) => { const n = norm(v); const i = DAYS.findIndex(d => n && d.startsWith(n.slice(0, 3))); return i >= 0 ? i + 1 : (/^[1-6]$/.test(n) ? Number(n) : 0); };
@@ -91,16 +103,16 @@ export function analyse(kind, text, cls) {
       if (!date) msg.push('date illisible (JJ/MM/AAAA)');
       if (!start) msg.push('heure de début illisible');
       if (date && year && (date < year.start || date > year.end)) msg.push('hors de l’année scolaire');
-      return { line, ok: !msg.length, msg, data: { date, start, end: end || (start ? model.hhmm(model.minutes(start) + 45) : ''), subject: subjectFrom(get(r, 3)), title: get(r, 4), status: ['prévue', 'faite', 'partielle', 'annulée'].includes(norm(get(r, 5))) ? norm(get(r, 5)) : 'prévue', note: get(r, 6) } };
+      return { line, ok: !msg.length, msg, data: { date, start, end: end || (start ? model.hhmm(model.minutes(start) + 45) : ''), subject: subjectFrom(get(r, 3)), domain: subjectSplit(get(r, 3)).rest, title: get(r, 4), status: ['prévue', 'faite', 'partielle', 'annulée'].includes(norm(get(r, 5))) ? norm(get(r, 5)) : 'prévue', note: get(r, 6) } };
     }
-    const subject = subjectFrom(get(r, 0)); const level = levelFrom(cls, get(r, 1)); const per = periodFrom(year, get(r, 2));
+    const subject = subjectFrom(get(r, 0)); const subjRest = subjectSplit(get(r, 0)).rest; const level = levelFrom(cls, get(r, 1)); const per = periodFrom(year, get(r, 2));
     if (!subject) msg.push('discipline manquante');
     if (!per) msg.push('période illisible (P1 à P5)');
-    if (kind === 'programmation') { if (!get(r, 4)) msg.push('notion manquante'); return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, subdomain: get(r, 3), title: get(r, 4), comp: get(r, 5), resources: get(r, 6) } }; }
+    if (kind === 'programmation') { if (!get(r, 4)) msg.push('notion manquante'); return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, subdomain: get(r, 3) || subjRest, title: get(r, 4), comp: get(r, 5), resources: get(r, 6) } }; }
     if (kind === 'progression') { const w = Number(get(r, 3)); if (!w) msg.push('semaine manquante (1, 2, 3…)'); if (!get(r, 4) && !get(r, 5)) msg.push('séquence ou séance manquante');
-      return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, week: w, seq: get(r, 4), ses: get(r, 5), objective: get(r, 6), support: get(r, 7), subdomain: get(r, 8), notions: get(r, 9) } }; }
+      return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, week: w, seq: get(r, 4), ses: get(r, 5), objective: get(r, 6), support: get(r, 7), subdomain: get(r, 8) || subjRest, notions: get(r, 9) } }; }
     if (!get(r, 3)) msg.push('séquence manquante');
-    return { line, ok: !msg.length, msg, data: { subject, level, periodId: per?.id, seq: get(r, 3), num: Number(get(r, 4)) || null, ses: get(r, 5), objective: get(r, 6), duration: Number(get(r, 7)) || null, comp: get(r, 8), deroule: get(r, 9), materiel: get(r, 10) } };
+    return { line, ok: !msg.length, msg, data: { subject, subdomain: subjRest, level, periodId: per?.id, seq: get(r, 3), num: Number(get(r, 4)) || null, ses: get(r, 5), objective: get(r, 6), duration: Number(get(r, 7)) || null, comp: get(r, 8), deroule: get(r, 9), materiel: get(r, 10) } };
   });
   return { rows, errors: [] };
 }
@@ -140,7 +152,7 @@ function seqFinder(cls, items) {
     const found = P.ofClass('sequence', cls.id).find(s => norm(s.title) === norm(d.seq) && norm(s.subject) === norm(d.subject));
     if (found) { created.set(key, found.id); return found.id; }
     const id = store.uid();
-    items.push({ create: { type: 'sequence', data: { id, classId: cls.id, title: d.seq, number: null, subject: d.subject, subdomain: '', periodId: d.periodId || null, levels: d.level ? [d.level] : [], competencyIds: [], notionIds: [], fileIds: [], manualRefs: [] } } });
+    items.push({ create: { type: 'sequence', data: { id, classId: cls.id, title: d.seq, number: null, subject: d.subject, subdomain: d.subdomain || '', periodId: d.periodId || null, levels: d.level ? [d.level] : [], competencyIds: [], notionIds: [], fileIds: [], manualRefs: [] } } });
     created.set(key, id); return id;
   };
 }
@@ -171,11 +183,12 @@ function notionsFor(d, items) {
 /** Ne garde du patch que ce qui change vraiment (comparaison du contenu). */
 function diff(rec, patch) {
   const out = {};
-  for (const [k, v] of Object.entries(patch)) if (JSON.stringify(rec?.[k] ?? null) !== JSON.stringify(v ?? null)) out[k] = v;
+  const canon = (v) => JSON.stringify(v ?? null, (k, x) => (k === 'id' ? undefined : x)); // les identifiants internes (phases…) ne comptent pas
+  for (const [k, v] of Object.entries(patch)) if (canon(rec?.[k]) !== canon(v)) out[k] = v;
   return Object.keys(out).length ? out : null;
 }
 
-export async function importRows(kind, rows, cls) {
+export async function importRows(kind, rows, cls, opts = {}) {
   const ok = rows.filter(r => r.ok).map(r => r.data);
   const items = []; const report = { created: 0, updated: 0, unchanged: 0, linked: 0, skipped: 0 };
   if (kind === 'programmation') {
@@ -253,26 +266,31 @@ export async function importRows(kind, rows, cls) {
     for (const t of tts.filter(x => x.changed)) items.push(t.existing ? { id: t.id, patch: { periodIds: t.periodIds, versions: t.versions } } : { create: { type: 'timetable', data: { id: t.id, classId: cls.id, name: t.name, periodIds: t.periodIds, versions: t.versions } } });
   } else if (kind === 'cahier') {
     const sessions = store.all('session').filter(s => s.classId === cls.id);
-    const claimed = new Set();
+    const claimed = new Set(); const usedSlots = new Set(); const usedOccs = new Set(); const ranges = new Map();
     for (const d of ok) {
       const key = `${d.date}|${d.start}`;
       if (claimed.has(key)) { report.skipped++; continue; }
       claimed.add(key);
-      const ses = d.title ? sessions.find(s => norm(s.title) === norm(d.title) && (!d.subject || norm(s.subject) === norm(d.subject))) || sessions.find(s => norm(s.title) === norm(d.title)) : null;
-      const plan = PL.dayPlan(cls, d.date, { ignoreBlank: true });
+      const loose = (t) => norm(t).replace(/\bs\d+\b/g, '').replace(/\s+/g, ' ').trim(); // « MDI D11 S3 — … » = « MDI D11 — … »
+      const ses = d.title ? sessions.find(s => norm(s.title) === norm(d.title) && (!d.subject || norm(s.subject) === norm(d.subject))) || sessions.find(s => norm(s.title) === norm(d.title))
+        || sessions.find(s => loose(s.title) === loose(d.title) && (!d.subject || norm(s.subject) === norm(d.subject))) : null;
+      const plan = PL.dayPlan(cls, d.date, { ignoreBlank: true, withRemoved: true });
       const slot = plan.entries.find(e => e.kind === 'slot' && e.start === d.start);
-      const occ = plan.entries.find(e => e.kind === 'occ' && e.start === d.start);
+      const occ = plan.entries.find(e => e.kind === 'occ' && e.start === d.start && !e.occ.removed) || plan.entries.find(e => e.kind === 'occ' && e.start === d.start);
+      if (!ranges.has(d.date)) ranges.set(d.date, []); ranges.get(d.date).push([d.start, d.end]);
+      if (occ) usedOccs.add(occ.occ.id); else if (slot) usedSlots.add(`${d.date}|${slot.slot.id}`);
       const base = slot ? PL.occDataFromEntry(slot, cls) : { classId: cls.id, date: d.date, start: d.start, end: d.end, subject: d.subject, levels: [], mode: 'dirigé', title: ses ? '' : d.title };
-      const data = { ...base, sessionId: ses?.id || null, status: d.status, note: d.note, ...(ses ? {} : { title: d.title || base.title || '' }) };
+      const data = { ...base, end: d.end || base.end, subject: d.subject || base.subject, sessionId: ses?.id || null, status: d.status, note: d.note, ...(d.domain ? { domain: d.domain } : {}), title: ses ? '' : (d.title || base.title || '') };
       if (occ) {
         // Créneau déjà rempli : on compare et on remplace ce qui a changé, même si une autre fiche y était liée (pas de doublon).
         const o = occ.occ;
-        const want = { sessionId: data.sessionId, title: data.title || '', status: d.status, ...(d.note ? { note: d.note } : {}), ...(d.end && d.end !== o.end ? { end: d.end } : {}), ...(d.subject ? { subject: d.subject } : {}) };
+        const want = { sessionId: data.sessionId, title: data.title || '', status: d.status, ...(o.removed ? { removed: false } : {}), ...(d.note ? { note: d.note } : {}), ...(d.end && d.end !== o.end ? { end: d.end } : {}), ...(d.subject ? { subject: d.subject } : {}), ...(d.domain ? { domain: d.domain } : {}) };
         const ch = diff({ ...o, title: o.title || '' }, want);
         if (!ch) { report.unchanged++; continue; }
         if ('sessionId' in ch || 'status' in ch) {
           const done = ['faite', 'partielle'].includes(d.status);
-          ch.snapshot = done ? P.snapshotOf(ses ? store.get(ses.id) : null) : null; ch.doneAt = done ? (o.doneAt || new Date().toISOString()) : null;
+          if ('sessionId' in ch || !done) ch.snapshot = null; // la fiche liée s'affiche telle qu'elle est (comme un premier import)
+          ch.doneAt = done ? (o.doneAt || new Date().toISOString()) : null;
           if (o.sessionId && o.sessionId !== data.sessionId) report.replaced = (report.replaced || 0) + 1;
         }
         items.push({ id: o.id, patch: ch }); report.updated++;
@@ -282,6 +300,21 @@ export async function importRows(kind, rows, cls) {
       items.push({ create: { type: 'occurrence', data } });
       if (ses) report.linked++;
       report.created++;
+    }
+    // Journées du tableau = référence : sur ces jours, ce qui chevauche une ligne du tableau sans être à son horaire est retiré
+    // (créneau de l'EDT masqué pour ce jour ; activité ajoutée à la corbeille). Les autres jours ne sont pas touchés.
+    if (opts.replaceDays) {
+      report.removed = 0;
+      for (const [date, rs] of ranges) {
+        for (const e of PL.dayPlan(cls, date, { ignoreBlank: true, withRemoved: true }).entries) {
+          if (!['slot', 'occ'].includes(e.kind) || (e.kind === 'occ' && (usedOccs.has(e.occ.id) || e.occ.removed)) || (e.kind === 'slot' && usedSlots.has(`${date}|${e.slot.id}`))) continue;
+          if (!rs.some(([a, b]) => e.start < b && a < e.end)) continue;
+          if (e.kind === 'slot') items.push({ create: { type: 'occurrence', data: { ...PL.occDataFromEntry(e, cls), status: 'annulée', removed: true, note: 'Retiré par l’import du cahier journal (journée remplacée).' } } });
+          else if (e.occ.slotId) items.push({ id: e.occ.id, patch: { removed: true, status: 'annulée' } });
+          else items.push({ id: e.occ.id, patch: { deletedAt: new Date().toISOString() } });
+          report.removed++;
+        }
+      }
     }
   }
   if (items.length) await store.batch(items, `Import CSV : ${KINDS[kind].label}`);
