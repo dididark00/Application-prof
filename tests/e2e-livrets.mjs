@@ -1054,6 +1054,18 @@ await test('Devoirs : plusieurs disciplines dans un même devoir, une carte par 
   assert(after.some(x => !x.del && x.t === 'Tables de 3 et 4 (test multi)'), 'ligne modifiée');
 });
 
+await test('Menu « Plus » d’une activité du cahier journal : entièrement visible, même au bord droit', async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await go('#/cahier?d=2026-11-05'); await page.waitForTimeout(500);
+  const btn = page.getByTestId('entry-more').first(); await btn.scrollIntoViewIfNeeded();
+  // Simule un bouton tout à droite (cas du MacBook) : on pousse le menu au bord.
+  await btn.evaluate(el => { el.closest('details').style.marginLeft = 'auto'; el.closest('details').parentElement.style.justifyContent = 'flex-end'; });
+  await btn.click(); await page.waitForTimeout(200);
+  const r = await btn.evaluate(el => { const m = el.parentElement.querySelector('.more-menu'); const b = m.getBoundingClientRect(); return { left: b.left, right: b.right, vw: document.documentElement.clientWidth }; });
+  assert(r.right <= r.vw && r.left >= 0, `menu dans l’écran (${Math.round(r.left)}–${Math.round(r.right)} / ${r.vw})`);
+  await btn.click();
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (233) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 245 entrées.
+Légende : ✅ Réalisé (234) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 246 entrées.
 
 ## Étape 1 — Socle
 
@@ -273,3 +273,4 @@ Légende : ✅ Réalisé (233) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §5 Préparation | Proposer une programmation annuelle (français et mathématiques CE2) : tous les objectifs d’apprentissage du programme (BO n° 41 du 31 octobre 2024) répartis de P1 à P5 ou sur toute l’année, reliés à leurs codes officiels ; les placements datés par le programme sont marqués « repère officiel » avec la citation exacte, les autres sont une proposition modifiable ; aperçu avant création, ajout dans une programmation existante possible, import du référentiel officiel au passage pour relier les compétences | Autres disciplines et niveaux à venir, dans le même esprit. |
 | ✅ | §6 Cahier journal | Impression du cahier journal revue : la date et la première activité sur la même page (plus de page presque blanche), objectif imprimé en entier, discipline, sous-domaine et séquence sous le titre, compétences, critères, matériel et trace sur deux colonnes, déroulement sur toute la largeur avec Élèves, Enseignante, Différenciation à la ligne ; une activité longue continue sur la page suivante au lieu de sauter une page | Cause : les styles de l’écran du cahier journal (2 panneaux) s’appliquaient aussi à l’impression ; ils sont désormais séparés. |
 | ✅ | §6 Devoirs | Plusieurs disciplines dans un même devoir : une ligne par discipline (travail, détails, séance ou leçon liée), dates et destinataires communs, « Ajouter une discipline », modification de toutes les lignes ensemble, retrait d’une ligne (corbeille) ; la liste montre une carte par jour avec une ligne par discipline, « Tout marquer donné » et « Ajouter » pour ce jour | Chaque ligne reste un devoir à part entière (aperçu parent, impression, séance liée). |
+| ✅ | §2 Ergonomie | Menus « Plus » toujours entièrement visibles : ils s’ouvrent vers la gauche quand ils dépasseraient du bord droit de l’écran (cahier journal, fiches…), et s’adaptent à la largeur sur petit écran |  |

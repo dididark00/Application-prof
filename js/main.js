@@ -226,6 +226,14 @@ async function start() {
   Theme.apply();
   renderShell({ navigate, onQuickAdd: openQuickAdd });
   window.addEventListener('hashchange', render);
+  // Menus « Plus » : s'ouvrent vers la gauche quand ils dépasseraient du bord droit de l'écran.
+  document.addEventListener('toggle', (e) => {
+    const d = e.target; if (!d.matches?.('details.more') || !d.open) return;
+    const m = d.querySelector(':scope > .more-menu'); if (!m || getComputedStyle(m).position !== 'absolute') return;
+    m.classList.remove('more-flip', 'more-fit');
+    const r = m.getBoundingClientRect(); const vw = document.documentElement.clientWidth;
+    if (r.right > vw - 8) { m.classList.add('more-flip'); const r2 = m.getBoundingClientRect(); if (r2.left < 8) m.classList.add('more-fit'); }
+  }, true);
   store.subscribe((evt) => {
     if ((evt.kind === 'change' || evt.kind === 'settings') && evt.quiet) { refreshChrome(); return; }
     if (evt.kind === 'settings' || evt.kind === 'init') Theme.apply();
