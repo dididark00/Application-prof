@@ -1007,6 +1007,28 @@ await test('Proposer une programmation CE2 (français, maths) : tous les objecti
   assert(await page.locator('.notion-off').count() > 0, 'repères officiels marqués dans la grille');
 });
 
+await test('Cahier journal imprimé : date sur la même page, objectif complet, discipline et séquence, déroulement pleine largeur', async () => {
+  const r = await S(`const PL = await import('./js/planning.js'); const D = await import('./js/printdocs.js'); const P = await import('./js/pedago.js'); const cls = model.currentClass();
+    let date = null, e = null;
+    for (let k = 0; k < 90 && !e; k++) { const d = model.addDays('2026-09-01', k); e = PL.dayPlan(cls, d).entries.find(x => x.session && x.session.sequenceId); if (e) date = d; }
+    if (!e) return null;
+    const long = 'Trouver le nombre caché à partir d’indices successifs et justifier sa réponse avec le tableau de numération, sans rien couper.';
+    await store.update(e.session.id, { objective: long, phases: [{ id: 'p1', kind: 'recherche', title: 'Mise en route', duration: 2, consigne: 'Installation. ; Élèves : s’installent. ; Enseignante : distribue.' }] });
+    const host = document.createElement('div'); document.body.append(host);
+    host.append(D.printDay(cls, date)); document.body.classList.add('print-test');
+    const card = [...host.querySelectorAll('.cjp-card')].find(c => c.textContent.includes(long));
+    const obj = card.querySelector('.cjp-obj'); const cs = getComputedStyle(card); const os = getComputedStyle(obj);
+    const out = { flex: cs.display, breakInside: cs.breakInside, clamp: os.webkitLineClamp, overflow: os.overflow, text: card.textContent, cell: card.querySelector('.cjp-phases td.pre').textContent, oldClass: host.querySelectorAll('[class^="cj-"]').length, seq: P.sequenceTitle(store.get(e.session.sequenceId)), subject: e.subject };
+    host.remove(); return out;`);
+  assert(r, 'un jour avec une séance de séquence');
+  eq(r.flex, 'block', 'fiche en bloc (pas en colonnes)'); assert(r.breakInside !== 'avoid', 'la fiche peut continuer sur la page suivante');
+  assert(r.clamp === 'none' || r.clamp === '' , `objectif non tronqué (${r.clamp})`); assert(r.overflow !== 'hidden', 'objectif visible en entier');
+  assert(r.text.includes('sans rien couper'), 'objectif complet');
+  assert(r.text.includes(`Séquence : ${r.seq}`) && r.text.includes(r.subject), 'discipline et séquence');
+  assert(r.cell.includes('\nÉlèves : s’installent.') && r.cell.includes('\nEnseignante : distribue.'), 'rôles sur des lignes séparées');
+  eq(r.oldClass, 0, 'aucune classe partagée avec l’écran');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

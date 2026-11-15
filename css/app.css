@@ -1169,48 +1169,16 @@ tr.corrected td { text-decoration: line-through; color: var(--ink-2); }
 .print-root.theme-couleur .per-row.p2 td { background: #fbeadb !important; } .print-root.theme-couleur .per-row.p3 td { background: #f8e1e1 !important; }
 .print-root.theme-couleur .per-row.p4 td { background: #e6edf7 !important; }
 /* Cahier-journal : une carte par activité, liseré de la couleur de la discipline */
-.cj-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
-.cj-head h1 { flex: 1; text-align: center; font-size: 1.4em; margin: 0; }
-.cj-tag { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 6px 12px; border-radius: 4px; background: #e9eef3; color: var(--pn, #1f3b5c); }
-.cj-class { font-weight: 700; color: var(--pn, #1f3b5c); }
-.cj-card { border: 1px solid #ccd; border-left: 4px solid #777; border-radius: 5px; padding: 6px 9px; margin: 0 0 7px; break-inside: avoid; page-break-inside: avoid; }
-.print-root.theme-couleur .cj-card { background: color-mix(in srgb, var(--c) 6%, white); }
-.cj-title { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-.cj-title strong { font-size: 1.05em; }
-.cj-dur { font-weight: 700; color: var(--c, #333); }
-.cj-time { color: #333; }
-.cj-status { margin-left: auto; font-size: .85em; border: 1px solid #999; border-radius: 10px; padding: 0 6px; }
-.cj-sub { font-size: .85em; color: #666; margin: 1px 0 4px; }
-.cj-obj { background: #f1f3f6; border-radius: 4px; padding: 3px 8px; margin: 3px 0 5px; }
-.print-root.theme-couleur .cj-obj { background: color-mix(in srgb, var(--c) 12%, white); }
-.cj-obj-label { display: block; font-size: .7em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--c, #a33); }
-.cj-block { margin: 2px 0; }
-.cj-comp { font-size: .82em; color: #555; margin-top: 3px; }
-.cj-break { text-align: center; font-size: .75em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666; background: #eceef1; border-radius: 3px; padding: 2px; margin: 0 0 7px; }
-.cj-break span { color: #555; }
 .week-item { border-left: 3px solid transparent; padding-left: 4px; }
-.print-root.bw .cj-card { border-left-color: #000 !important; }
 .print-lines p { border-bottom: 1px dotted #888; padding: 6px 0 2px; margin: 0; }
 .print-mini { font-weight: 700; margin: 6px 0 2px; font-size: .9em; }
 .side-row { display: grid; gap: 10px; align-items: start; }
 .side-head { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); margin: 0 0 4px 2px; }
 @media (max-width: 700px) { .side-row { grid-template-columns: 1fr !important; } }
-.cj-par { display: grid; gap: 6px; margin-bottom: 7px; break-inside: avoid; }
-.cj-par .cj-card { margin-bottom: 0; height: calc(100% - 18px); }
-.cj-group { font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--pn, #1f3b5c); margin: 0 0 2px 2px; }
 .more-menu .btn { white-space: normal; text-align: left; }
 .link-seq { border-top: 1px solid var(--line); padding: 8px 2px; }
 .link-seq-head { margin-bottom: 4px; }
 .link-comps details > summary { cursor: pointer; }
-.cj-sec { margin: 6px 0 2px; }
-.cj-label { font-size: .68em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--c, #1f4e79); margin-bottom: 1px; }
-.cj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
-.cj-list { margin: 0; padding-left: 1.1em; } .cj-list li { margin: 0 0 1px; }
-.cj-phases { width: 100%; border-collapse: collapse; font-size: .95em; }
-.cj-phases td { border-top: 1px solid #dde2e8; padding: 3px 5px; vertical-align: top; }
-.cj-ph-dur { width: 11%; white-space: nowrap; color: var(--c, #333); font-weight: 700; }
-.cj-ph-name { width: 22%; } .cj-ph-mod { font-size: .85em; color: #666; }
-.cj-line { margin: 1px 0; }
 .diapo-range { background: var(--surface-2); border-radius: 6px; }
 .animate-board.zoomed { display: block; overflow: auto; }
 .animate-board.zoomed svg { display: block; margin: 0 auto; }
@@ -1563,3 +1531,38 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .prop-preview { max-height: 52vh; overflow: auto; }
 .prop-preview th { white-space: nowrap; vertical-align: top; }
 .prop-preview li { margin: 2px 0; }
+
+/* ───── Cahier journal imprimé (préfixe cjp- : indépendant de l'écran du cahier journal) */
+.cjp-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; break-after: avoid; }
+.cjp-head h1 { flex: 1; text-align: center; font-size: 1.35em; margin: 0; }
+.cjp-tag { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 4px 10px; border-radius: 4px; background: #e9eef3; color: var(--pn, #1f3b5c); font-size: .85em; }
+.cjp-class { font-weight: 700; color: var(--pn, #1f3b5c); }
+.cjp-card { display: block; border: 1px solid #ccd; border-left: 4px solid #777; border-radius: 5px; padding: 5px 9px; margin: 0 0 6px; break-inside: auto; }
+.cjp-top { break-inside: avoid; }
+.print-root.theme-couleur .cjp-card { background: color-mix(in srgb, var(--c) 5%, white); }
+.print-root.bw .cjp-card { border-left-color: #000 !important; }
+.cjp-title { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.cjp-title strong { font-size: 1.05em; }
+.cjp-time { font-weight: 700; font-variant-numeric: tabular-nums; color: #333; }
+.cjp-dur { font-weight: 700; color: var(--c, #333); font-size: .9em; }
+.cjp-status { margin-left: auto; font-size: .8em; border: 1px solid #999; border-radius: 10px; padding: 0 6px; }
+.cjp-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: .82em; color: #555; margin: 1px 0 3px; }
+.cjp-subject { font-weight: 700; color: var(--c, #333); }
+.cjp-obj { background: #f1f3f6; border-radius: 4px; padding: 2px 8px; margin: 2px 0 4px; }
+.print-root.theme-couleur .cjp-obj { background: color-mix(in srgb, var(--c) 12%, white); }
+.cjp-obj-label, .cjp-label { display: block; font-size: .66em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--c, #1f4e79); margin-bottom: 1px; }
+.cjp-grid { display: grid; gap: 2px 16px; }
+.cjp-grid-2 { grid-template-columns: 1fr 1fr; }
+.cjp-sec { margin: 4px 0 1px; }
+.cjp-list { margin: 0; padding-left: 1.1em; } .cjp-list li { margin: 0; }
+.cjp-phases { width: 100%; border-collapse: collapse; font-size: .93em; }
+.cjp-phases tr { break-inside: avoid; }
+.cjp-phases td { border-top: 1px solid #dde2e8; padding: 2px 5px; vertical-align: top; }
+.cjp-ph-dur { width: 4.5em; white-space: nowrap; color: var(--c, #333); font-weight: 700; }
+.cjp-ph-name { width: 9.5em; } .cjp-ph-mod { font-size: .85em; color: #666; }
+.cjp-line { margin: 1px 0; }
+.cjp-break { text-align: center; font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666; background: #eceef1; border-radius: 3px; padding: 1px; margin: 0 0 6px; }
+.cjp-break span { color: #555; }
+.cjp-par { display: grid; gap: 6px; margin-bottom: 6px; }
+.cjp-par .cjp-card { margin-bottom: 0; }
+.cjp-group { font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--pn, #1f3b5c); margin: 0 0 2px 2px; }

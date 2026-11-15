@@ -146,7 +146,7 @@ export function printTimetable(tt, version, cls) {
 
 /** Séquence et compétences officielles d'une activité (fiche, séquence et activité du jour réunies). */
 function compsOf(e, s) {
-  const seq = store.get(e.occ?.sequenceId) || store.get(s?.sequenceId);
+  const seq = store.get(e.occ?.sequenceId) || store.get(s?.sequenceId) || store.get(e.session?.sequenceId);
   const ids = [...new Set([...(s?.competencyIds || []), ...(seq?.competencyIds || []), ...(e.occ?.competencyIds || [])])];
   const idx = new Map(); for (const r of store.all('referential')) for (const i of r.items || []) idx.set(i.id, i);
   return { seq, comps: ids.map(id => idx.get(id)).filter(Boolean).map(i => `${i.code ? i.code + ' — ' : ''}${i.label}`), text: s?.competencesText || '' };
@@ -155,10 +155,10 @@ function compsOf(e, s) {
 function derouleLines(txt) {
   return String(txt).split('\n').filter(l => l.trim()).map(l => {
     const m = l.match(/^\s*((?:\d+\s*(?:min|mn|')\.?\s*)?[^:]{1,40}?)\s*:\s*(.*)$/);
-    return h('div', { class: 'cj-line' }, m ? [h('strong', {}, m[1]), ` : ${m[2]}`] : l);
+    return h('div', { class: 'cjp-line' }, m ? [h('strong', {}, m[1]), ` : ${m[2]}`] : l);
   });
 }
-const cjSec = (label, content) => (content == null || content === '' || (Array.isArray(content) && !content.length) ? null : h('div', { class: 'cj-sec' }, h('div', { class: 'cj-label' }, label), content));
+const cjSec = (label, content) => (content == null || content === '' || (Array.isArray(content) && !content.length) ? null : h('div', { class: 'cjp-sec' }, h('div', { class: 'cjp-label' }, label), content));
 function entryCard(e, cls, multi) {
   const s = e.status === 'faite' || e.status === 'partielle' ? (e.occ?.snapshot || e.session) : e.session;
   const o = e.occ || {};
@@ -168,20 +168,25 @@ function entryCard(e, cls, multi) {
   const objective = o.objective || s?.objective;
   const { seq, comps, text: compsText } = compsOf(e, s);
   const phases = (s?.phases || []).filter(ph => ph.title || ph.duration || ph.consigne || ph.but || ph.eleves || ph.exercices || ph.question);
+  const roleLines = (t) => String(t || '').replace(/\s*;\s*(?=(?:Élèves|Enseignante?|Différenciation[^:]{0,25}|Matériel|Consigne|Trace|Aide|Critères?)\s*:)/g, '\n').replace(/\s*;\s*$/, '');
   const deroule = o.deroule ? h('div', {}, derouleLines(o.deroule))
-    : phases.length ? h('table', { class: 'cj-phases' }, h('tbody', {}, phases.map(ph => h('tr', {},
-      h('td', { class: 'cj-ph-dur' }, ph.duration ? `${ph.duration} min` : ''),
-      h('td', { class: 'cj-ph-name' }, h('strong', {}, ph.title || P.PHASE_KINDS[ph.kind]?.label || 'Phase'), ph.modalite ? h('div', { class: 'cj-ph-mod' }, ph.modalite) : null),
-      h('td', { class: 'pre' }, [ph.but ? `But : ${ph.but}` : '', ph.consigne, ph.exercices ? `Exercices : ${ph.exercices}` : '', ph.question, ph.eleves ? `Élèves : ${ph.eleves}` : '', ph.differenciation ? `Différenciation : ${ph.differenciation}` : ''].filter(Boolean).join('\n')))))) : null;
+    : phases.length ? h('table', { class: 'cjp-phases' }, h('tbody', {}, phases.map(ph => h('tr', {},
+      h('td', { class: 'cjp-ph-dur' }, ph.duration ? `${ph.duration} min` : ''),
+      h('td', { class: 'cjp-ph-name' }, h('strong', {}, ph.title || P.PHASE_KINDS[ph.kind]?.label || 'Phase'), ph.modalite ? h('div', { class: 'cjp-ph-mod' }, ph.modalite) : null),
+      h('td', { class: 'pre' }, [ph.but ? `But : ${ph.but}` : '', roleLines(ph.consigne), ph.exercices ? `Exercices : ${ph.exercices}` : '', ph.question, ph.eleves ? `Élèves : ${ph.eleves}` : '', ph.differenciation ? `Différenciation : ${ph.differenciation}` : ''].filter(Boolean).join('\n')))))) : null;
   const materiel = [o.materiel || s?.avant, s?.projeter ? `À projeter : ${s.projeter}` : '', s?.imprimer ? `À imprimer : ${s.imprimer}` : '', s?.distribuer ? `À distribuer : ${s.distribuer}` : ''].filter(Boolean).join('\n');
-  const left = [cjSec('Compétences', comps.length || compsText ? h('ul', { class: 'cj-list' }, comps.map(c => h('li', {}, c)), compsText ? h('li', {}, compsText) : null) : null), cjSec('Critères de réussite', s?.criteres ? h('div', { class: 'pre' }, s.criteres) : null)].filter(Boolean);
-  const right = [cjSec('Matériel', materiel ? h('div', { class: 'pre' }, materiel) : null), cjSec('Trace écrite', s?.trace ? h('div', { class: 'pre' }, s.trace) : null)].filter(Boolean);
-  return h('section', { class: 'cj-card', style: { borderLeftColor: col, '--c': col } },
-    h('div', { class: 'cj-title' }, h('strong', {}, e.title || e.subject || ''), dur > 0 ? h('span', { class: 'cj-dur' }, model.durationLabel(dur)) : null,
-      h('span', { class: 'cj-time' }, e.allDay ? 'journée' : `${e.start} - ${e.end}`), e.status && e.status !== 'prévue' ? h('span', { class: 'cj-status' }, e.status) : null),
-    h('div', { class: 'cj-sub' }, [e.subject, o.domain || s?.subdomain, seq ? `Séquence : ${P.sequenceTitle(seq)}` : ''].filter(Boolean).join(' · '), tags.length ? ` · ${tags.join(' · ')}` : ''),
-    objective ? h('div', { class: 'cj-obj' }, h('span', { class: 'cj-obj-label' }, 'Objectif'), h('div', { class: 'pre' }, objective)) : null,
-    left.length || right.length ? h('div', { class: 'cj-grid' }, h('div', {}, left), h('div', {}, right)) : null,
+  const infos = [cjSec('Compétences', comps.length || compsText ? h('ul', { class: 'cjp-list' }, comps.map(c => h('li', {}, c)), compsText ? h('li', {}, compsText) : null) : null),
+    cjSec('Critères de réussite', s?.criteres ? h('div', { class: 'pre' }, s.criteres) : null),
+    cjSec('Matériel', materiel ? h('div', { class: 'pre' }, materiel) : null), cjSec('Trace écrite', s?.trace ? h('div', { class: 'pre' }, s.trace) : null)].filter(Boolean);
+  const subdomain = o.domain || s?.subdomain;
+  return h('section', { class: 'cjp-card', style: { borderLeftColor: col, '--c': col } },
+    h('div', { class: 'cjp-top' },
+      h('div', { class: 'cjp-title' }, h('span', { class: 'cjp-time' }, e.allDay ? 'Journée' : `${e.start} – ${e.end}`), dur > 0 ? h('span', { class: 'cjp-dur' }, model.durationLabel(dur)) : null,
+        h('strong', {}, e.title || e.subject || ''), e.status && e.status !== 'prévue' ? h('span', { class: 'cjp-status' }, e.status) : null),
+      h('div', { class: 'cjp-meta' }, e.subject ? h('span', { class: 'cjp-subject' }, e.subject) : null, subdomain ? h('span', {}, subdomain) : null,
+        seq ? h('span', {}, h('b', {}, 'Séquence : '), P.sequenceTitle(seq)) : null, tags.length ? h('span', {}, tags.join(' · ')) : null),
+      objective ? h('div', { class: 'cjp-obj' }, h('span', { class: 'cjp-obj-label' }, 'Objectif'), h('div', { class: 'pre' }, objective)) : null,
+      infos.length ? h('div', { class: `cjp-grid cjp-grid-${Math.min(infos.length, 2)}` }, infos) : null),
     cjSec('Déroulement', deroule),
     cjSec('Notes', o.notes ? h('div', { class: 'pre' }, o.notes) : null), cjSec('Bilan', o.note ? h('div', { class: 'pre' }, o.note) : null));
 }
@@ -190,7 +195,7 @@ function breakBar(prev, next) {
   const a = model.minutes(prev.end), b = model.minutes(next.start);
   if (!(b - a >= 10) || prev.allDay || next.allDay) return null;
   const label = a <= 12 * 60 + 30 && b >= 12 * 60 + 30 || b - a >= 60 ? 'Pause méridienne' : 'Récréation';
-  return h('div', { class: 'cj-break' }, h('span', {}, label), ` ${prev.end} - ${next.start}`);
+  return h('div', { class: 'cjp-break' }, h('span', {}, label), ` ${prev.end} - ${next.start}`);
 }
 
 export function printDay(cls, date, { hide = new Set() } = {}) {
@@ -202,11 +207,11 @@ export function printDay(cls, date, { hide = new Set() } = {}) {
   for (const e of entries) { const c = clusters.at(-1); if (c && e.start < c.end && PL.otherGroups(cls, [...c.items, e]).length) { c.items.push(e); if (e.end > c.end) c.end = e.end; } else clusters.push({ start: e.start, end: e.end, allDay: e.allDay, items: [e] }); }
   const items = []; clusters.forEach((c, i) => {
     if (i) { const br = breakBar(clusters[i - 1], c); if (br) items.push(br); }
-    items.push(c.items.length === 1 ? entryCard(c.items[0], cls, multi) : h('div', { class: 'cj-par', style: { gridTemplateColumns: `repeat(${c.items.length}, 1fr)` } },
-      c.items.map(e => h('div', {}, h('div', { class: 'cj-group' }, PL.groupOf(e, cls) || cls.name), entryCard(e, cls, multi)))));
+    items.push(c.items.length === 1 ? entryCard(c.items[0], cls, multi) : h('div', { class: 'cjp-par', style: { gridTemplateColumns: `repeat(${c.items.length}, 1fr)` } },
+      c.items.map(e => h('div', {}, h('div', { class: 'cjp-group' }, PL.groupOf(e, cls) || cls.name), entryCard(e, cls, multi)))));
   });
-  return h('div', { class: 'print-doc cj' },
-    h('header', { class: 'cj-head' }, h('span', { class: 'cj-tag' }, 'Cahier-journal'), h('h1', {}, model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())), h('span', { class: 'cj-class' }, cls.name)),
+  return h('div', { class: 'print-doc cjp' },
+    h('header', { class: 'cjp-head' }, h('span', { class: 'cjp-tag' }, 'Cahier-journal'), h('h1', {}, model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())), h('span', { class: 'cjp-class' }, cls.name)),
     plan.school.ok ? null : h('p', { class: 'print-warn' }, plan.school.reason),
     plan.warnings.length ? h('p', { class: 'print-warn' }, plan.warnings.map(w => w.message).join(' ')) : null,
     entries.length ? items : h('p', { class: 'muted' }, 'Aucune activité prévue.'),
