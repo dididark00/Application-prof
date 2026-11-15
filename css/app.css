@@ -1566,3 +1566,13 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .cjp-par { display: grid; gap: 6px; margin-bottom: 6px; }
 .cjp-par .cjp-card { margin-bottom: 0; }
 .cjp-group { font-size: .72em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--pn, #1f3b5c); margin: 0 0 2px 2px; }
+.hw-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hw-line { border-left: 4px solid var(--c, var(--accent)); padding: 4px 0 4px 10px; }
+.hw-line-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.hw-subject { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+.hw-actions { margin-left: auto; }
+.hw-line p { margin: 2px 0; }
+.hw-rows { display: grid; gap: 8px; margin-bottom: 6px; }
+.hw-row { border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.hw-row-main { display: grid; grid-template-columns: minmax(130px, 200px) 1fr auto; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .hw-row-main { grid-template-columns: 1fr auto; } .hw-row-main input { grid-column: 1 / -1; grid-row: 2; } }

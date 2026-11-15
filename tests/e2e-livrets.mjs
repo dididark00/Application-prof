@@ -1029,6 +1029,31 @@ await test('Cahier journal imprimé : date sur la même page, objectif complet, 
   eq(r.oldClass, 0, 'aucune classe partagée avec l’écran');
 });
 
+await test('Devoirs : plusieurs disciplines dans un même devoir, une carte par jour, modification et retrait d’une ligne', async () => {
+  await go('#/devoirs'); await page.waitForTimeout(300);
+  await page.getByTestId('new-homework').click(); await page.waitForTimeout(200);
+  await page.locator('.modal [name=dueDate]').fill('2030-03-12');
+  await page.getByTestId('hw-subject').nth(0).selectOption('Français'); await page.getByTestId('hw-title').nth(0).fill('Relire le texte (test multi)');
+  await page.getByTestId('hw-add-row').click(); await page.getByTestId('hw-subject').nth(1).selectOption('Mathématiques'); await page.getByTestId('hw-title').nth(1).fill('Tables de 3 (test multi)');
+  await page.getByTestId('hw-add-row').click(); await page.getByTestId('hw-subject').nth(2).selectOption('Anglais').catch(() => page.getByTestId('hw-subject').nth(2).selectOption({ index: 3 }));
+  await page.getByTestId('hw-save').click(); await page.waitForTimeout(200);
+  assert((await page.locator('.modal .form-errors').textContent()).includes('pas de travail'), 'ligne incomplète signalée');
+  await page.getByTestId('hw-title').nth(2).fill('Chanson (test multi)');
+  await page.getByTestId('hw-save').click(); await page.waitForTimeout(500);
+  const hw = await S(`return store.all('homework').filter(x => !x.deletedAt && x.dueDate === '2030-03-12').map(x => ({ id: x.id, g: x.groupId, s: x.subject, t: x.title }));`);
+  eq(hw.length, 3, 'trois devoirs créés'); assert(hw[0].g && hw.every(x => x.g === hw[0].g), 'même groupe');
+  const day = page.locator('[data-testid=homework-day]', { hasText: 'Tables de 3 (test multi)' });
+  eq(await day.getByTestId('homework-line').count(), 3, 'une carte, trois lignes');
+  await day.getByTestId('hw-edit').first().click(); await page.waitForTimeout(200);
+  eq(await page.getByTestId('hw-row').count(), 3, 'les trois disciplines s’éditent ensemble');
+  await page.getByTestId('hw-row').nth(2).getByRole('button', { name: 'Retirer cette discipline' }).click();
+  await page.getByTestId('hw-title').nth(1).fill('Tables de 3 et 4 (test multi)');
+  await page.getByTestId('hw-save').click(); await page.waitForTimeout(500);
+  const after = await S(`return store.all('homework').filter(x => x.dueDate === '2030-03-12').map(x => ({ t: x.title, del: !!x.deletedAt }));`);
+  eq(after.filter(x => !x.del).length, 2, 'ligne retirée (à la corbeille)');
+  assert(after.some(x => !x.del && x.t === 'Tables de 3 et 4 (test multi)'), 'ligne modifiée');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));
