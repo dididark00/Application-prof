@@ -126,6 +126,9 @@ export function activityDialog(cls, e, date) {
   q.addEventListener('input', drawComps); drawComps();
 
   const sessSel = !e ? h('select', { 'data-testid': 'act-session' }, h('option', { value: '' }, '— aucune (activité décrite ici)'), P.ofClass('session', cls.id).map(x => h('option', { value: x.id }, `${P.sessionTitle(x)}${x.subject ? ' (' + x.subject + ')' : ''}`))) : null;
+  const linkSel = e && e.kind !== 'event' ? h('select', { 'data-testid': 'act-link-session' }, h('option', { value: '' }, '— aucune (activité décrite ici)'),
+    P.ofClass('session', cls.id).sort((a, b) => (a.subject || '').localeCompare(b.subject || '', 'fr') || P.sessionTitle(a).localeCompare(P.sessionTitle(b), 'fr', { numeric: true }))
+      .map(x => h('option', { value: x.id, selected: x.id === s?.id }, `${x.subject ? x.subject + ' · ' : ''}${P.sessionTitle(x)}`))) : null;
   const multi = (cls.levels || []).length > 1;
   const body = h('div', { class: 'form act-form' }, dl, dlLieu, dlGroup,
     sessSel ? field('Fiche de séance (facultatif)', sessSel) : null,
@@ -138,7 +141,8 @@ export function activityDialog(cls, e, date) {
     field('Intitulé', title),
     field('Objectif', objective),
     h('div', { class: 'grid-2' }, field('Séquence', seqSel), field('Encadrement', mode)),
-    s ? h('p', { class: 'small' }, 'Fiche de séance liée : ', h('a', { href: `#/seance/${s.id}` }, P.sessionTitle(s)), h('span', { class: 'muted' }, ' — les champs vides reprennent la fiche (texte grisé).')) : null,
+    linkSel ? h('div', { class: 'field' }, h('label', {}, 'Fiche de séance liée'), h('div', { class: 'row' }, linkSel, s ? h('a', { class: 'btn btn-small', href: `#/seance/${s.id}` }, 'Ouvrir la fiche') : null),
+      h('p', { class: 'muted small' }, s ? 'Les champs vides reprennent la fiche (texte grisé). « Aucune » retire la fiche de ce moment, sans la supprimer.' : 'Facultatif : reliez une fiche de séance à ce moment.')) : null,
     field('Déroulement de la séance', deroule),
     h('div', { class: 'grid-2' }, field('Matériel', materiel), field('Lieu', lieu)),
     h('div', { class: 'field' }, h('label', {}, 'Pièces jointes'), fileList, h('div', { class: 'row' }, addBtn, existing)),
@@ -153,7 +157,10 @@ export function activityDialog(cls, e, date) {
         org: body.querySelector('input[name=act-org]:checked')?.value || 'classe', domain: domain.value.trim(), decloisonnement: declo.checked, horsHoraires: hors.checked,
         title: title.value.trim(), objective: objective.value.trim(), sequenceId: seqSel.value || null, deroule: deroule.value.trim(), materiel: materiel.value.trim(),
         lieu: lieu.value.trim(), fileIds: files, notes: notes.value.trim(), competencyIds: comps, group: group.value.trim() === cls.name ? '' : group.value.trim() };
-      if (e) await PL.patchEntry(e, cls, data, `Activité du ${model.frShort(e.date)} modifiée`);
+      if (e) {
+        if (linkSel && (linkSel.value || null) !== (s?.id || null)) data.sessionId = linkSel.value || null;
+        await PL.patchEntry(e, cls, data, 'sessionId' in data ? (data.sessionId ? `Fiche changée le ${model.frShort(e.date)}` : `Fiche retirée du ${model.frShort(e.date)}`) : `Activité du ${model.frShort(e.date)} modifiée`);
+      }
       else { const sid = sessSel?.value || null; if (sid && !data.subject) data.subject = store.get(sid)?.subject || ''; await store.create('occurrence', { classId: cls.id, date, status: 'prévue', sessionId: sid, ...data }, `Activité ajoutée le ${model.frShort(date)}`); }
     } }] });
 }

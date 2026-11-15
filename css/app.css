@@ -1577,6 +1577,5 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .hw-row-main { display: grid; grid-template-columns: minmax(130px, 200px) 1fr auto; gap: 8px; align-items: center; }
 @media (max-width: 600px) { .hw-row-main { grid-template-columns: 1fr auto; } .hw-row-main input { grid-column: 1 / -1; grid-row: 2; } }
 
-.more-menu.more-flip { left: auto; right: 0; }
-.more-menu.more-fit { position: fixed; left: 8px; right: 8px; top: auto; }
+.more-menu.more-floating { position: fixed; z-index: 60; right: auto; overflow-y: auto; overscroll-behavior: contain; }
 .more-menu { max-width: min(340px, calc(100vw - 16px)); }

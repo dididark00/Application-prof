@@ -397,7 +397,7 @@ function entryCard(cls, e, inConflict) {
 
   const diags = s ? diagramsOfSession(s.id) : [];
   const diagLinks = diags.length ? h('p', { class: 'small', 'data-testid': 'entry-diagrams' }, 'Schémas EPS : ', diags.map(x => h('a', { href: `#/eps/${x.id}` }, x.title)).reduce((a, x) => [...a, a.length ? ', ' : '', x], [])) : null;
-  return h('article', { class: cardCls, style: { borderLeftColor: model.subjectColor(e.subject) }, 'data-testid': 'entry' }, header, body, diagLinks, bilan, actions);
+  return h('article', { class: cardCls, style: { borderLeftColor: model.subjectColor(e.subject) }, 'data-testid': 'entry', 'data-key': e.key }, header, body, diagLinks, bilan, actions);
 }
 
 async function chooseSession(cls, e) {

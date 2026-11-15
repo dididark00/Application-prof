@@ -226,14 +226,26 @@ async function start() {
   Theme.apply();
   renderShell({ navigate, onQuickAdd: openQuickAdd });
   window.addEventListener('hashchange', render);
-  // Menus « Plus » : s'ouvrent vers la gauche quand ils dépasseraient du bord droit de l'écran.
-  document.addEventListener('toggle', (e) => {
-    const d = e.target; if (!d.matches?.('details.more') || !d.open) return;
-    const m = d.querySelector(':scope > .more-menu'); if (!m || getComputedStyle(m).position !== 'absolute') return;
-    m.classList.remove('more-flip', 'more-fit');
-    const r = m.getBoundingClientRect(); const vw = document.documentElement.clientWidth;
-    if (r.right > vw - 8) { m.classList.add('more-flip'); const r2 = m.getBoundingClientRect(); if (r2.left < 8) m.classList.add('more-fit'); }
-  }, true);
+  // Menus « Plus » : posés au-dessus de tout (jamais coupés par un panneau qui défile ni par le bord de l'écran),
+  // vers le bas ou vers le haut selon la place, alignés à droite si besoin ; fermés au défilement.
+  const placeMenu = (d) => {
+    const m = d.querySelector(':scope > .more-menu'); if (!m) return;
+    m.removeAttribute('style'); m.classList.remove('more-floating');
+    if (getComputedStyle(m).position !== 'absolute') return; // petit écran : menu dans le flux
+    const b = d.querySelector(':scope > summary').getBoundingClientRect();
+    const vw = document.documentElement.clientWidth; const vh = window.innerHeight; const gap = 6;
+    m.classList.add('more-floating');
+    const w = Math.min(m.offsetWidth, vw - 16);
+    let left = b.left; if (left + w > vw - 8) left = Math.max(8, b.right - w);
+    const below = vh - b.bottom - gap - 8; const above = b.top - gap - 8;
+    const hgt = m.scrollHeight; const down = hgt <= below || below >= above;
+    Object.assign(m.style, { left: `${left}px`, width: `${w}px`, maxHeight: `${Math.max(120, down ? below : above)}px`,
+      top: down ? `${b.bottom + gap}px` : 'auto', bottom: down ? 'auto' : `${vh - b.top + gap}px` });
+  };
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d.matches?.('details.more') && d.open) placeMenu(d); }, true);
+  const closeMenus = (ev) => { for (const d of document.querySelectorAll('details.more[open]')) if (!(ev?.target instanceof Node && d.querySelector('.more-menu')?.contains(ev.target))) { const m = d.querySelector(':scope > .more-menu'); if (m?.classList.contains('more-floating')) d.open = false; } };
+  window.addEventListener('scroll', closeMenus, true);
+  window.addEventListener('resize', closeMenus);
   store.subscribe((evt) => {
     if ((evt.kind === 'change' || evt.kind === 'settings') && evt.quiet) { refreshChrome(); return; }
     if (evt.kind === 'settings' || evt.kind === 'init') Theme.apply();

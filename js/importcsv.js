@@ -144,14 +144,14 @@ function seqFinder(cls, items) {
     created.set(key, id); return id;
   };
 }
-function sesFinder(cls, items) {
+function sesFinder(cls, items, onFound = null) {
   const created = new Map();
   return (seqId, d) => {
     if (!d.ses) return null;
     const key = `${seqId}|${norm(d.ses)}`;
     if (created.has(key)) return created.get(key);
-    const found = store.all('session').find(s => s.classId === cls.id && (s.sequenceId === seqId || !seqId) && norm(s.title) === norm(d.ses));
-    if (found) { created.set(key, found.id); return found.id; }
+    const found = store.all('session').find(s => !s.deletedAt && s.classId === cls.id && (s.sequenceId === seqId || !seqId) && norm(s.title) === norm(d.ses));
+    if (found) { created.set(key, found.id); onFound?.(found, d); return found.id; }
     const id = store.uid(); const n = [...created.keys()].filter(k => k.startsWith(`${seqId}|`)).length + P.sessionsOfSequence(seqId).length + 1;
     items.push({ create: { type: 'session', data: { id, ...sessionData(cls, seqId, d.num || n, d) } } });
     created.set(key, id); return id;
@@ -168,9 +168,16 @@ function notionsFor(d, items) {
   return [...new Set(pool.filter(n => n.id && wanted.includes(norm(n.title))).map(n => n.id))];
 }
 
+/** Ne garde du patch que ce qui change vraiment (comparaison du contenu). */
+function diff(rec, patch) {
+  const out = {};
+  for (const [k, v] of Object.entries(patch)) if (JSON.stringify(rec?.[k] ?? null) !== JSON.stringify(v ?? null)) out[k] = v;
+  return Object.keys(out).length ? out : null;
+}
+
 export async function importRows(kind, rows, cls) {
   const ok = rows.filter(r => r.ok).map(r => r.data);
-  const items = []; const report = { created: 0, linked: 0, skipped: 0 };
+  const items = []; const report = { created: 0, updated: 0, unchanged: 0, linked: 0, skipped: 0 };
   if (kind === 'programmation') {
     const progs = new Map();
     for (const d of ok) {
@@ -180,11 +187,22 @@ export async function importRows(kind, rows, cls) {
       progs.set(key, p);
       if (d.subdomain && !p.subdomains.includes(d.subdomain)) p.subdomains = [...(p.subdomains || []), d.subdomain];
       const cm = matchCompetencies(d.comp); report.linked += cm.ids.length;
-      items.push({ create: { type: 'notion', data: { id: store.uid(), programmationId: p.id, periodId: d.periodId, subdomain: d.subdomain, title: d.title, competences: cm.rest, competencyIds: cm.ids, resources: d.resources, order: (items.length + 1) * 10 } } }); report.created++;
+      const nData = { programmationId: p.id, periodId: d.periodId, subdomain: d.subdomain, title: d.title, competences: cm.rest, competencyIds: cm.ids, resources: d.resources };
+      const exN = store.get(p.id) ? P.notionsOf(p.id).find(n => norm(n.title) === norm(d.title)) : null;
+      if (exN) { const ch = diff(exN, nData); if (ch) { items.push({ id: exN.id, patch: ch }); report.updated++; } else report.unchanged++; continue; }
+      items.push({ create: { type: 'notion', data: { id: store.uid(), ...nData, order: (items.length + 1) * 10 } } });
     }
     for (const p of progs.values()) if (store.get(p.id)) items.push({ id: p.id, patch: { subdomains: p.subdomains } });
   } else if (kind === 'sequences' || kind === 'progression') {
-    const findSeq = seqFinder(cls, items); const findSes = sesFinder(cls, items);
+    const findSeq = seqFinder(cls, items);
+    // Séance déjà existante (même titre, même séquence) : on la met à jour avec ce qui change dans le tableau.
+    const findSes = sesFinder(cls, items, kind !== 'sequences' ? null : (found, d) => {
+      const cm = d.comp ? matchCompetencies(d.comp) : null;
+      const want = { ...(d.objective ? { objective: d.objective } : {}), ...(d.duration ? { duration: d.duration } : {}), ...(d.deroule ? { phases: parsePhases(d.deroule) } : {}),
+        ...(d.materiel ? { materiel: d.materiel } : {}), ...(cm ? { competencyIds: cm.ids, competencesText: cm.rest } : {}), ...(d.subdomain ? { subdomain: d.subdomain } : {}), ...(d.num ? { order: d.num } : {}) };
+      const ch = diff(found, want);
+      if (ch) { items.push({ id: found.id, patch: ch }); report.updated++; } else report.unchanged++;
+    });
     const progs = new Map();
     for (const d of ok) {
       const seqId = d.seq ? findSeq(d) : null;
@@ -198,10 +216,13 @@ export async function importRows(kind, rows, cls) {
           pr = ex ? { id: ex.id, rows: structuredClone(ex.rows || []), existing: true, programmationId: ex.programmationId || progId() } : { id: store.uid(), rows: [], data: { classId: cls.id, subject: d.subject, level: d.level, subdomain: d.subdomain || '', periodId: d.periodId, programmationId: P.ofClass('programmation', cls.id).find(x => norm(x.subject) === norm(d.subject) && (x.level || '') === d.level)?.id || null, owner: '', extraColumns: [] } };
           progs.set(key, pr);
         }
-        pr.rows.push({ id: store.uid(), week: d.week, sequenceId: seqId, sessionId: sesId, title: sesId || seqId ? '' : (d.ses || d.seq), objective: d.objective, support: d.support, status: 'À venir', adjustments: '', extra: {}, notionIds: notionsFor(d, items) });
+        const rowData = { week: d.week, sequenceId: seqId, sessionId: sesId, title: sesId || seqId ? '' : (d.ses || d.seq), objective: d.objective, support: d.support, status: 'À venir', adjustments: '', extra: {}, notionIds: notionsFor(d, items) };
+        const same = pr.rows.find(r => String(r.week) === String(d.week) && ((sesId && r.sessionId === sesId) || (!sesId && seqId && r.sequenceId === seqId && !r.sessionId) || (!sesId && !seqId && norm(r.title) === norm(rowData.title))));
+        if (same) { const keep = { status: same.status, adjustments: same.adjustments, extra: same.extra }; const ch = diff(same, { ...rowData, ...keep, id: same.id }); if (ch) { Object.assign(same, ch); report.updated++; } else report.unchanged++; continue; }
+        pr.rows.push({ id: store.uid(), ...rowData });
         report.linked += pr.rows.at(-1).notionIds.length;
         report.created++;
-      } else report.created++;
+      } else if (!sesId || !store.get(sesId)) report.created++;
     }
     for (const pr of progs.values()) items.push(pr.existing ? { id: pr.id, patch: { rows: pr.rows, programmationId: pr.programmationId } } : { create: { type: 'progression', data: { id: pr.id, ...pr.data, rows: pr.rows } } });
   } else if (kind === 'edt') {
@@ -241,11 +262,24 @@ export async function importRows(kind, rows, cls) {
       const plan = PL.dayPlan(cls, d.date, { ignoreBlank: true });
       const slot = plan.entries.find(e => e.kind === 'slot' && e.start === d.start);
       const occ = plan.entries.find(e => e.kind === 'occ' && e.start === d.start);
-      if (occ && (occ.sessionId || occ.occ?.note)) { report.skipped++; continue; }
       const base = slot ? PL.occDataFromEntry(slot, cls) : { classId: cls.id, date: d.date, start: d.start, end: d.end, subject: d.subject, levels: [], mode: 'dirigé', title: ses ? '' : d.title };
       const data = { ...base, sessionId: ses?.id || null, status: d.status, note: d.note, ...(ses ? {} : { title: d.title || base.title || '' }) };
-      if (occ) items.push({ id: occ.occ.id, patch: { sessionId: data.sessionId, status: d.status, note: d.note, title: data.title } });
-      else items.push({ create: { type: 'occurrence', data } });
+      if (occ) {
+        // Créneau déjà rempli : on compare et on remplace ce qui a changé, même si une autre fiche y était liée (pas de doublon).
+        const o = occ.occ;
+        const want = { sessionId: data.sessionId, title: data.title || '', status: d.status, ...(d.note ? { note: d.note } : {}), ...(d.end && d.end !== o.end ? { end: d.end } : {}), ...(d.subject ? { subject: d.subject } : {}) };
+        const ch = diff({ ...o, title: o.title || '' }, want);
+        if (!ch) { report.unchanged++; continue; }
+        if ('sessionId' in ch || 'status' in ch) {
+          const done = ['faite', 'partielle'].includes(d.status);
+          ch.snapshot = done ? P.snapshotOf(ses ? store.get(ses.id) : null) : null; ch.doneAt = done ? (o.doneAt || new Date().toISOString()) : null;
+          if (o.sessionId && o.sessionId !== data.sessionId) report.replaced = (report.replaced || 0) + 1;
+        }
+        items.push({ id: o.id, patch: ch }); report.updated++;
+        if (ses) report.linked++;
+        continue;
+      }
+      items.push({ create: { type: 'occurrence', data } });
       if (ses) report.linked++;
       report.created++;
     }

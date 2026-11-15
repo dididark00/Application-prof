@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (234) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 246 entrées.
+Légende : ✅ Réalisé (236) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 248 entrées.
 
 ## Étape 1 — Socle
 
@@ -273,4 +273,6 @@ Légende : ✅ Réalisé (234) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §5 Préparation | Proposer une programmation annuelle (français et mathématiques CE2) : tous les objectifs d’apprentissage du programme (BO n° 41 du 31 octobre 2024) répartis de P1 à P5 ou sur toute l’année, reliés à leurs codes officiels ; les placements datés par le programme sont marqués « repère officiel » avec la citation exacte, les autres sont une proposition modifiable ; aperçu avant création, ajout dans une programmation existante possible, import du référentiel officiel au passage pour relier les compétences | Autres disciplines et niveaux à venir, dans le même esprit. |
 | ✅ | §6 Cahier journal | Impression du cahier journal revue : la date et la première activité sur la même page (plus de page presque blanche), objectif imprimé en entier, discipline, sous-domaine et séquence sous le titre, compétences, critères, matériel et trace sur deux colonnes, déroulement sur toute la largeur avec Élèves, Enseignante, Différenciation à la ligne ; une activité longue continue sur la page suivante au lieu de sauter une page | Cause : les styles de l’écran du cahier journal (2 panneaux) s’appliquaient aussi à l’impression ; ils sont désormais séparés. |
 | ✅ | §6 Devoirs | Plusieurs disciplines dans un même devoir : une ligne par discipline (travail, détails, séance ou leçon liée), dates et destinataires communs, « Ajouter une discipline », modification de toutes les lignes ensemble, retrait d’une ligne (corbeille) ; la liste montre une carte par jour avec une ligne par discipline, « Tout marquer donné » et « Ajouter » pour ce jour | Chaque ligne reste un devoir à part entière (aperçu parent, impression, séance liée). |
-| ✅ | §2 Ergonomie | Menus « Plus » toujours entièrement visibles : ils s’ouvrent vers la gauche quand ils dépasseraient du bord droit de l’écran (cahier journal, fiches…), et s’adaptent à la largeur sur petit écran |  |
+| ✅ | §2 Ergonomie | Menus « Plus » toujours entièrement visibles : posés au-dessus de la page, ils s’ouvrent vers le haut ou vers la gauche quand la place manque (bas d’un panneau, bord de l’écran), avec défilement interne si besoin, et se ferment au défilement de la page |  |
+| ✅ | §6 Cahier journal | « Modifier l’activité » : choix de la fiche de séance liée (changer de fiche, ou « aucune » pour la retirer de ce moment sans la supprimer) |  |
+| ✅ | §14 Exports | Réimport d’un tableau CSV modifié : chaque ligne est comparée à l’existant ; ce qui a changé est remplacé (cahier journal : fiche liée, statut, bilan, même si une autre fiche était liée ; séances : objectif, durée, déroulé, matériel, compétences ; notions de programmation ; lignes de progression), le reste n’est pas touché, aucun doublon ; bilan de l’import (ajoutées, mises à jour, identiques, fiches remplacées) et « Annuler » pour tout défaire |  |

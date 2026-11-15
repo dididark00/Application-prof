@@ -1054,16 +1054,36 @@ await test('Devoirs : plusieurs disciplines dans un même devoir, une carte par 
   assert(after.some(x => !x.del && x.t === 'Tables de 3 et 4 (test multi)'), 'ligne modifiée');
 });
 
-await test('Menu « Plus » d’une activité du cahier journal : entièrement visible, même au bord droit', async () => {
-  await page.setViewportSize({ width: 1280, height: 800 });
+await test('Menu « Plus » d’une activité du cahier journal : entièrement visible (bord droit, bas de l’écran) ; retirer la fiche depuis « Modifier l’activité »', async () => {
+  await page.setViewportSize({ width: 1280, height: 700 });
   await go('#/cahier?d=2026-11-05'); await page.waitForTimeout(500);
-  const btn = page.getByTestId('entry-more').first(); await btn.scrollIntoViewIfNeeded();
-  // Simule un bouton tout à droite (cas du MacBook) : on pousse le menu au bord.
-  await btn.evaluate(el => { el.closest('details').style.marginLeft = 'auto'; el.closest('details').parentElement.style.justifyContent = 'flex-end'; });
+  const btn = page.getByTestId('entry-more').first();
+  await btn.evaluate(el => { const d = el.closest('details'); d.style.marginLeft = 'auto'; d.parentElement.style.justifyContent = 'flex-end'; el.scrollIntoView({ block: 'end' }); });
+  await page.waitForTimeout(150);
   await btn.click(); await page.waitForTimeout(200);
-  const r = await btn.evaluate(el => { const m = el.parentElement.querySelector('.more-menu'); const b = m.getBoundingClientRect(); return { left: b.left, right: b.right, vw: document.documentElement.clientWidth }; });
-  assert(r.right <= r.vw && r.left >= 0, `menu dans l’écran (${Math.round(r.left)}–${Math.round(r.right)} / ${r.vw})`);
-  await btn.click();
+  const r = await btn.evaluate(el => { const m = el.parentElement.querySelector('.more-menu'); const b = m.getBoundingClientRect();
+    const last = [...m.querySelectorAll('button')].at(-1); last.scrollIntoView({ block: 'nearest' }); const q = last.getBoundingClientRect(); const hit = document.elementFromPoint(q.left + 10, q.top + q.height / 2);
+    return { l: b.left, r: b.right, t: b.top, bo: b.bottom, vw: document.documentElement.clientWidth, vh: innerHeight, lastOk: last.contains(hit), open: el.parentElement.open }; });
+  assert(r.open, 'menu ouvert');
+  assert(r.l >= 0 && r.r <= r.vw && r.t >= 0 && r.bo <= r.vh, `menu dans l’écran (${JSON.stringify(r)})`);
+  assert(r.lastOk, 'dernier bouton atteignable');
+  await page.keyboard.press('Escape'); await btn.click({ force: true }).catch(() => {});
+  // Retirer la fiche via « Modifier l’activité »
+  const info = await S(`const PL = await import('./js/planning.js'); const cls = model.currentClass();
+    for (let k = 0; k < 60; k++) { const d = model.addDays('2026-11-02', k); const e = PL.dayPlan(cls, d).entries.find(x => x.session && x.kind !== 'event'); if (e) return { d, key: e.key }; }
+    return null;`);
+  await go(`#/cahier?d=${info.d}`); await page.waitForTimeout(400);
+  await page.evaluate(() => document.querySelectorAll('details.more[open]').forEach(d => { d.open = false; }));
+  if (await page.locator(`[data-testid=tl-card][data-key="${info.key}"] .cj-pick`).count()) { await page.locator(`[data-testid=tl-card][data-key="${info.key}"] .cj-pick`).click(); await page.waitForTimeout(300); }
+  const card = page.locator(`[data-testid=entry][data-key="${info.key}"]`);
+  await card.getByTestId('entry-more').click(); await page.waitForTimeout(150);
+  await card.getByTestId('edit-activity').click(); await page.waitForTimeout(250);
+  const countS = () => S(`const PL = await import('./js/planning.js'); return PL.dayPlan(model.currentClass(), a).entries.filter(x => x.session).length;`, info.d);
+  const before = await countS();
+  assert(await page.getByTestId('act-link-session').inputValue() !== '', 'fiche actuelle présélectionnée');
+  await page.getByTestId('act-link-session').selectOption(''); await page.getByTestId('act-save').click(); await page.waitForTimeout(400);
+  eq(await countS(), before - 1, 'fiche retirée de ce moment');
+  await page.setViewportSize({ width: 1280, height: 800 });
 });
 
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });

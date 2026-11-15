@@ -168,6 +168,29 @@ await test('Timer feu tricolore : vert, orange à mi-temps, rouge à la fin', as
   eq(c.join(','), '#3f9b4f,#f08c1e,#f08c1e,#d64545,#2f6f8f', 'couleurs selon le temps restant');
 });
 
+await test('Réimport CSV : on compare, on remplace ce qui a changé (même une fiche liée), sans doublon', async () => {
+  const slot = await S(`const p = PL.dayPlan(store.get(a.cls), '2026-11-23'); const e = p.entries.find(x => x.kind === 'occ' && x.session); return { start: e.start, subject: e.subject };`, ids);
+  const r = await S(`const cls = store.get(a.cls);
+    const other = store.all('session').find(s => s.classId === cls.id && !s.deletedAt && s.title !== 'Lire et écrire les nombres jusqu’à 10 000 (exemple)');
+    const head = 'Date;Début;Fin;Discipline;Séance;Statut;Bilan\\n';
+    const line = (t, st, b) => '23/11/2026;' + a.start + ';;' + a.subject + ';' + t + ';' + st + ';' + b;
+    const count = () => store.all('occurrence').filter(o => !o.deletedAt && o.classId === cls.id && o.date === '2026-11-23' && o.start === a.start).length;
+    const imp = async (csv) => IC.importRows('cahier', IC.analyse('cahier', csv, cls).rows, cls);
+    const same = await imp(head + line('Lire et écrire les nombres jusqu’à 10 000 (exemple)', 'faite', 'Bien compris'));
+    const changed = await imp(head + line(other.title, 'prévue', 'Nouveau bilan'));
+    const e = PL.dayPlan(cls, '2026-11-23').entries.find(x => x.start === a.start && x.kind === 'occ');
+    // Séquences : réimport d'une séance existante avec un nouvel objectif
+    const seq = store.get(other.sequenceId);
+    const before = store.all('session').filter(s => !s.deletedAt && s.classId === cls.id).length;
+    const sq = seq ? await IC.importRows('sequences', IC.analyse('sequences', 'Discipline;Niveau;Période;Séquence;N° séance;Séance;Objectif\\n' + seq.subject + ';;P1;' + seq.title + ';;' + other.title + ';Objectif réimporté (essai)', cls).rows, cls) : null;
+    return { same, changed, n: count(), sid: e.occ.sessionId, otherId: other.id, note: e.occ.note, status: e.status,
+      sq, after: store.all('session').filter(s => !s.deletedAt && s.classId === cls.id).length, before, obj: store.get(other.id).objective, hasSeq: !!seq };`, { ...ids, ...slot });
+  eq(r.same.unchanged, 1, 'ligne identique : rien ne change'); eq(r.same.updated, 0, 'pas de mise à jour inutile');
+  eq(r.changed.updated, 1, 'ligne modifiée : mise à jour'); eq(r.changed.replaced, 1, 'fiche liée remplacée');
+  eq(r.n, 1, 'aucun doublon dans le créneau'); eq(r.sid, r.otherId, 'nouvelle fiche liée'); eq(r.note, 'Nouveau bilan', 'bilan remplacé'); eq(r.status, 'prévue', 'statut remplacé');
+  if (r.hasSeq) { eq(r.sq.updated, 1, 'séance existante mise à jour'); eq(r.after, r.before, 'aucune séance en double'); eq(r.obj, 'Objectif réimporté (essai)', 'objectif remplacé'); }
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-semaine.txt`, results.join('\n'));
