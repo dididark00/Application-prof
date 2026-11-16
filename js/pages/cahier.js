@@ -141,7 +141,7 @@ function draggable(card, cls, e, all) {
   if (!movable(e)) return;
   card.classList.add('can-drag');
   card.title = 'Rester appuyé et glisser : sur une activité pour échanger, sur une pause ou une heure pour déplacer';
-  let start = null, ghost = null, target = null, timer = null, armed = false;
+  let start = null, ghost = null, target = null, timer = null, armed = false, scroller = null, last = { x: 0, y: 0 };
   const clear = () => { document.querySelectorAll('.drop-on').forEach(x => x.classList.remove('drop-on')); };
   const findTarget = (x, y) => {
     ghost && (ghost.style.visibility = 'hidden');
@@ -177,9 +177,17 @@ function draggable(card, cls, e, all) {
     ev.preventDefault();
     ghost.style.left = `${ev.clientX - Number(ghost.dataset.dx)}px`; ghost.style.top = `${ev.clientY - Number(ghost.dataset.dy)}px`;
     clear(); target = findTarget(ev.clientX, ev.clientY); target?.el.classList.add('drop-on');
+    // Près du haut ou du bas de l'écran : la page défile toute seule pour atteindre une activité hors de vue.
+    last = { x: ev.clientX, y: ev.clientY };
+    const edge = 70; const v = ev.clientY > innerHeight - edge ? 1 : ev.clientY < edge ? -1 : 0;
+    if (v && !scroller) scroller = setInterval(() => {
+      const dir = last.y > innerHeight - edge ? 1 : last.y < edge ? -1 : 0;
+      if (!armed || !dir) { clearInterval(scroller); scroller = null; return; }
+      window.scrollBy(0, dir * 14); clear(); target = findTarget(last.x, last.y); target?.el.classList.add('drop-on');
+    }, 30);
   });
   const end = async (ev, cancel = false) => {
-    clearTimeout(timer);
+    clearTimeout(timer); clearInterval(scroller); scroller = null;
     if (!armed) { start = null; return; }
     armed = false; start = null; ghost?.remove(); ghost = null; card.classList.remove('dragging'); clear();
     // Le clic qui suit un glisser ne doit pas sélectionner la carte.

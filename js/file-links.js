@@ -94,27 +94,48 @@ export async function attachToEntry(cls, e) {
   await attach(recId, got.ids, got.role, `${got.ids.length > 1 ? 'Fichiers joints' : 'Fichier joint'} (${roleLabel(got.role).toLowerCase()})`);
 }
 
-/** Depuis Fichiers : relier un ou plusieurs fichiers à une fiche de séance ou à un moment du cahier journal. */
+/** Depuis Fichiers : relier un ou plusieurs fichiers à une fiche de séance, une séquence ou un moment du cahier journal.
+ * La liste des choix s'affiche directement dans la fenêtre (avec une recherche), puis « Relier ». */
 export function linkFromFiles(fileIds) {
   const cls = model.currentClass();
   if (!cls) return toast('Choisissez d’abord une classe en haut de l’écran.', { kind: 'error' });
-  let r = 'ressource'; let target = 'seance'; let date = model.todayIso(); let entryKey = '';
+  let r = 'ressource'; let target = 'seance'; let date = model.todayIso(); let entryKey = ''; let pickId = ''; let q = '';
+  const seqLabel = (id) => (id && store.get(id) && !store.get(id).deletedAt ? P.sequenceTitle(store.get(id)) : 'hors séquence');
+  const options = () => (target === 'seance'
+    ? P.ofClass('session', cls.id).map(s => ({ id: s.id, label: P.sessionTitle(s), group: `${s.subject || 'Autre'} · ${seqLabel(s.sequenceId)}` }))
+    : P.ofClass('sequence', cls.id).map(s => ({ id: s.id, label: P.sequenceTitle(s), group: s.subject || 'Autre' })))
+    .sort((a, b) => a.group.localeCompare(b.group, 'fr', { numeric: true }) || a.label.localeCompare(b.label, 'fr', { numeric: true }));
+  const listBox = h('div', { class: 'pick-list link-pick', 'data-testid': 'link-list' });
+  const drawList = () => {
+    const t = q.trim().toLowerCase(); let last = null;
+    const xs = options().filter(o => !t || `${o.label} ${o.group}`.toLowerCase().includes(t));
+    listBox.replaceChildren(...(xs.length ? xs.flatMap(o => {
+      const out = []; if (o.group !== last) { out.push(h('p', { class: 'pick-group' }, o.group)); last = o.group; }
+      out.push(h('label', { class: 'pick-item' }, h('input', { type: 'radio', name: 'link-pick', checked: pickId === o.id, 'data-testid': 'link-pick', onchange: () => { pickId = o.id; } }), h('span', {}, o.label)));
+      return out;
+    }) : [h('p', { class: 'muted' }, target === 'seance' ? 'Aucune fiche de séance trouvée dans cette classe.' : 'Aucune séquence trouvée dans cette classe.')]));
+  };
   const body = h('div', { class: 'form' });
   const draw = () => {
     const plan = PL.dayPlan(cls, date).entries;
     body.replaceChildren(
       h('div', { class: 'field' }, h('label', {}, 'Ce fichier est…'), roleSeg(() => r, (v) => { r = v; })),
-      h('div', { class: 'field' }, h('label', {}, 'Relier à…'), h('div', { class: 'seg', role: 'radiogroup' },
-        [['seance', 'une fiche de séance'], ['moment', 'un moment du cahier journal']].map(([k, l]) => h('button', { type: 'button', class: target === k ? 'on' : '', 'data-testid': `link-target-${k}`, onclick: () => { target = k; draw(); } }, l)))),
+      h('div', { class: 'field' }, h('label', {}, 'Relier à…'), h('div', { class: 'seg wrap', role: 'radiogroup' },
+        [['seance', 'une fiche de séance'], ['sequence', 'une séquence'], ['moment', 'un moment du cahier journal']].map(([k, l]) => h('button', { type: 'button', role: 'radio', 'aria-checked': String(target === k), class: target === k ? 'on' : '', 'data-testid': `link-target-${k}`, onclick: () => { if (target !== k) { target = k; pickId = ''; q = ''; } draw(); } }, l)))),
       target === 'moment' ? h('div', { class: 'stack-sm' },
         h('div', { class: 'field' }, h('label', {}, 'Jour'), h('input', { type: 'date', value: date, 'data-testid': 'link-date', onchange: (ev) => { if (ev.target.value) { date = ev.target.value; entryKey = ''; draw(); } } })),
         plan.length ? h('div', { class: 'pick-list' }, plan.map(e => h('label', { class: 'pick-item' }, h('input', { type: 'radio', name: 'link-entry', checked: entryKey === e.key, 'data-testid': 'link-entry', onchange: () => { entryKey = e.key; } }),
           h('span', {}, h('strong', {}, `${e.allDay ? 'Journée' : e.start} ${e.title || e.subject || ''}`), e.session ? h('span', { class: 'muted small' }, ` — ${P.sessionTitle(e.session)}`) : null))))
-          : h('p', { class: 'muted' }, 'Rien de prévu ce jour-là.')) : h('p', { class: 'muted small' }, 'Le fichier suivra la fiche partout où elle est programmée dans le cahier journal.'));
+          : h('p', { class: 'muted' }, 'Rien de prévu ce jour-là.'))
+        : h('div', { class: 'stack-sm' },
+          h('input', { type: 'search', value: q, placeholder: target === 'seance' ? 'Chercher une fiche (titre, discipline, séquence)…' : 'Chercher une séquence…', 'aria-label': 'Chercher', 'data-testid': 'link-search', oninput: (ev) => { q = ev.target.value; drawList(); } }),
+          listBox,
+          h('p', { class: 'muted small' }, target === 'seance' ? 'Le fichier suivra la fiche partout où elle est programmée dans le cahier journal.' : 'Le fichier rejoint les supports de la séquence (onglet Ressources de la séquence).')));
+    if (target !== 'moment') drawList();
   };
   draw();
   modal({ title: fileIds.length > 1 ? `Relier ${fileIds.length} fichiers` : `Relier « ${store.get(fileIds[0])?.name || 'le fichier'} »`, wide: true, body,
-    actions: [{ label: 'Annuler' }, { label: 'Relier…', primary: true, testid: 'link-go', onClick: async () => {
+    actions: [{ label: 'Annuler' }, { label: 'Relier', primary: true, testid: 'link-go', onClick: async () => {
       if (target === 'moment') {
         const e = PL.dayPlan(cls, date).entries.find(x => x.key === entryKey);
         if (!e) { toast('Choisissez un moment de la journée.'); return false; }
@@ -123,18 +144,16 @@ export function linkFromFiles(fileIds) {
         toast(`Relié au cahier journal du ${model.frShort(date)}`, { action: 'Voir', onAction: () => { location.hash = `#/cahier?d=${date}`; } });
         return;
       }
-      const sessions = P.ofClass('session', cls.id);
-      if (!sessions.length) { toast('Aucune fiche de séance dans cette classe.'); return false; }
-      const sel = await pickMany({ title: 'Choisir la fiche de séance', single: true, items: sessions.map(s => ({ id: s.id, label: P.sessionTitle(s), group: `${s.subject || 'Autre'} · ${s.sequenceId && store.get(s.sequenceId) ? P.sequenceTitle(store.get(s.sequenceId)) : 'hors séquence'}` }))
-        .sort((a, b) => a.group.localeCompare(b.group, 'fr', { numeric: true }) || a.label.localeCompare(b.label, 'fr', { numeric: true })) });
-      if (!sel?.length) return false;
-      await attach(sel[0], fileIds, r, `Fichier relié à la fiche (${roleLabel(r).toLowerCase()})`);
-      toast('Relié à la fiche de séance', { action: 'Voir', onAction: () => { location.hash = `#/seance/${sel[0]}`; } });
+      if (!pickId || !store.get(pickId)) { toast(target === 'seance' ? 'Choisissez une fiche de séance dans la liste.' : 'Choisissez une séquence dans la liste.'); return false; }
+      await attach(pickId, fileIds, r, `Fichier relié ${target === 'seance' ? 'à la fiche' : 'à la séquence'} (${roleLabel(r).toLowerCase()})`);
+      const id = pickId;
+      toast(target === 'seance' ? 'Relié à la fiche de séance' : 'Relié à la séquence', { action: 'Voir', onAction: () => { location.hash = target === 'seance' ? `#/seance/${id}` : `#/sequence/${id}`; } });
     } }] });
 }
 
 /** Où un fichier est relié (fiches de séance, moments). */
 export function usesOf(fileId) {
   return store.all('session').filter(s => !s.deletedAt && (s.fileIds || []).includes(fileId)).length
+    + store.all('sequence').filter(s => !s.deletedAt && (s.fileIds || []).includes(fileId)).length
     + store.all('occurrence').filter(o => !o.deletedAt && (o.fileIds || []).includes(fileId)).length;
 }

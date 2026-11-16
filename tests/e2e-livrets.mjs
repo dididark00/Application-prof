@@ -426,6 +426,7 @@ await test('Cahier journal : glisser une activité (échanger, déplacer sur une
   assert(d, 'jour avec 3 activités');
   await go(`#/cahier?d=${d}`);
   await page.getByTestId('layout-panneaux').click(); await page.waitForTimeout(300);
+  await page.getByTestId('tl-card').nth(0).evaluate(el => el.scrollIntoView({ block: 'start' })); await page.waitForTimeout(150);
   const info = async () => page.evaluate(() => [...document.querySelectorAll('[data-testid=tl-card]')].map(c => ({ t: c.querySelector('.cj-title').textContent, time: c.closest('.cj-row').dataset.start })));
   const before = await info();
   const drag = async (from, to) => {
@@ -938,10 +939,17 @@ await test('Fichiers reliés avec un rôle : depuis Fichiers (fiche ou moment) e
   // 1. Depuis Fichiers, vers une fiche de séance, « à projeter »
   await go('#/fichiers'); await page.waitForTimeout(300);
   await page.locator('.file-item', { hasText: 'Diaporama test rôle' }).getByTestId('file-link-to').click(); await page.waitForTimeout(200);
-  await page.getByTestId('role-projeter').click(); await page.getByTestId('link-go').click(); await page.waitForTimeout(300);
-  await page.locator('.pick-list input').first().check(); await page.getByRole('button', { name: 'Valider' }).click(); await page.waitForTimeout(500);
+  await page.getByTestId('role-projeter').click(); await page.getByTestId('link-target-seance').click(); await page.waitForTimeout(150);
+  assert(await page.getByTestId('link-pick').count() > 0, 'la liste des fiches s’affiche dès le choix « une fiche de séance »');
+  await page.getByTestId('link-search').fill('zzzz-introuvable'); eq(await page.getByTestId('link-pick').count(), 0, 'recherche');
+  await page.getByTestId('link-search').fill(''); await page.getByTestId('link-pick').first().check(); await page.getByTestId('link-go').click(); await page.waitForTimeout(500);
   const r1 = await S(`const s = store.all('session').find(x => (x.fileIds || []).includes(a)); return s ? s.fileRoles?.[a] : null;`, info.f1);
   eq(r1, 'projeter', 'relié à la fiche, à projeter');
+  await page.evaluate(() => document.getElementById('toasts')?.replaceChildren());
+  await page.locator('.file-item', { hasText: 'Diaporama test rôle' }).getByTestId('file-link-to').click(); await page.waitForTimeout(200);
+  await page.getByTestId('link-target-sequence').click(); await page.waitForTimeout(150);
+  await page.getByTestId('link-pick').first().check(); await page.getByTestId('link-go').click(); await page.waitForTimeout(500);
+  assert(await S(`return store.all('sequence').some(x => (x.fileIds || []).includes(a));`, info.f1), 'relié à une séquence');
   const clearToasts = () => page.evaluate(() => document.getElementById('toasts')?.replaceChildren());
   await clearToasts();
   // 2. Depuis Fichiers, vers un moment du cahier journal, « à imprimer »
