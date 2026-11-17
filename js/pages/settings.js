@@ -50,10 +50,10 @@ function general() {
   const form = h('form', { class: 'card form', onsubmit: async (e) => {
     e.preventDefault();
     const d = formData(form);
-    const subjects = [...new Set(d.subjects.split('\n').map(x => x.trim()).filter(Boolean))];
+    const parsed = model.parseSubjectsText(d.subjects); const subjects = parsed.names;
     const web = d.webmailUrl.trim() ? safeUrl(/^https?:/i.test(d.webmailUrl.trim()) ? d.webmailUrl.trim() : `https://${d.webmailUrl.trim()}`) : '';
     if (d.webmailUrl.trim() && !web) { toast('Adresse de la messagerie invalide', { kind: 'error' }); return; }
-    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, printStyle: d.printStyle || 'couleur', dashTitle: (d.dashTitle || '').trim(), subjects: subjects.length ? subjects : null, academicMail: d.academicMail.trim(), webmailUrl: web || '' });
+    await store.setSettings({ appName: d.appName || 'Classeur', userName: d.userName, printStyle: d.printStyle || 'couleur', dashTitle: (d.dashTitle || '').trim(), subjects: subjects.length ? subjects : null, subjectDomains: subjects.length ? parsed.domains : null, academicMail: d.academicMail.trim(), webmailUrl: web || '' });
     toast('Réglages enregistrés');
   } },
     h('h2', {}, 'Identité'),
@@ -72,7 +72,10 @@ function general() {
       field('Adresse de ma messagerie en ligne', h('input', { name: 'webmailUrl', value: s.webmailUrl || '', placeholder: 'https://messagerie.ac-….fr', 'data-testid': 'webmail-url' }),
         h('span', {}, 'Académie de Versailles : ', h('button', { class: 'linklike', type: 'button', 'data-testid': 'webmail-versailles', onclick: (e) => { e.target.closest('form').webmailUrl.value = 'https://messagerie.ac-versailles.fr/'; } }, 'messagerie.ac-versailles.fr'), ' (adresse indiquée par l’académie).'))),
     h('h2', {}, 'Disciplines'),
-    field('Une discipline par ligne', h('textarea', { name: 'subjects', rows: 8, 'data-testid': 'subjects' }, model.subjects().join('\n')), 'Utilisées dans l’emploi du temps, les programmations, les fiches et les fichiers. Renommer une discipline ne modifie pas les fiches existantes.'),
+    h('p', { class: 'muted small' }, 'Une discipline par ligne. Ses domaines (sous-disciplines) après « : », séparés par « ; ». Exemple : Mathématiques : Nombres et calculs ; Grandeurs et mesures. Les domaines sont proposés dans les fiches, séquences, progressions et programmations.'),
+    h('div', { class: 'row wrap' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'subjects-official', onclick: (e) => { const ta = e.target.closest('form').subjects; const before = ta.value; ta.value = model.mergeOfficial(ta.value); toast(before === ta.value ? 'Rien à ajouter : tout y est déjà.' : 'Disciplines et domaines du cycle 2 ajoutés. Vérifiez puis « Enregistrer ».'); } }, 'Compléter avec le cycle 2 (programmes 2026)'),
+      h('span', { class: 'muted small' }, 'Ajoute ce qui manque (Histoire-géographie, Sciences et technologie, domaines complémentaires…) sans rien retirer.')),
+    field('Disciplines et domaines', h('textarea', { name: 'subjects', rows: 12, 'data-testid': 'subjects' }, model.subjectsText()), 'Utilisées dans l’emploi du temps, les programmations, les fiches et les fichiers. Renommer une discipline ne modifie pas les fiches existantes.'),
     h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Enregistrer')));
   return h('div', { class: 'stack' }, appearance(), form,
     h('div', { class: 'card' }, h('h2', {}, 'À propos'),

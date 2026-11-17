@@ -1118,6 +1118,27 @@ await test('Modèles d’attestations : créer son modèle, mettre à jour un mo
   assert(await card.getByTestId('att-outdated').count() === 0, 'à jour');
 });
 
+await test('Disciplines et domaines : compléter avec le cycle 2 (programmes 2026), domaines proposés dans les fiches', async () => {
+  const saved = await S(`return { s: store.getSettings().subjects || null, d: store.getSettings().subjectDomains || null };`);
+  await go('#/reglages'); await page.waitForTimeout(400);
+  const ta = page.getByTestId('subjects');
+  await ta.fill('Français : Lecture ; Ma rubrique perso\nQuestionner le monde\nAutre');
+  await page.getByTestId('subjects-official').click(); await page.waitForTimeout(150);
+  const v = await ta.inputValue();
+  assert(v.includes('Ma rubrique perso') && v.includes('Questionner le monde'), 'rien n’est retiré');
+  assert(v.includes('Histoire-géographie : Histoire ; Géographie') && v.includes('Sciences et technologie : ') && v.includes('Formation aux premiers secours'), 'cycle 2 ajouté');
+  assert(v.trim().endsWith('Autre'), '« Autre » reste en dernier');
+  await ta.evaluate(el => el.closest('form').requestSubmit()); await page.waitForTimeout(300);
+  const r = await S(`const M = await import('./js/model.js'); return { subj: M.subjects(), hg: M.subjectDomains('Histoire-géographie'), fr: M.subjectDomains('Français') };`);
+  assert(r.subj.includes('Domaines complémentaires') && r.subj.at(-1) === 'Autre', 'disciplines enregistrées');
+  eq(r.hg.join('|'), 'Histoire|Géographie', 'domaines enregistrés'); assert(r.fr.includes('Ma rubrique perso') && r.fr.includes('Grammaire et orthographe'), 'domaines fusionnés');
+  // Suggestion dans un champ « sous-domaine »
+  const opts = await page.evaluate(() => { const f = document.createElement('form'); f.innerHTML = '<select name="subject"><option value="Histoire-géographie" selected></option></select><input name="subdomain">'; document.body.append(f); f.querySelector('input').focus();
+    const r = [...document.querySelectorAll('#dl-domains option')].map(o => o.value); f.remove(); return r; });
+  eq(opts.join('|'), 'Histoire|Géographie', 'domaines proposés');
+  await S(`await store.setSettings({ subjects: a.s, subjectDomains: a.d });`, saved);
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

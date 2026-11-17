@@ -103,9 +103,9 @@ function newDialog(cls) {
   const levels = cls.levels || [];
   const form = h('form', { class: 'form', onsubmit: (e) => e.preventDefault() },
     h('div', { class: 'grid-2' },
-      field('Discipline / domaine', h('select', { name: 'subject' }, model.subjects().map(s => h('option', { value: s }, s)))),
+      field('Discipline / domaine', h('select', { name: 'subject', onchange: (e) => { const i = e.target.form.subdomains; if (!i.dataset.touched) i.value = model.subjectDomains(e.target.value).join(', '); } }, model.subjects().map(s => h('option', { value: s }, s)))),
       field('Niveau', h('select', { name: 'level' }, levels.map(l => h('option', { value: l }, l))))),
-    field('Sous-domaines (séparés par des virgules)', h('input', { name: 'subdomains', placeholder: 'ex. Nombres, Fractions, Opérations, Calcul mental, Problèmes, Mesures, Géométrie' })),
+    field('Sous-domaines (séparés par des virgules)', h('input', { name: 'subdomains', value: model.subjectDomains(model.subjects()[0]).join(', '), placeholder: 'ex. Nombres, Fractions, Opérations, Calcul mental, Problèmes, Mesures, Géométrie', oninput: (e) => { e.target.dataset.touched = '1'; } })),
     field('Références', h('input', { name: 'references', placeholder: 'programme officiel en vigueur ; manuel utilisé ; édition' })),
     field('Répartition', h('select', { name: 'owner' }, h('option', { value: '' }, '—'), model.owners(cls).map(([v, l]) => h('option', { value: v }, l)))));
   modal({ title: 'Nouvelle programmation annuelle', body: form, actions: [{ label: 'Annuler' }, { label: 'Créer', primary: true, onClick: async () => {

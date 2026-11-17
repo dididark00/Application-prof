@@ -131,6 +131,48 @@ export function subjects() {
   const s = store.getSettings().subjects;
   return Array.isArray(s) && s.length ? s : DEFAULT_SUBJECTS;
 }
+/** Domaines (sous-disciplines) proposés pour une discipline : ceux des Réglages, sinon la liste par défaut. */
+export const DEFAULT_DOMAINS = {
+  'Français': ['Lecture', 'Écriture', 'Oral', 'Vocabulaire', 'Grammaire et orthographe'],
+  'Mathématiques': ['Nombres et calculs', 'Grandeurs et mesures', 'Espace et géométrie', 'Organisation et gestion de données', 'Algorithmique et programmation'],
+  'Questionner le monde': ['Le vivant', 'La matière', 'Les objets', 'Se repérer dans l’espace', 'Se repérer dans le temps'],
+  'Langues vivantes': ['Langue vivante étrangère', 'Langue vivante étrangère 2', 'Langue vivante régionale'],
+};
+export function subjectDomains(subject) {
+  const m = store.getSettings().subjectDomains;
+  return (m && Array.isArray(m[subject]) ? m[subject] : DEFAULT_DOMAINS[subject]) || [];
+}
+/** Disciplines et domaines du cycle 2 (programmes 2026, en vigueur à la rentrée 2026), à ajouter depuis les Réglages. */
+export const OFFICIAL_C2_2026 = [
+  ['Français', ['Lecture', 'Écriture', 'Oral', 'Vocabulaire', 'Grammaire et orthographe']],
+  ['Mathématiques', ['Nombres et calculs', 'Grandeurs et mesures', 'Espace et géométrie', 'Organisation et gestion de données', 'Algorithmique et programmation']],
+  ['Histoire-géographie', ['Histoire', 'Géographie']],
+  ['Sciences et technologie', ['La matière, les mesures, l’électricité', 'Les êtres vivants dans leur environnement', 'Le corps humain et la santé', 'Les objets techniques au cœur de la société']],
+  ['Langues vivantes', ['Langue vivante étrangère', 'Langue vivante étrangère 2', 'Langue vivante régionale']],
+  ['Arts plastiques', ['Histoire des arts']],
+  ['Éducation musicale', ['Histoire des arts']],
+  ['EPS', []],
+  ['EMC', []],
+  ['Domaines complémentaires', ['Éducation à la vie affective et relationnelle (EVAR)', 'Éducation aux médias et à l’information (EMI)', 'Éducation au développement durable (EDD)', 'Informatique et numérique', 'Éducation à la sécurité routière', 'Formation aux premiers secours', 'Compétences psychosociales', 'Autres compétences transversales']],
+];
+/** Texte « Discipline : domaine ; domaine » (une ligne par discipline) ↔ listes. */
+export function subjectsText(list = subjects()) { return list.map(n => { const d = subjectDomains(n); return d.length ? `${n} : ${d.join(' ; ')}` : n; }).join('\n'); }
+export function parseSubjectsText(text) {
+  const names = []; const domains = {};
+  for (const line of String(text || '').split('\n')) {
+    const i = line.indexOf(' : '); const name = (i >= 0 ? line.slice(0, i) : line).trim(); if (!name || names.includes(name)) continue;
+    names.push(name); domains[name] = i >= 0 ? [...new Set(line.slice(i + 3).split(';').map(x => x.trim()).filter(Boolean))] : [];
+  }
+  return { names, domains };
+}
+/** Ajoute les disciplines et domaines officiels manquants (ne retire rien, garde l'ordre ; « Autre » reste en dernier). */
+export function mergeOfficial(text) {
+  const { names, domains } = parseSubjectsText(text);
+  const out = names.filter(n => n !== 'Autre');
+  for (const [n, ds] of OFFICIAL_C2_2026) { if (!out.includes(n)) { out.push(n); domains[n] = []; } domains[n] = [...new Set([...(domains[n] || []), ...ds])]; }
+  if (names.includes('Autre') || !names.length) out.push('Autre');
+  return out.map(n => (domains[n]?.length ? `${n} : ${domains[n].join(' ; ')}` : n)).join('\n');
+}
 const PALETTE = ['#2f6f8f', '#b5532f', '#6a8f2f', '#8f2f6a', '#a3801f', '#2f8f7a', '#5a4fa3', '#8f4a2f', '#3f7f3f', '#7a5c8f'];
 export function subjectColor(name) {
   if (!name) return '#777';
