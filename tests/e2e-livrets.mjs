@@ -1094,6 +1094,30 @@ await test('Menu « Plus » d’une activité du cahier journal : entièrement v
   await page.setViewportSize({ width: 1280, height: 800 });
 });
 
+await test('Modèles d’attestations : créer son modèle, mettre à jour un modèle (nouvelle année) et l’appliquer à la classe sans perdre les résultats', async () => {
+  await go('#/attestations'); await page.waitForTimeout(300);
+  await page.getByTestId('att-models').click(); await page.waitForTimeout(200);
+  await page.getByTestId('model-new').click(); await page.waitForTimeout(150);
+  await page.getByTestId('model-title').fill('Permis piéton (essai)'); await page.getByTestId('model-items').fill('Traverser au passage piéton\nRepérer les dangers'); await page.getByTestId('model-note').fill('Grille 2026-2027');
+  await page.getByTestId('model-save').click(); await page.waitForTimeout(250);
+  assert((await page.getByTestId('models-list').textContent()).includes('Permis piéton (essai)'), 'modèle créé');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+  await page.getByTestId('att-add').click(); await page.waitForTimeout(150);
+  await page.getByTestId('att-template').selectOption({ label: 'Permis piéton (essai)' }); await page.getByTestId('att-add-go').click(); await page.waitForTimeout(300);
+  const card = page.getByTestId('att-card').filter({ hasText: 'Permis piéton (essai)' });
+  await card.getByTestId('att-cell').first().click(); await card.getByTestId('att-cell').first().click(); await page.waitForTimeout(200); // 1re étape acquise pour le 1er élève
+  // L'année suivante, la grille change : une étape reformulée s'ajoute
+  await page.getByTestId('att-models').click(); await page.waitForTimeout(150);
+  await page.getByTestId('models-list').locator('li', { hasText: 'Permis piéton (essai)' }).getByTestId('model-edit').click(); await page.waitForTimeout(150);
+  await page.getByTestId('model-items').fill('Traverser au passage piéton\nRepérer les dangers\nSe faire voir la nuit'); await page.getByTestId('model-save').click(); await page.waitForTimeout(250);
+  await page.keyboard.press('Escape'); await page.waitForTimeout(250);
+  assert(await card.getByTestId('att-outdated').count() === 1, 'la classe est prévenue');
+  await card.getByTestId('att-apply-model').click(); await page.waitForTimeout(300);
+  const r = await S(`const a = store.all('attestation').find(x => x.title === 'Permis piéton (essai)'); const first = a.items[0].id; return { n: a.items.length, kept: Object.values(a.results).some(x => x[first]?.state === 'acquis') };`);
+  eq(r.n, 3, 'nouvelle étape ajoutée'); assert(r.kept, 'résultat de l’étape inchangée conservé');
+  assert(await card.getByTestId('att-outdated').count() === 0, 'à jour');
+});
+
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });
 await browser.close();
 writeFileSync(`${OUT}resultats-livrets.txt`, results.join('\n'));

@@ -15,6 +15,54 @@ export const TEMPLATES = [
   { key: 'aper', title: 'Attestation de première éducation à la route (APER)', items: ['Piéton : se déplacer et traverser en sécurité', 'Passager : bon usage de la ceinture et du siège, monter et descendre d’un véhicule', 'Rouleur (vélo, trottinette, rollers) : s’équiper et se déplacer en sécurité'] },
   { key: 'aps', title: 'Apprendre à porter secours (APS)', items: ['Protéger : repérer un danger et se protéger', 'Alerter : appeler le 15, 18 ou 112 et donner les informations utiles', 'Secourir : gestes adaptés à son âge (position d’attente, compresser une plaie…)'] },
 ];
+/** Modèles d'attestations : ceux de l'application (modifiables) + les vôtres. Rangés dans les réglages (synchronisés).
+ * Chaque modèle garde la date de sa dernière mise à jour et une note (source, année, circonscription). */
+export function models() {
+  const saved = store.getSettings().attestationModels || {};
+  const base = TEMPLATES.map(t => ({ ...t, builtin: true, ...(saved[t.key] || {}), key: t.key }));
+  const custom = Object.values(saved).filter(m => m && !TEMPLATES.some(t => t.key === m.key) && !m.deleted);
+  return [...base.filter(m => !m.deleted), ...custom].sort((a, b) => a.title.localeCompare(b.title, 'fr'));
+}
+const modelOf = (key) => models().find(m => m.key === key) || null;
+async function saveModel(key, patch, label) {
+  const saved = { ...(store.getSettings().attestationModels || {}) };
+  saved[key] = patch === null ? null : { ...(saved[key] || {}), ...patch, key, updatedAt: new Date().toISOString() };
+  if (patch === null) delete saved[key];
+  void label; await store.setSettings({ attestationModels: saved });
+}
+/** L'attestation suivie diffère-t-elle de son modèle (étapes ajoutées, retirées ou reformulées) ? */
+export const outdated = (a) => { const m = modelOf(a.key); return !!m && (m.items.join('\n') !== a.items.map(i => i.label).join('\n') || m.title !== a.title); };
+
+function modelDialog(m = null, after = () => {}) {
+  const title = h('input', { value: m?.title || '', placeholder: 'ex. Permis piéton, Brevet de natation 25 m', 'data-testid': 'model-title' });
+  const items = h('textarea', { rows: 7, 'data-testid': 'model-items' }, (m?.items || []).join('\n'));
+  const note = h('input', { value: m?.note || '', placeholder: 'ex. Grille circonscription 2026-2027', 'data-testid': 'model-note' });
+  const actions = [{ label: 'Annuler' }];
+  if (m?.builtin) actions.unshift({ label: 'Revenir au modèle d’origine', onClick: async () => { await saveModel(m.key, null, 'Modèle d’attestation rétabli'); after(); } });
+  else if (m) actions.unshift({ label: 'Supprimer le modèle', danger: true, onClick: async () => { if (!await confirmDialog('Supprimer ce modèle ?', 'Les attestations déjà suivies dans vos classes sont gardées.', { confirmLabel: 'Supprimer', danger: true })) return false; await saveModel(m.key, { deleted: true }, 'Modèle d’attestation supprimé'); after(); } });
+  actions.push({ label: 'Enregistrer', primary: true, testid: 'model-save', onClick: async () => {
+    const list = items.value.split('\n').map(x => x.trim()).filter(Boolean);
+    if (!title.value.trim() || !list.length) { toast('Donnez un titre et au moins une étape.'); return false; }
+    await saveModel(m?.key || `perso-${store.uid()}`, { title: title.value.trim(), items: list, note: note.value.trim() }, m ? 'Modèle d’attestation mis à jour' : 'Nouveau modèle d’attestation');
+    after();
+  } });
+  modal({ title: m ? `Modèle : ${m.title}` : 'Nouveau modèle d’attestation ou de diplôme', wide: true, body: h('div', { class: 'form' },
+    field('Titre', title), field('Étapes ou compétences (une par ligne)', items, 'Collez la liste de la grille officielle ou de votre circonscription.'),
+    field('Source, année (facultatif)', note)), actions });
+}
+
+function modelsDialog() {
+  const body = h('div', {});
+  const draw = () => body.replaceChildren(
+    h('p', { class: 'muted small' }, 'Vos modèles servent pour toutes vos classes et toutes les années. Si la grille change, mettez le modèle à jour : chaque classe qui le suit vous proposera d’appliquer les nouvelles étapes, en gardant les résultats des étapes inchangées.'),
+    h('ul', { class: 'plain stack-sm', 'data-testid': 'models-list' }, models().map(m => h('li', { class: 'row wrap' },
+      h('strong', {}, m.title), h('span', { class: 'muted small' }, `${m.items.length} étape(s)${m.note ? ` · ${m.note}` : ''}${m.updatedAt ? ` · modifié le ${model.frShort(m.updatedAt.slice(0, 10))}` : m.builtin ? ' · modèle de l’application' : ''}`),
+      h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'model-edit', onclick: () => modelDialog(m, draw) }, 'Modifier')))),
+    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'model-new', onclick: () => modelDialog(null, draw) }, icon('plus', 14), 'Nouveau modèle'));
+  draw();
+  modal({ title: 'Modèles d’attestations et de diplômes', wide: true, body, actions: [{ label: 'Fermer', primary: true }] });
+}
+
 const STATES = [['', 'à faire'], ['en cours', 'en cours'], ['acquis', 'acquis']];
 const next = (v) => STATES[(STATES.findIndex(s => s[0] === (v || '')) + 1) % STATES.length][0];
 
@@ -28,10 +76,10 @@ export function obtained(a, sid) {
 
 function addDialog(cls) {
   const used = new Set(attestationsOf(cls.id).map(a => a.key));
-  const sel = h('select', { 'data-testid': 'att-template' }, TEMPLATES.filter(t => !used.has(t.key)).map(t => h('option', { value: t.key }, t.title)), h('option', { value: 'perso' }, 'Autre (personnalisée)…'));
+  const sel = h('select', { 'data-testid': 'att-template' }, models().filter(t => !used.has(t.key)).map(t => h('option', { value: t.key }, t.title)), h('option', { value: 'perso' }, 'Autre (pour cette classe seulement)…'));
   const title = h('input', { placeholder: 'ex. Ceinture de calcul mental', 'data-testid': 'att-title' });
   const items = h('textarea', { rows: 5, 'data-testid': 'att-items' });
-  const sync = () => { const t = TEMPLATES.find(x => x.key === sel.value); title.value = t ? t.title : ''; items.value = t ? t.items.join('\n') : ''; };
+  const sync = () => { const t = modelOf(sel.value); title.value = t ? t.title : ''; items.value = t ? t.items.join('\n') : ''; };
   sel.addEventListener('change', sync); sync();
   modal({ title: 'Ajouter une attestation', wide: true, body: h('div', { class: 'form' }, field('Attestation', sel), field('Titre', title),
     field('Étapes (une par ligne)', items, 'Proposition modifiable : vérifiez les étapes sur la grille de votre circonscription.')),
@@ -85,12 +133,20 @@ export function render({ rerender }) {
     await store.update(a.id, { results: cur }, `${a.title} : ${store.get(sid)?.firstName || ''}`);
   };
   return h('div', { class: 'page' },
-    pageHeader('Attestations', { favKey: 'classe/attestations', subtitle: cls.name, actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'att-add', onclick: () => addDialog(cls) }, icon('plus', 16), 'Ajouter une attestation')] }),
+    pageHeader('Attestations', { favKey: 'classe/attestations', subtitle: cls.name, actions: [h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'att-add', onclick: () => addDialog(cls) }, icon('plus', 16), 'Ajouter une attestation'),
+      h('button', { class: 'btn', type: 'button', 'data-testid': 'att-models', onclick: () => modelsDialog() }, 'Modèles…')] }),
     subTabs(),
     h('p', { class: 'muted small' }, 'Un clic par case : à faire → en cours → acquis (daté). L’attestation est obtenue quand toutes les étapes sont acquises ; elle figure alors dans le livret (option « Attestations obtenues »).'),
     list.length ? list.map(a => {
       const n = students.filter(({ student: s }) => obtained(a, s.id)).length;
       return h('section', { class: 'card', 'data-testid': 'att-card' },
+        outdated(a) ? h('p', { class: 'banner warn row wrap', 'data-testid': 'att-outdated' }, 'Le modèle de cette attestation a été mis à jour.',
+          h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'att-apply-model', onclick: async () => {
+            const m = modelOf(a.key); const kept = m.items.map(label => a.items.find(i => i.label === label) || { id: store.uid(), label });
+            const lost = a.items.filter(i => !m.items.includes(i.label)).length;
+            if (lost && !await confirmDialog('Appliquer le nouveau modèle ?', `${lost} étape(s) ne figurent plus dans le modèle : leurs résultats ne seront plus affichés (ils restent dans l’historique).`, { confirmLabel: 'Appliquer' })) return;
+            await store.update(a.id, { title: m.title, items: kept }, `${m.title} : modèle appliqué`);
+          } }, 'Appliquer les nouvelles étapes')) : null,
         h('div', { class: 'card-head' }, h('h2', {}, a.title, ' ', badge(`${n}/${students.length} obtenue(s)`, n === students.length && n ? 'ok' : 'muted')),
           h('span', { class: 'row' },
             h('button', { class: 'btn btn-small', type: 'button', onclick: () => printAttestations(cls, a, students, 'table') }, icon('print', 14), 'Tableau de suivi'),

@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (239) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 251 entrées.
+Légende : ✅ Réalisé (240) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 252 entrées.
 
 ## Étape 1 — Socle
 
@@ -278,4 +278,5 @@ Légende : ✅ Réalisé (239) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §14 Exports | Réimport d’un tableau CSV modifié : chaque ligne est comparée à l’existant ; ce qui a changé est remplacé (cahier journal : fiche liée, statut, bilan, même si une autre fiche était liée ; séances : objectif, durée, déroulé, matériel, compétences ; notions de programmation ; lignes de progression), le reste n’est pas touché, aucun doublon ; bilan de l’import (ajoutées, mises à jour, identiques, fiches remplacées) et « Annuler » pour tout défaire |  |
 | ✅ | §14 Exports | Import CSV : disciplines écrites avec une précision reconnues (« Mathématiques — Géométrie », « Français : production d’écrits », « EMC / Français » → discipline + sous-domaine ; inconnue → « Autre » avec son intitulé) ; option « Remplacer les journées du tableau » (cochée par défaut) : sur les jours du tableau, un ancien créneau ou une activité qui chevauche une ligne sans être à son horaire est retiré (activité à la corbeille, créneau de l’EDT masqué ce jour-là) ; un second import identique ne change rien ; séance retrouvée même si le cahier écrit « S3 » en plus | Vérifié sur un cahier journal réel de 165 lignes et 24 séances (hors dépôt). |
 | ✅ | §11 Fichiers | « Relier… » dans Fichiers : la liste des fiches de séance (ou des séquences) s’affiche directement dans la fenêtre, avec une recherche, groupée par discipline et séquence ; nouveau choix « une séquence » (le fichier rejoint les ressources de la séquence) | Avant, choisir « une fiche de séance » ne montrait rien tant qu’on n’avait pas cliqué « Relier… » en bas. |
+| ✅ | §9 Attestations | Modèles d’attestations et de diplômes : bouton « Modèles… » (créer son modèle, modifier un modèle de l’application, revenir à l’origine, note de source et d’année) ; modèles communs à toutes les classes et années, synchronisés ; quand un modèle change, chaque classe qui le suit propose « Appliquer les nouvelles étapes » en gardant les résultats des étapes inchangées |  |
 | ✅ | §6 Cahier journal | Glisser une activité : la page défile toute seule quand on approche du haut ou du bas de l’écran, pour atteindre une activité hors de vue |  |
