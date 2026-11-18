@@ -8,7 +8,7 @@ import * as E from '../eleve.js';
 import { h, toast } from '../ui.js';
 import { pageHeader, subTabs, needClass, avatar } from '../components.js';
 import { competencyLabel, competencyIndex } from './referentiels.js';
-import { scale } from './evaluations.js';
+import { displayScale as scale } from './evaluations.js';
 
 const ui = { comp: '', subject: '', level: 'A', kind: 'réussite', note: '' };
 

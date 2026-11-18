@@ -10,7 +10,9 @@ export function labelTable(t) {
   if (!rows.length) return;
   const headRow = rows[0];
   const labels = [];
-  for (const th of headRow.cells) for (let i = 0; i < (th.colSpan || 1); i++) labels.push(th.textContent.trim());
+  // Intitulé seul : on ignore les boutons et menus de l'en-tête (ex. « Vides → A »).
+  const headText = (th) => { const c = th.cloneNode(true); c.querySelectorAll('.btn, select, input, .no-label').forEach(x => x.remove()); return c.textContent.replace(/\s+/g, ' ').trim(); };
+  for (const th of headRow.cells) for (let i = 0; i < (th.colSpan || 1); i++) labels.push(headText(th));
   if (labels.length < 2) return;
   const apply = (tr) => { let i = 0; for (const td of tr.cells) { const l = labels[i] || ''; if (l && !td.dataset.label) td.dataset.label = l; i += td.colSpan || 1; } };
   for (const tb of t.tBodies) for (const tr of tb.rows) apply(tr);

@@ -536,10 +536,11 @@ await test('Évaluations : saisie rapide (un clic, clavier 1-4 puis élève suiv
     return ev.id;`);
   await go(`#/evaluations/${id}`);
   const seg0 = page.getByTestId('eval-seg').nth(0);
+  eq((await seg0.locator('button').allTextContents()).join(' '), 'D A ECA NA NE Abs', 'ordre : du plus haut au plus bas, puis NE et Abs');
   await seg0.locator('button', { hasText: 'ECA' }).click(); await page.waitForTimeout(200);
   await seg0.locator('button.on').focus();
-  await page.keyboard.press('3'); await page.waitForTimeout(150); // ligne 1 -> A, puis ligne 2
-  await page.keyboard.press('1'); await page.waitForTimeout(150); // ligne 2 -> NA
+  await page.keyboard.press('2'); await page.waitForTimeout(150); // ligne 1 -> A (2e bouton : D, A, ECA, NA), puis ligne 2
+  await page.keyboard.press('4'); await page.waitForTimeout(150); // ligne 2 -> NA (4e bouton)
   const lv = await S(`const ev = store.get(a); return Object.values(ev.results).map(r => r.items?.x?.level).filter(Boolean);`, id);
   eq(JSON.stringify(lv.sort()), JSON.stringify(['A', 'NA']), 'clic puis clavier : la 1re case modifiée, la 2e remplie');
   await page.getByTestId('fill-col').nth(1).click(); await page.waitForTimeout(400);

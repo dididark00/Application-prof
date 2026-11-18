@@ -10,7 +10,7 @@ import { competencyIndex, competencyLabel } from './referentiels.js';
 import { h, icon, toast, badge, emptyState, download, modal, field } from '../ui.js';
 import { pageHeader, subTabs, needClass, avatar } from '../components.js';
 import { bound } from '../forms.js';
-import { resultsOf, scale, levelKind, inLivret, EVAL_KINDS } from './evaluations.js';
+import { resultsOf, scale, displayScale, levelKind, inLivret, EVAL_KINDS } from './evaluations.js';
 import { attestationsOf, obtained } from './attestations.js';
 import { toCsv } from '../csv.js';
 import { printDocument } from '../print.js';
@@ -112,7 +112,7 @@ function summary(res) {
 }
 function draft(sub, sm, sc) {
   if (!sm) return '';
-  const parts = sc.map(([k, l]) => sm.levels[k] ? `${l.toLowerCase()} : ${sm.levels[k]}` : '').filter(Boolean);
+  const parts = displayScale().map(([k, l]) => sm.levels[k] ? `${l.toLowerCase()} : ${sm.levels[k]}` : '').filter(Boolean);
   return `${sub} — ${sm.items} élément(s) évalué(s)${parts.length ? ` (${parts.join(', ')})` : ''}${sm.max ? `, ${sm.pts}/${sm.max} points` : ''}.`;
 }
 
@@ -159,7 +159,7 @@ export function render({ rerender, query = {} }) {
           h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Imprimer le bilan de ${s.firstName}`, onclick: () => generateDialog(cls, per, pi, [s], mat) }, icon('print', 16)))),
       h('div', { class: 'grid-2' },
         h('div', {}, h('h3', {}, mat ? 'Observations de réussite' : 'Résultats de la période'),
-          !mat && Object.keys(sm).length ? h('ul', { class: 'plain' }, Object.entries(sm).map(([k, v]) => h('li', {}, h('strong', {}, `${k} : `), sc.map(([lv]) => v.levels[lv] ? badge(`${lv} ${v.levels[lv]}`, levelKind(lv)) : null), v.max ? ` ${v.pts}/${v.max} pts` : ''))) : (!mat ? h('p', { class: 'muted small' }, 'Aucun résultat saisi sur la période.') : null),
+          !mat && Object.keys(sm).length ? h('ul', { class: 'plain' }, Object.entries(sm).map(([k, v]) => h('li', {}, h('strong', {}, `${k} : `), displayScale().map(([lv]) => v.levels[lv] ? badge(`${lv} ${v.levels[lv]}`, levelKind(lv)) : null), v.max ? ` ${v.pts}/${v.max} pts` : ''))) : (!mat ? h('p', { class: 'muted small' }, 'Aucun résultat saisi sur la période.') : null),
           obs.length ? h('ul', { class: 'plain small' }, obs.slice(0, 6).map(o => h('li', {}, `${model.frShort(o.date)} · ${o.kind} : ${o.text}`))) : h('p', { class: 'muted small' }, 'Aucune observation sur la période.'),
           h('p', { class: 'muted small' }, `${abs} demi-journée(s) d’absence sur la période.`)),
         h('div', {},
@@ -206,7 +206,7 @@ function compPanel(cls, per, s, res, sc, rerender) {
       h('span', { class: 'comp-label' }, r.label),
       h('span', { class: 'comp-hist' }, r.results.map(x => h('span', { class: `chip lvl-${x.level || 'none'}`, title: `${x.title} — ${model.frShort(x.date)}` }, `${model.frShort(x.date)} ${x.level || (x.points != null ? `${x.points}${x.max ? '/' + x.max : ''}` : '')}`))),
       h('select', { 'aria-label': `Niveau retenu : ${r.label}`, 'data-testid': 'comp-level', onchange: (e) => setLv(r.key, e.target.value === r.proposed ? '' : e.target.value) },
-        h('option', { value: '' }, r.proposed ? `retenu : ${r.proposed} (proposé)` : '—'), sc.map(([k, l]) => h('option', { value: k, selected: r.forced && r.level === k }, `${k} — ${l}`)))))))),
+        h('option', { value: '' }, r.proposed ? `retenu : ${r.proposed} (proposé)` : '—'), displayScale().map(([k, l]) => h('option', { value: k, selected: r.forced && r.level === k }, `${k} — ${l}`)))))))),
     h('p', { class: 'muted small' }, 'Niveau proposé : moyenne des résultats, en donnant plus de poids aux plus récents. Choisissez un autre niveau si besoin.'));
 }
 
@@ -217,7 +217,7 @@ function markRow(cls, per, s, sub, smSub, sc, rerender) {
   const save = (patch) => saveReport(cls, per, s, { marks: { ...(reportOf(cls.id, per.id, s.id)?.marks || {}), [sub]: { ...markOf(reportOf(cls.id, per.id, s.id), sub), ...patch } } }, `Note ${sub}`);
   return h('div', { class: 'row wrap mark-row', 'data-testid': 'mark-row' },
     o.niveaux ? h('select', { 'aria-label': `Niveau en ${sub}`, 'data-testid': 'mark-level', onchange: (e) => save({ level: e.target.value }) },
-      h('option', { value: '' }, sug.level ? `Niveau (proposé : ${sug.level})` : 'Niveau'), sc.map(([k, l]) => h('option', { value: k, selected: m.level === k }, `${k} — ${l}`))) : null,
+      h('option', { value: '' }, sug.level ? `Niveau (proposé : ${sug.level})` : 'Niveau'), displayScale().map(([k, l]) => h('option', { value: k, selected: m.level === k }, `${k} — ${l}`))) : null,
     o.notes ? h('label', { class: 'inline small' }, 'Note', h('input', { class: 'money-input', inputmode: 'decimal', value: m.note || '', placeholder: sug.note || '—', 'aria-label': `Note en ${sub}`, 'data-testid': 'mark-note', onchange: (e) => save({ note: e.target.value.trim() }) }), ` / ${o.sur}`) : null,
     (sug.note && !m.note) || (sug.level && !m.level) ? h('button', { class: 'btn btn-link small', type: 'button', onclick: () => save({ note: m.note || sug.note, level: m.level || sug.level }).then(rerender) }, 'reprendre la proposition') : null);
 }
@@ -283,19 +283,19 @@ function printReport(cls, per, pi, s, mat, o = optsOf(cls)) {
     h('div', { class: 'livret-school' }, h('strong', {}, cls.school || 'École'), h('div', {}, `Année scolaire ${year?.label || ''}`)),
     h('div', { class: 'livret-title' }, h('h1', {}, mat ? 'Carnet de suivi des apprentissages' : per.label === 'Année' ? 'Bilan annuel' : 'Livret scolaire'), h('div', { class: 'print-sub' }, `${per.label} — du ${model.frShort(per.start)} au ${model.frShort(per.end)}`)),
     h('div', { class: 'livret-student' }, h('strong', { class: 'livret-name' }, `${s.firstName} ${s.lastName}`), h('div', {}, `Classe : ${cls.name}`), teacher ? h('div', {}, `${Wcap} : ${teacher}`) : null));
-  const legend = !mat && (o.niveaux || o.detail) ? h('p', { class: 'livret-legend' }, h('strong', {}, 'Positionnement : '), sc.map(([k, l]) => `${k} = ${l}`).join(' · ')) : null;
+  const legend = !mat && (o.niveaux || o.detail) ? h('p', { class: 'livret-legend' }, h('strong', {}, 'Positionnement : '), displayScale().map(([k, l]) => `${k} = ${l}`).join(' · ')) : null;
   const subBlock = (sub) => {
     const m = markOf(rep, sub); const rows = syn[sub] || [];
     const domains = [...new Set(rows.map(r => r.domain))];
     const compRow = (r) => h('tr', {},
       h('td', { class: 'livret-comp' }, r.label, o.dates && r.results.length ? h('div', { class: 'livret-ev' }, r.results.map(x => `${model.frShort(x.date)} : ${x.level || ''}${x.points != null && x.max ? ` ${x.points}/${x.max}` : ''}`).join(' · ')) : null),
-      sc.map(([k]) => h('td', { class: `livret-pos ${r.level === k ? `on lv-${k}` : ''}` }, r.level === k ? '●' : '')));
+      displayScale().map(([k]) => h('td', { class: `livret-pos ${r.level === k ? `on lv-${k}` : ''}` }, r.level === k ? '●' : '')));
     return h('section', { class: 'livret-sub' },
       h('div', { class: 'livret-sub-head' }, h('span', { class: 'livret-sub-name' }, sub),
         o.niveaux && m.level ? h('span', { class: `livret-level lv-${m.level}` }, `${m.level} · ${label[m.level] || ''}`) : null,
         o.notes && m.note ? h('span', { class: 'livret-note' }, `${m.note} / ${o.sur}`) : null),
       o.detail && rows.length ? h('table', { class: 'print-table livret-items' },
-        h('thead', {}, h('tr', {}, h('th', { class: 'livret-comp' }, 'Compétences évaluées'), sc.map(([k, l]) => h('th', { class: 'livret-pos', title: l }, h('span', {}, l))))),
+        h('thead', {}, h('tr', {}, h('th', { class: 'livret-comp' }, 'Compétences évaluées'), displayScale().map(([k, l]) => h('th', { class: 'livret-pos', title: l }, h('span', {}, l))))),
         h('tbody', {}, domains.length > 1 || domains[0] ? domains.flatMap(d => [d ? h('tr', { class: 'livret-domain' }, h('td', { colspan: sc.length + 1 }, d)) : null, ...rows.filter(r => r.domain === d).map(compRow)]) : rows.map(compRow))) : null,
       rep?.subjects?.[sub] ? h('div', { class: 'livret-app' }, h('span', { class: 'livret-app-label' }, 'Appréciation'), h('p', { class: 'pre' }, rep.subjects[sub])) : null);
   };
@@ -353,7 +353,7 @@ function classStats(cls, per, students) {
   const ranked = per_s.map(x => ({ s: x.s, v: mastery(x.rows, sc) })).filter(x => x.v != null).sort((a, b) => b.v - a.v);
   return h('details', { class: 'card class-stats', 'data-testid': 'class-stats' }, h('summary', {}, h('strong', {}, 'Statistiques de la classe'), h('span', { class: 'muted small' }, ` — ${per_s.length} élève(s) évalué(s), ${total} niveau(x) retenu(s)`)),
     h('div', { class: 'cs-dist', role: 'img', 'aria-label': `Répartition : ${keys.map(k => `${k} ${dist[k]}`).join(', ')}` },
-      [...keys.map(k => [k, dist[k]]), ['NE', ne]].filter(([, n]) => n).map(([k, n]) => h('span', { class: `cs-seg lv-${k}`, style: { flexGrow: String(n) }, title: `${k} : ${n}` }, `${k} ${Math.round(n / total * 100)} %`))),
+      [...[...keys].reverse().map(k => [k, dist[k]]), ['NE', ne]].filter(([, n]) => n).map(([k, n]) => h('span', { class: `cs-seg lv-${k}`, style: { flexGrow: String(n) }, title: `${k} : ${n}` }, `${k} ${Math.round(n / total * 100)} %`))),
     h('div', { class: 'cs-grid' },
       profile(classSyn, sc),
       h('div', {}, h('div', { class: 'lp-title' }, 'Maîtrise par élève'), h('div', { class: 'cs-students' }, ranked.map(x => h('div', { class: 'lp-gauge' }, h('span', { class: 'lp-name' }, x.s.firstName), h('span', { class: 'lp-bar' }, h('span', { style: { width: `${Math.round(x.v * 100)}%` } })), h('span', { class: 'lp-pct' }, `${Math.round(x.v * 100)} %`)))))),

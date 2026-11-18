@@ -1580,3 +1580,13 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .more-menu.more-floating { position: fixed; z-index: 60; right: auto; overflow-y: auto; overscroll-behavior: contain; }
 .more-menu { max-width: min(340px, calc(100vw - 16px)); }
 .link-pick { max-height: 40vh; overflow: auto; }
+/* Saisie d'une évaluation sur téléphone : l'intitulé au-dessus, les boutons D / A / ECA / NA / NE / Abs sur toute la largeur. */
+@media (max-width: 640px) {
+  table.eval-grid[data-cards] tr { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  table.eval-grid[data-cards] td:not(:first-child) { flex: 1 1 100%; flex-direction: column; align-items: stretch; min-width: 0; }
+  table.eval-grid[data-cards] td[data-label]:not(:first-child)::before { white-space: normal; }
+  table.eval-grid[data-cards] .lvl-seg { display: flex; width: 100%; box-sizing: border-box; }
+  table.eval-grid[data-cards] .lvl-btn { flex: 1 1 0; min-width: 0; padding: 0 2px; min-height: 40px; }
+  table.eval-grid[data-cards] td:has(> input[type=checkbox]) { flex-direction: row; align-items: center; }
+  table.eval-grid[data-cards] input:not([type=checkbox]), table.eval-grid[data-cards] select { width: 100%; box-sizing: border-box; }
+}

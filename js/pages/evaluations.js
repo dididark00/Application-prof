@@ -12,6 +12,8 @@ import { printDocument } from '../print.js';
 
 export const DEFAULT_SCALE = [['NA', 'Non acquis'], ['ECA', 'En cours d’acquisition'], ['A', 'Acquis'], ['D', 'Dépassé']];
 export function scale() { const s = store.getSettings().evalScale; return Array.isArray(s) && s.length ? s : DEFAULT_SCALE; }
+/** Ordre d'affichage : du plus haut au plus bas (D, A, ECA, NA), puis NE et Abs. scale() reste du plus bas au plus haut pour les calculs. */
+export function displayScale() { return [...scale()].reverse(); }
 const KIND = { NA: 'warn', ECA: 'info', A: 'ok', D: 'ok' };
 export const levelKind = (l) => KIND[l] || 'muted';
 
@@ -89,7 +91,7 @@ function detail(id, rerender) {
 
   const levelKeys = sc.map(([k]) => k);
   const fillKey = levelKeys.includes('A') ? 'A' : levelKeys[Math.max(0, levelKeys.length - 2)];
-  const footTxt = (it) => { const c = colStats(it); return [...sc.map(([k]) => c[k] ? `${k} ${c[k]}` : ''), c.NE ? `NE ${c.NE}` : '', c.Abs ? `Abs ${c.Abs}` : '', c['—'] ? `vides ${c['—']}` : ''].filter(Boolean).join(' · '); };
+  const footTxt = (it) => { const c = colStats(it); return [...displayScale().map(([k]) => c[k] ? `${k} ${c[k]}` : ''), c.NE ? `NE ${c.NE}` : '', c.Abs ? `Abs ${c.Abs}` : '', c['—'] ? `vides ${c['—']}` : ''].filter(Boolean).join(' · '); };
   const refreshFoot = (it) => { const el = document.querySelector(`[data-foot="${it.id}"]`); if (el) el.textContent = footTxt(it); };
   // val : un niveau de l'échelle, '' (effacer), 'NE' (non évalué) ou 'ABS' (absent à cet exercice).
   const setLevel = async (sid, it, val, seg) => {
@@ -103,14 +105,14 @@ function detail(id, rerender) {
   /** Une case = des boutons NA / ECA / A / D : un clic (re-cliquer efface), ou au clavier 1-4, 0 pour effacer, puis élève suivant. */
   const levelSeg = (s, it, v, row, col) => {
     const cur = v.status === 'ne' ? 'NE' : v.status === 'abs' ? 'ABS' : (v.level || '');
-    const keys = [...sc.map(([k, l], i) => [k, k, `${l} (touche ${i + 1})`]), ['NE', 'NE', 'Non évalué (touche N)'], ['ABS', 'Abs', 'Absent à cet exercice (touche X)']];
+    const keys = [...displayScale().map(([k, l], i) => [k, k, `${l} (touche ${i + 1})`]), ['NE', 'NE', 'Non évalué (touche N)'], ['ABS', 'Abs', 'Absent à cet exercice (touche X)']];
     const seg = h('div', { class: 'lvl-seg', role: 'radiogroup', 'aria-label': `${s.firstName} — ${it.label}`, 'data-testid': 'eval-seg', 'data-row': row, 'data-col': col, 'data-val': cur },
       keys.map(([k, txt, title], i) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${cur === k ? 'on' : ''} ${k === 'NE' || k === 'ABS' ? 'lvl-extra' : ''}`, role: 'radio', 'aria-checked': String(cur === k), 'data-k': k, title, tabindex: (cur ? cur === k : i === 0) ? 0 : -1,
         onclick: () => setLevel(s.id, it, seg.dataset.val === k ? '' : k, seg) }, txt)));
     seg.addEventListener('keydown', async (e) => {
       const n = Number(e.key);
       let val = null;
-      if (n >= 1 && n <= sc.length) val = sc[n - 1][0];
+      if (n >= 1 && n <= sc.length) val = displayScale()[n - 1][0];
       else if (e.key === '0' || e.key === 'Delete' || e.key === 'Backspace') val = '';
       else if (e.key.toLowerCase() === 'n') val = 'NE';
       else if (e.key.toLowerCase() === 'x') val = 'ABS';
@@ -162,7 +164,7 @@ function detail(id, rerender) {
     h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, h('th', { style: { width: '20%' } }, 'Élève'), ev.items.map(it => h('th', {}, it.label)), h('th', {}, 'Observation'))),
       h('tbody', {}, students.map(({ student: s }, row) => { const r = ev.results?.[s.id] || {};
         return h('tr', {}, h('td', {}, `${(s.lastName || '').toUpperCase()} ${s.firstName}`), ev.items.map(it => h('td', {}, blank ? '' : r.absent ? 'abs.' : [r.items?.[it.id]?.level, r.items?.[it.id]?.points != null ? `${r.items[it.id].points}${it.maxPoints ? '/' + it.maxPoints : ''}` : ''].filter(Boolean).join(' · '))), h('td', {}, blank ? '' : r.observation || '')); }))),
-    h('p', { class: 'print-foot' }, `Légende : ${sc.map(([k, l]) => `${k} = ${l}`).join(' · ')} · case vide = non évalué`));
+    h('p', { class: 'print-foot' }, `Légende : ${displayScale().map(([k, l]) => `${k} = ${l}`).join(' · ')} · case vide = non évalué`));
 
   return h('div', { class: 'page' },
     h('p', {}, h('a', { href: '#/evaluations', class: 'back' }, '← Évaluations')),
@@ -180,7 +182,7 @@ function detail(id, rerender) {
       bound({ label: 'Mode', type: 'select', value: ev.mode, options: [['maîtrise', 'Niveaux de maîtrise'], ['notes', 'Points'], ['les deux', 'Les deux']], onSave: (v) => store.update(ev.id, { mode: v }, 'Mode de l’évaluation') }),
       bound({ label: 'Type', type: 'select', value: ev.kind || 'sommative', options: EVAL_KINDS, onSave: (v) => store.update(ev.id, { kind: v }, 'Type d’évaluation') }),
       h('label', { class: 'inline', style: { alignSelf: 'end' } }, h('input', { type: 'checkbox', checked: inLivret(ev), 'data-testid': 'eval-inlivret-toggle', onchange: (e) => store.update(ev.id, { inLivret: e.target.checked }, e.target.checked ? 'Évaluation dans le livret' : 'Évaluation hors livret') }), 'Dans le livret'),
-      h('div', { class: 'field' }, h('label', {}, 'Légende'), h('p', { class: 'small' }, sc.map(([k, l]) => `${k} : ${l}`).join(' · '), h('br'), 'NE : non évalué · Abs : absent à cet exercice (ni l’un ni l’autre ne compte comme « non acquis »).'))),
+      h('div', { class: 'field' }, h('label', {}, 'Légende'), h('p', { class: 'small' }, displayScale().map(([k, l]) => `${k} : ${l}`).join(' · '), h('br'), 'NE : non évalué · Abs : absent à cet exercice (ni l’un ni l’autre ne compte comme « non acquis »).'))),
       (ev.versions || []).length ? h('p', { class: 'small' }, 'Versions : ', ev.versions.map(v => `${v.label}${v.note ? ` (${v.note})` : ''}`).join(' ; ')) : null),
     ev.items.length ? h('section', { class: 'card' }, grid) : emptyState('Aucun item', 'Ajoutez des items ou des compétences à évaluer.'),
     h('p', { class: 'muted small' }, 'Saisie rapide : un clic par case (re-cliquer efface), ou au clavier les touches 1 à ', String(sc.length), ' puis l’élève suivant (0 efface, flèches pour se déplacer). « Vides → ', fillKey, ' » remplit une colonne, il ne reste qu’à corriger les exceptions. Aucune note n’est convertie en niveau de maîtrise (ni l’inverse). Les absents sont signalés au rattrapage.'));
@@ -203,7 +205,7 @@ function byStudent(ev0, students, i) {
       state.absent ? null : h('div', { class: 'stack' }, ev.items.map(it => h('div', { class: 'bs-item' },
         h('div', { class: 'bs-label' }, it.label, showPts && it.maxPoints ? h('span', { class: 'muted small' }, ` / ${it.maxPoints}`) : null),
         h('div', { class: 'row wrap' },
-          showLevel ? h('div', { class: 'lvl-seg big', role: 'radiogroup', 'aria-label': it.label }, sc.map(([k, l]) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${state.items[it.id]?.level === k ? 'on' : ''}`, role: 'radio', 'aria-checked': String(state.items[it.id]?.level === k), title: l, 'data-testid': 'bs-level',
+          showLevel ? h('div', { class: 'lvl-seg big', role: 'radiogroup', 'aria-label': it.label }, displayScale().map(([k, l]) => h('button', { type: 'button', class: `lvl-btn lvl-${k} ${state.items[it.id]?.level === k ? 'on' : ''}`, role: 'radio', 'aria-checked': String(state.items[it.id]?.level === k), title: l, 'data-testid': 'bs-level',
             onclick: () => { const cur = state.items[it.id]?.level; state.items[it.id] = { ...(state.items[it.id] || {}), level: cur === k ? '' : k }; draw(); } }, k))) : null,
           showPts ? h('input', { type: 'number', step: '0.5', min: 0, class: 'pts', 'aria-label': `${it.label} (points)`, value: state.items[it.id]?.points ?? '', oninput: (e) => { state.items[it.id] = { ...(state.items[it.id] || {}), points: e.target.value === '' ? null : Number(e.target.value) }; } }) : null)))),
       h('div', { class: 'field' }, h('label', {}, 'Observation'), h('input', { type: 'text', value: state.observation, placeholder: 'facultatif', oninput: (e) => { state.observation = e.target.value; } })));
