@@ -91,7 +91,7 @@ function detail(id) {
       bound({ label: 'Titre de la séance', type: 'text', value: s.title, testid: 'f-title', onSave: (v) => save({ title: v }, 'Titre') })),
     h('div', { class: 'grid-3' },
       bound({ label: 'Discipline / domaine', type: 'select', value: s.subject || '', options: ['', ...model.subjects()], testid: 'f-subject', onSave: (v) => save({ subject: v }, 'Discipline') }),
-      bound({ label: 'Sous-domaine', type: 'text', value: s.subdomain, onSave: (v) => save({ subdomain: v }, 'Sous-domaine') }),
+      bound({ label: 'Sous-domaine', type: 'text', value: s.subdomain, suggestions: model.subjectDomains(s.subject), testid: 'f-subdomain', onSave: (v) => save({ subdomain: v }, 'Sous-domaine') }),
       bound({ label: 'Durée prévue (min)', type: 'number', value: s.duration, placeholder: String(P.sessionDuration({ phases: s.phases }) || ''), hint: 'Vide : somme des phases', onSave: (v) => save({ duration: v }, 'Durée') })),
     h('div', { class: 'grid-3' },
       bound({ label: 'Place dans la journée', type: 'text', value: s.place, placeholder: 'ex. début de journée, lundi matin', testid: 'f-place', onSave: (v) => save({ place: v }, 'Place') }),

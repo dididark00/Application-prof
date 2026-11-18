@@ -1134,9 +1134,16 @@ await test('Disciplines et domaines : compléter avec le cycle 2 (programmes 202
   assert(r.subj.includes('Domaines complémentaires') && r.subj.at(-1) === 'Autre', 'disciplines enregistrées');
   eq(r.hg.join('|'), 'Histoire|Géographie', 'domaines enregistrés'); assert(r.fr.includes('Ma rubrique perso') && r.fr.includes('Grammaire et orthographe'), 'domaines fusionnés');
   // Suggestion dans un champ « sous-domaine »
-  const opts = await page.evaluate(() => { const f = document.createElement('form'); f.innerHTML = '<select name="subject"><option value="Histoire-géographie" selected></option></select><input name="subdomain">'; document.body.append(f); f.querySelector('input').focus();
-    const r = [...document.querySelectorAll('#dl-domains option')].map(o => o.value); f.remove(); return r; });
-  eq(opts.join('|'), 'Histoire|Géographie', 'domaines proposés');
+  const opts = await page.evaluate(async () => { const f = document.createElement('form'); f.innerHTML = '<select name="subject"><option value="Histoire-géographie" selected></option></select><input name="subdomain">'; document.body.append(f); f.querySelector('input').focus();
+    await new Promise(r => setTimeout(r, 200)); const box = f.querySelector('.suggest-chips'); const r = [...box.querySelectorAll('button')].map(o => o.textContent);
+    box.querySelector('button').click(); const v = f.querySelector('input').value; f.remove(); return [r.join('|'), v]; });
+  eq(opts[0], 'Histoire|Géographie', 'domaines proposés sous le champ'); eq(opts[1], 'Histoire', 'un clic remplit le champ');
+  // Fiche de séance : propositions sous « Sous-domaine »
+  const sid = await S(`const s = store.all('session').find(x => x.classId === model.currentClass().id && !x.deletedAt); await store.update(s.id, { subject: 'Histoire-géographie' }, 'essai'); return s.id;`);
+  await go(`#/seance/${sid}`); await page.waitForTimeout(400);
+  const chips = page.locator('.suggest-field', { has: page.getByTestId('f-subdomain') }).getByTestId('suggest-chips');
+  await chips.locator('button', { hasText: 'Géographie' }).click(); await page.waitForTimeout(300);
+  eq(await S(`return store.get(a).subdomain;`, sid), 'Géographie', 'sous-domaine choisi en un clic dans la fiche');
   await S(`await store.setSettings({ subjects: a.s, subjectDomains: a.d });`, saved);
 });
 

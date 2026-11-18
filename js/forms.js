@@ -8,7 +8,18 @@ function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = `${Math.min(
  * Champ lié : value initiale + onSave(valeur). Enregistre à la sortie du champ.
  * type : text | textarea | number | date | time | select | checkbox
  */
-export function bound({ label, value, onSave, type = 'textarea', placeholder = '', options = [], hint, testid, compact = false }) {
+/** Propositions cliquables sous un champ texte (ex. domaines d'une discipline). Écrire autre chose reste possible. */
+export function suggestChips(input, list, onPick = null) {
+  const box = h('div', { class: 'suggest-chips', 'data-testid': 'suggest-chips' });
+  const draw = (xs) => { box.replaceChildren(...xs.map(v => h('button', { type: 'button', class: `chip ${input.value === v ? 'on' : ''}`, onclick: () => {
+    input.value = v; input.dispatchEvent(new Event('input', { bubbles: true })); onPick ? onPick(v) : input.dispatchEvent(new Event('change', { bubbles: true })); draw(xs);
+  } }, v))); box.hidden = !xs.length; };
+  draw(list || []);
+  box.update = draw;
+  return box;
+}
+
+export function bound({ label, value, onSave, type = 'textarea', placeholder = '', options = [], hint, testid, compact = false, suggestions = null }) {
   let input;
   const save = async (v) => {
     try { await onSave(v); input.classList.add('saved'); setTimeout(() => input.classList.remove('saved'), 700); }
@@ -29,6 +40,11 @@ export function bound({ label, value, onSave, type = 'textarea', placeholder = '
   } else {
     input = h('input', { type, value: value ?? '', placeholder, 'data-testid': testid, min: type === 'number' ? 0 : null });
     input.addEventListener('change', () => partialDate(input) || save(type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value));
+  }
+  if (suggestions?.length && input.tagName === 'INPUT') {
+    const chips = suggestChips(input, suggestions);
+    const wrap = h('div', { class: 'suggest-field' }, input, chips);
+    return label ? field(label, wrap, hint) : wrap;
   }
   return label ? field(label, input, hint) : input;
 }

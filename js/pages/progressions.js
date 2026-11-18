@@ -109,7 +109,7 @@ function detail(id) {
           await store.remove(pr.id, 'Progression mise à la corbeille'); location.hash = '#/progressions';
         } }, icon('trash', 16))] }),
     h('section', { class: 'card' }, h('div', { class: 'grid-3' },
-      bound({ label: 'Sous-domaine', type: 'text', value: pr.subdomain, onSave: (v) => store.update(pr.id, { subdomain: v }, 'Sous-domaine', { quiet: true }) }),
+      bound({ label: 'Sous-domaine', type: 'text', value: pr.subdomain, suggestions: model.subjectDomains(pr.subject), onSave: (v) => store.update(pr.id, { subdomain: v }, 'Sous-domaine', { quiet: true }) }),
       ownerSelect(pr.id, cls),
       bound({ label: 'Colonnes fil rouge (virgules)', type: 'text', value: extras.join(', '), onSave: (v) => store.update(pr.id, { extraColumns: v.split(',').map(x => x.trim()).filter(Boolean) }, 'Colonnes') })),
       h('p', {}, h('strong', {}, 'Programmation de référence : '), prog ? h('a', { href: `#/programmation/${prog.id}` }, `${prog.subject} ${prog.level}`) : h('span', { class: 'muted' }, 'aucune'),

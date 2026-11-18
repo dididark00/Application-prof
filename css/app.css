@@ -1590,3 +1590,7 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
   table.eval-grid[data-cards] td:has(> input[type=checkbox]) { flex-direction: row; align-items: center; }
   table.eval-grid[data-cards] input:not([type=checkbox]), table.eval-grid[data-cards] select { width: 100%; box-sizing: border-box; }
 }
+.suggest-field { display: grid; gap: 6px; }
+.suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.suggest-chips .chip { font-size: .8rem; padding: 3px 10px; cursor: pointer; }
+.suggest-chips .chip.on { background: var(--accent); color: var(--on-accent, #fff); }

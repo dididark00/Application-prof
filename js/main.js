@@ -226,16 +226,16 @@ async function start() {
   Theme.apply();
   renderShell({ navigate, onQuickAdd: openQuickAdd });
   window.addEventListener('hashchange', render);
-  // Domaines proposés (liste de suggestions) dans les champs « sous-domaine » / « domaine », d'après la discipline choisie.
-  document.addEventListener('focusin', (e) => {
-    const el = e.target; if (!(el instanceof HTMLInputElement) || !['subdomain', 'domain', 'subdomains'].includes(el.name)) return;
-    const subj = el.dataset.subject || el.form?.querySelector('[name=subject]')?.value || '';
-    const ds = subj ? model.subjectDomains(subj) : [];
-    if (el.name === 'subdomains') { if (!el.value && ds.length) el.placeholder = ds.join(', '); return; }
-    let dl = document.getElementById('dl-domains'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'dl-domains'; document.body.append(dl); }
-    dl.replaceChildren(...ds.map(v => { const o = document.createElement('option'); o.value = v; return o; }));
-    el.setAttribute('list', 'dl-domains');
+  // Domaines proposés sous les champs « sous-domaine » / « domaine » des fenêtres, d'après la discipline choisie (clic = choisi).
+  document.addEventListener('focusin', async (e) => {
+    const el = e.target; if (!(el instanceof HTMLInputElement) || !['subdomain', 'domain'].includes(el.name)) return;
+    const subjOf = () => el.dataset.subject || el.form?.querySelector('[name=subject]')?.value || '';
+    const { suggestChips } = await import('./forms.js');
+    let box = el.nextElementSibling?.classList.contains('suggest-chips') ? el.nextElementSibling : null;
+    if (!box) { box = suggestChips(el, []); el.after(box); el.form?.querySelector('[name=subject]')?.addEventListener('change', () => box.update(model.subjectDomains(subjOf()))); }
+    box.update(model.subjectDomains(subjOf()));
   });
+  document.addEventListener('focusin', (e) => { const el = e.target; if (el instanceof HTMLInputElement && el.name === 'subdomains' && !el.value) { const ds = model.subjectDomains(el.form?.querySelector('[name=subject]')?.value || ''); if (ds.length) el.placeholder = ds.join(', '); } });
   // Menus « Plus » : posés au-dessus de tout (jamais coupés par un panneau qui défile ni par le bord de l'écran),
   // vers le bas ou vers le haut selon la place, alignés à droite si besoin ; fermés au défilement.
   const placeMenu = (d) => {

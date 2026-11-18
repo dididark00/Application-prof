@@ -103,7 +103,7 @@ function detail(id) {
         bound({ label: 'Période', type: 'select', value: s.periodId || '', options: [['', '—'], ...periods.map((p, i) => [p.id, `P${i + 1}`])], onSave: (v) => save({ periodId: v || null }, 'Période') })),
       h('div', { class: 'grid-3' },
         bound({ label: 'Discipline / domaine', type: 'select', value: s.subject || '', options: model.subjects(), onSave: (v) => save({ subject: v }, 'Discipline') }),
-        bound({ label: 'Sous-domaine', type: 'text', value: s.subdomain, onSave: (v) => save({ subdomain: v }, 'Sous-domaine') }),
+        bound({ label: 'Sous-domaine', type: 'text', value: s.subdomain, suggestions: model.subjectDomains(s.subject), onSave: (v) => save({ subdomain: v }, 'Sous-domaine') }),
         ownerSelect(s.id, cls)),
       h('div', { class: 'grid-3' },
         h('div', { class: 'field' }, h('label', {}, 'Niveau(x)'), levelChips(s.levels || [], cls.levels || [], (v) => save({ levels: v }, 'Niveaux'))),

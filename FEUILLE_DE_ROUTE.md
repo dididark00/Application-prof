@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (242) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 254 entrées.
+Légende : ✅ Réalisé (243) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 255 entrées.
 
 ## Étape 1 — Socle
 
@@ -281,4 +281,5 @@ Légende : ✅ Réalisé (242) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §9 Attestations | Modèles d’attestations et de diplômes : bouton « Modèles… » (créer son modèle, modifier un modèle de l’application, revenir à l’origine, note de source et d’année) ; modèles communs à toutes les classes et années, synchronisés ; quand un modèle change, chaque classe qui le suit propose « Appliquer les nouvelles étapes » en gardant les résultats des étapes inchangées |  |
 | ✅ | §5 Préparation | Disciplines et domaines : chaque discipline peut avoir ses domaines (« Mathématiques : Nombres et calculs ; Grandeurs et mesures… ») ; bouton « Compléter avec le cycle 2 (programmes 2026) » qui ajoute Histoire-géographie, Sciences et technologie, les domaines complémentaires (EVAR, EMI, EDD, informatique, sécurité routière, premiers secours, compétences psychosociales…) sans rien retirer ; domaines proposés dans les champs « sous-domaine » et pré-remplis dans une nouvelle programmation ; liste modifiable chaque année |  |
 | ✅ | §9 Livrets | Niveaux affichés du plus haut au plus bas : D, A, ECA, NA, puis NE et Abs (saisie, saisie élève par élève, observation éclair, légendes, livret) ; touches 1 à 4 dans cet ordre ; les calculs (synthèse, profil) sont inchangés. Sur téléphone, la saisie d’une évaluation tient dans l’écran : intitulé au-dessus, boutons sur toute la largeur, intitulé sans le texte du bouton « Vides → A » |  |
+| ✅ | §5 Préparation | Sous-domaine : les domaines de la discipline sont proposés en boutons cliquables sous le champ (fiche de séance, séquence, progression, fenêtres de création, activité du cahier journal) ; on peut toujours écrire autre chose |  |
 | ✅ | §6 Cahier journal | Glisser une activité : la page défile toute seule quand on approche du haut ou du bas de l’écran, pour atteindre une activité hors de vue |  |
