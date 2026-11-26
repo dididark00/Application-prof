@@ -301,6 +301,7 @@ export const ROADMAP = [
   R(5, '§9 Livrets', 'Niveaux affichés du plus haut au plus bas : D, A, ECA, NA, puis NE et Abs (saisie, saisie élève par élève, observation éclair, légendes, livret) ; touches 1 à 4 dans cet ordre ; les calculs (synthèse, profil) sont inchangés. Sur téléphone, la saisie d’une évaluation tient dans l’écran : intitulé au-dessus, boutons sur toute la largeur, intitulé sans le texte du bouton « Vides → A »', 'fait', ''),
   R(5, '§5 Préparation', 'Sous-domaine : les domaines de la discipline sont proposés en boutons cliquables sous le champ (fiche de séance, séquence, progression, fenêtres de création, activité du cahier journal) ; on peut toujours écrire autre chose', 'fait', ''),
   R(5, '§6 Cahier journal', 'Glisser une activité : la page défile toute seule quand on approche du haut ou du bas de l’écran, pour atteindre une activité hors de vue', 'fait', ''),
+  R(5, '§14 Exports', 'Fiche de séance imprimée ou exportée en PDF : rubriques à cocher (identification, cadre pédagogique, colonnes du déroulement, bilan…) et choix de la mise en page, tableau actuel (paysage) ou sans tableau (rubriques à la suite, portrait) ; derniers choix retenus', 'fait', 'Version vierge : mêmes choix'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

@@ -76,7 +76,7 @@ function dayView(cls, date, nav) {
     uncheckedCard(cls, date),
     plan.warnings.length ? h('div', { class: 'card warn-card', 'data-testid': 'conflicts' }, h('h2', {}, icon('alert', 18), ` ${plan.warnings.length} conflit(s)`),
       h('ul', {}, plan.warnings.map(w => h('li', {}, w.message, ' ',
-        [w.a, w.b].filter(x => x.kind !== 'event' && x.status === 'prévue').map(x => h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'propose-postpone', onclick: () => postponeDialog(cls, x) }, `Reporter « ${x.title} »`))))),
+        [w.a, w.b].filter(x => x.kind !== 'event' && x.status === 'prévue').map(x => h('button', { class: 'btn btn-small btn-wrap', type: 'button', 'data-testid': 'propose-postpone', onclick: () => postponeDialog(cls, x) }, `Reporter « ${x.title} »`))))),
       h('p', { class: 'muted small' }, 'Rien n’est déplacé automatiquement : choisissez ce que vous reportez.')) : null,
     vplan.entries.length && split() ? splitView(cls, date, vplan, inConflict)
     : vplan.entries.length ? (multi ? parallel(cls, vplan, inConflict) : PL.otherGroups(cls, vplan.entries).length ? sideBySide(cls, vplan, inConflict) : h('div', { class: 'stack', 'data-testid': 'day-entries' }, vplan.entries.map(e => entryCard(cls, e, inConflict))))

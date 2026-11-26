@@ -40,52 +40,95 @@ function phaseCells(ph) {
   ];
 }
 
-export function printSession(id, { blank = false } = {}) {
+/** Parties de la fiche de séance que l'on peut cocher à l'impression ou à l'export. */
+export const FICHE_PARTS = [
+  { group: 'Identification', items: [['enseignante', 'Enseignante'], ['classe', 'Classe'], ['dates', 'Date et horaire'], ['duree', 'Durée'], ['domaine', 'Domaine'], ['place', 'Place'], ['sequence', 'Séquence'], ['seance', 'Séance']] },
+  { group: 'Cadre pédagogique', items: [['competences', 'Compétences'], ['objectif', 'Objectif'], ['prerequis', 'Prérequis'], ['criteres', 'Critères de réussite'], ['materiel', 'Matériel et supports'], ['cahier', 'Trace et cahier'], ['manuel', 'Manuel'], ['vocabulaire', 'Vocabulaire'], ['photocopies', 'Photocopies'], ['problematique', 'Problématique']] },
+  { group: 'Déroulement', items: [['multiniveau', 'Multiniveau'], ['deroulement', 'Déroulement des phases'], ['col-eleves', 'Activité des élèves'], ['col-ens', 'Rôle de l’enseignante'], ['col-diff', 'Différenciation et évaluation']] },
+  { group: 'Après la séance', items: [['instit', 'Institutionnalisation, correction et évaluation'], ['bilan', 'Bilan après la séance'], ['checklist', 'Checklist avant visite (mode Visite)']] },
+];
+export const FICHE_LAYOUTS = [['tableau', 'Tableau (format actuel)'], ['blocs', 'Sans tableau (rubriques à la suite)']];
+
+/** Rubriques à la suite, sans tableau : intitulé en couleur puis le texte. */
+const blocks = (pairs, { blank = false, skipEmpty = false, compact = false } = {}) => {
+  const shown = pairs.filter(([, v]) => blank || !skipEmpty || (v != null && String(v).trim() !== ''));
+  if (!shown.length) return null;
+  if (compact && !blank) return h('p', { class: 'fb-meta' }, shown.flatMap(([k, v], i) => [i ? ' · ' : '', h('b', {}, `${k} : `), String(v ?? '').replace(/\n/g, ' ; ')]));
+  return h('div', { class: 'fb-list' }, shown.map(([k, v]) => h('div', { class: `fb-item${blank ? ' fb-blank' : ''}` }, h('div', { class: 'fb-label' }, k), h('div', { class: 'fb-val pre' }, blank ? '' : (v ?? '')))));
+};
+
+export function printSession(id, { blank = false, show = null, layout = 'tableau' } = {}) {
   const s = store.get(id); const cls = store.get(s.classId);
   const seq = s.sequenceId ? store.get(s.sequenceId) : null;
   const full = blank || s.mode === 'visite';
+  const on = (k) => !show || (show instanceof Set ? show.has(k) : show.includes(k));
+  const pick = (pairs) => pairs.filter(([k]) => on(k)).map(([, l, v]) => [l, v]);
+  const flat = layout === 'blocs';
+  const fields = (pairs, opts = {}) => (flat ? blocks : kv4)(pick(pairs), opts);
   const o = { blank, skipEmpty: !full };
   const idx = competencyIndex();
   const comps = [s.competencesText, ...(s.competencyIds || []).map(c => `${competencyLabel(c, idx)} (${competencySource(c, idx)})`)].filter(Boolean).join('\n');
   const occs = P.occurrencesOfSession(s.id).filter(x => x.status !== 'reportée');
   const dates = occs.map(x => `${model.frDate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })}${x.start ? ` · ${x.start.replace(':', ' h ')} à ${(x.end || '').replace(':', ' h ')}` : ''}`).join('\n');
   const levels = (s.levels?.length ? s.levels : cls.levels).join(', ');
+  const ident = fields([['enseignante', 'Enseignante', teacher()], ['classe', 'Classe', `${cls.name} — ${nbStudents(cls)} élèves${levels && levels !== cls.name ? ' · ' + levels : ''}`],
+    ['dates', 'Date et horaire', dates], ['duree', 'Durée', model.durationLabel(P.sessionDuration(s))],
+    ['domaine', 'Domaine', [s.subject, s.subdomain].filter(Boolean).join(' — ')], ['place', 'Place', lines(s.place, s.organisation ? `Organisation : ${s.organisation}` : '')],
+    ['sequence', 'Séquence', seq ? P.sequenceTitle(seq) : ''], ['seance', 'Séance', [P.sessionNumber(s) ? `n° ${P.sessionNumber(s)}${s.optional ? ' (si nécessaire)' : ''}` : '', s.title].filter(Boolean).join(' — ')]],
+    { blank, skipEmpty: flat, compact: true });
+  const cadre = fields([['competences', 'Compétences', comps], ['objectif', 'Objectif', s.objective], ['prerequis', 'Prérequis', s.prerequis], ['criteres', 'Critères de réussite', s.criteres],
+    ['materiel', 'Matériel et supports', lines(s.avant, pre('À projeter', s.projeter), pre('À imprimer', s.imprimer), pre('À distribuer', s.distribuer), (s.fileIds || []).map(f => store.get(f)?.name).filter(Boolean).join(', '))],
+    ['cahier', 'Trace et cahier', lines(s.cahier, pre('Correction', s.correction))],
+    ['manuel', 'Manuel', manualRefsText(s.manualRefs)], ['vocabulaire', 'Vocabulaire', s.vocabulaire],
+    ['photocopies', 'Photocopies', (s.copies || []).map(c => `${c.label} (${c.perStudent}/élève + ${c.extra})`).join(' ; ')]], o);
   const sections = [
     h('header', { class: 'print-head print-head-center' }, h('h1', {}, 'Fiche de préparation'), blank ? null : h('p', { class: 'print-sub' }, P.sessionTitle(s))),
-    kv4([['Enseignante', teacher()], ['Classe', `${cls.name} — ${nbStudents(cls)} élèves${levels && levels !== cls.name ? ' · ' + levels : ''}`],
-      ['Date et horaire', dates], ['Durée', model.durationLabel(P.sessionDuration(s))],
-      ['Domaine', [s.subject, s.subdomain].filter(Boolean).join(' — ')], ['Place', lines(s.place, s.organisation ? `Organisation : ${s.organisation}` : '')],
-      ['Séquence', seq ? P.sequenceTitle(seq) : ''], ['Séance', [P.sessionNumber(s) ? `n° ${P.sessionNumber(s)}${s.optional ? ' (si nécessaire)' : ''}` : '', s.title].filter(Boolean).join(' — ')]], { blank }),
-    h2('Cadre pédagogique'),
-    kv4([['Compétences', comps], ['Objectif', s.objective], ['Prérequis', s.prerequis], ['Critères de réussite', s.criteres],
-      ['Matériel et supports', lines(s.avant, pre('À projeter', s.projeter), pre('À imprimer', s.imprimer), pre('À distribuer', s.distribuer), (s.fileIds || []).map(f => store.get(f)?.name).filter(Boolean).join(', '))],
-      ['Trace et cahier', lines(s.cahier, pre('Correction', s.correction))],
-      ['Manuel', manualRefsText(s.manualRefs)], ['Vocabulaire', s.vocabulaire],
-      ['Photocopies', (s.copies || []).map(c => `${c.label} (${c.perStudent}/élève + ${c.extra})`).join(' ; ')]], o),
-    s.problematique ? h('p', { class: 'print-problem' }, h('strong', {}, 'Problématique : '), s.problematique) : null,
+    ident,
+    cadre || (on('problematique') && s.problematique) ? h2('Cadre pédagogique') : null, cadre,
+    on('problematique') && s.problematique ? h('p', { class: 'print-problem' }, h('strong', {}, 'Problématique : '), s.problematique) : null,
   ];
-  if (!blank && (s.variants || []).some(v => v.objective || v.consigne || v.support)) {
-    sections.push(h2('Multiniveau'), h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, ['Niveau', 'Objectif', 'Consigne', 'Support'].map(t => h('th', {}, t)))),
-      h('tbody', {}, s.variants.map(v => h('tr', {}, h('td', {}, v.level), h('td', {}, v.objective || ''), h('td', {}, v.consigne || ''), h('td', {}, v.support || ''))))));
+  if (!blank && on('multiniveau') && (s.variants || []).some(v => v.objective || v.consigne || v.support)) {
+    sections.push(h2('Multiniveau'), flat
+      ? h('div', { class: 'fb-list' }, s.variants.filter(v => v.objective || v.consigne || v.support).map(v => h('div', { class: 'fb-item' }, h('div', { class: 'fb-label' }, v.level), h('div', { class: 'fb-val pre' }, lines(pre('Objectif', v.objective), pre('Consigne', v.consigne), pre('Support', v.support))))))
+      : h('table', { class: 'print-table' }, h('thead', {}, h('tr', {}, ['Niveau', 'Objectif', 'Consigne', 'Support'].map(t => h('th', {}, t)))),
+        h('tbody', {}, s.variants.map(v => h('tr', {}, h('td', {}, v.level), h('td', {}, v.objective || ''), h('td', {}, v.consigne || ''), h('td', {}, v.support || ''))))));
   }
-  const phases = blank ? P.defaultPhases().map(p => ({ ...p, duration: null })) : (s.phases || []);
-  sections.push(h2(blank ? 'Déroulement de la séance' : `Déroulement de la séance${P.sessionDuration(s) ? ' — ' + model.durationLabel(P.sessionDuration(s)) : ''}`),
-    h('table', { class: 'print-table deroule' },
-      h('thead', {}, h('tr', {}, [['Durée et modalité', '10%'], ['Phase', '14%'], ['Déroulement et consignes', '24%'], ['Activité des élèves', '17%'], ['Rôle de l’enseignante', '17%'], ['Différenciation et évaluation', '18%']].map(([t, w]) => h('th', { style: { width: w } }, t)))),
-      h('tbody', {}, phases.map(ph => h('tr', {}, phaseCells(blank ? { kind: ph.kind } : ph).map(c => h('td', {}, c)))))));
-  sections.push(h('div', { class: 'keep' }, h2('Institutionnalisation, correction et évaluation'),
-    kv4([['Trace ou synthèse', s.trace], ['Correction attendue', s.correctionAttendue], ['Évaluation', s.evaluation], ['Prolongement', s.prolongement]], { blank })));
+  if (on('deroulement')) {
+    const phases = blank ? P.defaultPhases().map(p => ({ ...p, duration: null })) : (s.phases || []);
+    // Colonnes : durée, phase, consignes toujours ; élèves, enseignante, différenciation au choix.
+    const cols = [[null, 'Durée et modalité', 10], [null, 'Phase', 14], [null, 'Déroulement et consignes', 24], ['col-eleves', 'Activité des élèves', 17], ['col-ens', 'Rôle de l’enseignante', 17], ['col-diff', 'Différenciation et évaluation', 18]];
+    const keep = cols.map((c, i) => [c, i]).filter(([c]) => !c[0] || on(c[0]));
+    const total = keep.reduce((t, [c]) => t + c[2], 0);
+    sections.push(h2(blank ? 'Déroulement de la séance' : `Déroulement de la séance${P.sessionDuration(s) ? ' — ' + model.durationLabel(P.sessionDuration(s)) : ''}`));
+    if (flat) {
+      sections.push(h('div', { class: 'fb-phases' }, phases.map(ph => {
+        const cells = phaseCells(blank ? { kind: ph.kind } : ph);
+        const body = keep.slice(2).map(([c, i]) => [c[1], cells[i]]).filter(([, v]) => blank || (v && String(v).trim()));
+        return h('div', { class: 'fb-phase' },
+          h('div', { class: 'fb-phase-head' }, cells[1], cells[0] ? h('span', { class: 'fb-phase-dur' }, String(cells[0]).replace(/\n/g, ' · ')) : null),
+          body.map(([l, v]) => h('div', { class: `fb-sub${blank ? ' fb-blank' : ''}` }, h('span', { class: 'fb-sub-label' }, l), h('div', { class: 'pre' }, blank ? '' : v))));
+      })));
+    } else {
+      sections.push(h('table', { class: 'print-table deroule' },
+        h('thead', {}, h('tr', {}, keep.map(([c]) => h('th', { style: { width: `${Math.round(c[2] * 100 / total)}%` } }, c[1])))),
+        h('tbody', {}, phases.map(ph => { const cells = phaseCells(blank ? { kind: ph.kind } : ph); return h('tr', {}, keep.map(([, i]) => h('td', {}, cells[i]))); }))));
+    }
+  }
+  const instit = on('instit') ? (flat ? blocks : kv4)([['Trace ou synthèse', s.trace], ['Correction attendue', s.correctionAttendue], ['Évaluation', s.evaluation], ['Prolongement', s.prolongement]], { blank, skipEmpty: flat && !full }) : null;
+  if (instit) sections.push(h('div', { class: 'keep' }, h2('Institutionnalisation, correction et évaluation'), instit));
   // Bilan : celui saisi au cahier journal pour chaque date, sinon des lignes à remplir à la main.
-  const bilans = blank ? [] : occs.filter(x => x.after && Object.values(x.after).some(Boolean));
-  sections.push(h('div', { class: 'keep' }, h2('Bilan après la séance'), bilans.length
-    ? bilans.map(x => [bilans.length > 1 ? h('p', { class: 'print-mini' }, model.frDate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })) : null,
-      kv4(P.AFTER_FIELDS.map(f => [f.label, x.after[f.key]]), { skipEmpty: true })])
-    : h('div', { class: 'print-lines' }, ['Réussites observées', 'Obstacles rencontrés', 'Élèves à reprendre et remédiation prévue'].map(l => h('p', {}, `${l} : `)))));
-  if (full) {
+  if (on('bilan')) {
+    const bilans = blank ? [] : occs.filter(x => x.after && Object.values(x.after).some(Boolean));
+    sections.push(h('div', { class: 'keep' }, h2('Bilan après la séance'), bilans.length
+      ? bilans.map(x => [bilans.length > 1 ? h('p', { class: 'print-mini' }, model.frDate(x.date, { weekday: 'long', day: 'numeric', month: 'long' })) : null,
+        (flat ? blocks : kv4)(P.AFTER_FIELDS.map(f => [f.label, x.after[f.key]]), { skipEmpty: true })])
+      : h('div', { class: 'print-lines' }, ['Réussites observées', 'Obstacles rencontrés', 'Élèves à reprendre et remédiation prévue'].map(l => h('p', {}, `${l} : `)))));
+  }
+  if (full && on('checklist')) {
     sections.push(h('div', { class: 'keep' }, h2('Checklist avant visite / INSPE'), h('ul', { class: 'print-check' }, P.VISIT_CHECKLIST.map(([k, l]) => h('li', {}, `${!blank && s.checklist?.[k] ? '☑' : '☐'} ${l}`)))));
   }
   sections.push(docFoot(cls, 'Fiches de préparation'));
-  return h('div', { class: 'print-doc fiche' }, sections);
+  return h('div', { class: `print-doc fiche${flat ? ' fiche-blocs' : ''}` }, sections);
 }
 
 export function printSequence(id, { blank = false } = {}) {

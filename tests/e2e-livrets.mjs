@@ -173,7 +173,7 @@ await test('Fiches imprimées : phases, institutionnalisation, problématique, s
     await store.update(s.id, { problematique: 'PB-TEST', trace: 'TRACE-TEST', prolongement: 'PROLONG-TEST' });
     const P = await import('./js/pedago.js'); const last = P.sessionsOfSequence(s.sequenceId).at(-1); await store.update(last.id, { optional: true });
     return { s: s.id, q: s.sequenceId, cls: s.classId };`);
-  await go(`#/seance/${ids.s}`); await page.getByTestId('print-session').click(); await page.waitForTimeout(200);
+  await go(`#/seance/${ids.s}`); await page.getByTestId('print-session').click(); await page.getByTestId('print-session-go').click(); await page.waitForTimeout(200);
   let t = await page.evaluate(() => window.__p || '');
   for (const x of ['Fiche de préparation', 'Déroulement de la séance', 'Rôle de l’enseignante', 'Institutionnalisation, correction et évaluation', 'PB-TEST', 'TRACE-TEST', 'PROLONG-TEST', 'Bilan après la séance']) assert(t.includes(x), `séance : ${x}`);
   await S(`await store.update(a, { binome: { name: 'Binôme-test', active: true } });`, ids.cls);
@@ -1145,6 +1145,26 @@ await test('Disciplines et domaines : compléter avec le cycle 2 (programmes 202
   await chips.locator('button', { hasText: 'Géographie' }).click(); await page.waitForTimeout(300);
   eq(await S(`return store.get(a).subdomain;`, sid), 'Géographie', 'sous-domaine choisi en un clic dans la fiche');
   await S(`await store.setSettings({ subjects: a.s, subjectDomains: a.d });`, saved);
+});
+
+await test('Fiche de séance : rubriques à cocher et mise en page sans tableau, choix retenus', async () => {
+  const id = await S(`const s = store.all('session').find(x => (x.phases || []).length && !x.deletedAt); await store.update(s.id, { objective: 'OBJ-COCHE', prerequis: 'PREREQ-COCHE' }); await store.setSettings({ ficheExport: null }); return s.id;`);
+  await page.evaluate(() => { window.print = () => { window.__p = document.getElementById('print-root').textContent; }; });
+  await go(`#/seance/${id}`); await page.getByTestId('print-session').click();
+  await page.getByTestId('part-prerequis').uncheck(); await page.getByTestId('part-col-ens').uncheck(); await page.getByTestId('part-bilan').uncheck();
+  await page.getByTestId('print-session-go').click(); await page.waitForTimeout(200);
+  let t = await page.evaluate(() => window.__p || '');
+  assert(t.includes('OBJ-COCHE'), 'objectif gardé : ' + t.slice(0, 400)); assert(!t.includes('PREREQ-COCHE'), 'prérequis retiré');
+  assert(!t.includes('Rôle de l’enseignante'), 'colonne enseignante retirée'); assert(!t.includes('Bilan après la séance'), 'bilan retiré');
+  assert(t.includes('Activité des élèves'), 'colonne élèves gardée');
+  await page.getByTestId('print-session').click();
+  assert(!(await page.getByTestId('part-prerequis').isChecked()), 'choix retenu');
+  await page.getByTestId('layout-blocs').click(); await page.getByTestId('print-session-go').click(); await page.waitForTimeout(200);
+  const r = await page.evaluate(() => ({ t: window.__p || '', tables: document.querySelectorAll('#print-root table').length, phases: document.querySelectorAll('#print-root .fb-phase').length, page: document.getElementById('page-style')?.textContent || '' }));
+  eq(r.tables, 0, 'aucun tableau'); assert(r.phases > 0, 'phases en blocs'); assert(r.t.includes('OBJ-COCHE'), 'objectif en blocs');
+  assert(r.page.includes('portrait'), 'portrait sans tableau');
+  eq(await S(`return store.getSettings().ficheExport.layout`), 'blocs', 'mise en page retenue');
+  await S(`await store.setSettings({ ficheExport: null })`);
 });
 
 await test('Aucune erreur dans la console', async () => { eq(errors.length, 0, errors.join(' | ')); });

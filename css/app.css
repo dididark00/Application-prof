@@ -1594,3 +1594,26 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .suggest-chips .chip { font-size: .8rem; padding: 3px 10px; cursor: pointer; }
 .suggest-chips .chip.on { background: var(--accent); color: var(--on-accent, #fff); }
+
+/* ───── Fiche de séance : fenêtre d'impression et mise en page « sans tableau » ───── */
+.print-opts-label { font-weight: 700; margin: 4px 0 6px; }
+.print-opts-group { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px 4px; margin: 8px 0; }
+.print-opts-group legend { font-weight: 600; font-size: .9rem; padding: 0 4px; color: var(--ink-2); }
+.print-opts .chip:has(input:checked) { background: var(--accent-soft, var(--surface)); border-color: var(--accent); }
+.fiche-blocs .fb-meta { margin: 2px 0 8px; line-height: 1.5; font-size: .95em; }
+.fiche-blocs .fb-meta b { font-weight: 700; }
+.fiche-blocs .fb-list { display: block; }
+.fiche-blocs .fb-item { margin: 0 0 7px; break-inside: avoid; page-break-inside: avoid; }
+.fiche-blocs .fb-label { font-weight: 700; font-size: .9em; margin-bottom: 1px; }
+.fiche-blocs .fb-val { padding-left: 8px; border-left: 2px solid #bbb; }
+.fiche-blocs .fb-blank .fb-val, .fiche-blocs .fb-sub.fb-blank .pre { min-height: 3.2em; border-bottom: 1px dotted #888; }
+.fiche-blocs .fb-phase { margin: 0 0 9px; padding: 6px 9px; border: 1px solid #bbb; border-radius: 6px; break-inside: avoid; page-break-inside: avoid; }
+.fiche-blocs .fb-phase-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 3px; }
+.fiche-blocs .fb-phase-dur { font-size: .88em; color: #444; font-weight: 600; }
+.fiche-blocs .fb-sub { margin-top: 3px; font-size: .94em; }
+.fiche-blocs .fb-sub-label { font-weight: 700; font-size: .88em; }
+.print-root.theme-couleur .fiche-blocs .fb-label, .print-root.theme-couleur .fiche-blocs .fb-sub-label, .print-root.theme-couleur .fiche-blocs .fb-meta b { color: var(--pn); }
+.print-root.theme-couleur .fiche-blocs .fb-val { border-left-color: var(--pline); }
+.print-root.theme-couleur .fiche-blocs .fb-phase { border-color: var(--pline); border-left: 4px solid var(--pb); }
+.print-root.theme-couleur .fiche-blocs .fb-phase-head strong { color: var(--pb); }
+.btn.btn-wrap { white-space: normal; max-width: 100%; height: auto; text-align: left; overflow-wrap: anywhere; margin: 2px 0; }

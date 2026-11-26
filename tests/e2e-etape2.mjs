@@ -192,6 +192,7 @@ await test('Impressions : fiche de séance (visite et vierge), séquence, EDT, j
   for (const [route, btn, name] of shots) {
     await go(route);
     await page.getByTestId(btn).click();
+    if (btn === 'print-session') await page.getByTestId('print-session-go').click();
     await page.emulateMedia({ media: 'print' });
     const pdf = await page.pdf({ preferCSSPageSize: true });
     writeFileSync(`${OUT}etape2-${name}.pdf`, pdf);

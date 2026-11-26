@@ -10,7 +10,7 @@ import { pageHeader, subTabs, needClass } from '../components.js';
 import { bound, iconBtn, pickMany } from '../forms.js';
 import { sectionFields, competencyBlock, filesBlock, manualRefsBlock, levelChips } from '../pedago-ui.js';
 import { printDocument } from '../print.js';
-import { printSession } from '../printdocs.js';
+import { printSession, FICHE_PARTS, FICHE_LAYOUTS } from '../printdocs.js';
 import * as G from '../groups.js';
 import { slideshowsOf, createFor } from './diaporamas.js';
 import { gamesOfSession } from '../jeux.js';
@@ -148,9 +148,9 @@ function detail(id) {
           h('button', { type: 'button', class: (s.mode || 'quotidien') === m ? 'on' : '', 'data-testid': `mode-${m}`, onclick: () => save({ mode: m }, `Mode ${l}`, false) }, l))),
         h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'schedule', onclick: () => scheduleDialog(s, cls) }, icon('calendar', 16), 'Programmer'),
         h('button', { class: 'btn', type: 'button', 'data-testid': 'duplicate-session', title: 'Crée une copie indépendante : la modifier ne change pas cette fiche', onclick: async () => { const c = await P.duplicateSession(s.id); toast('Copie indépendante créée'); location.hash = `#/seance/${c.id}`; } }, icon('copy', 16), 'Dupliquer'),
-        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-session', onclick: () => printDocument(printSession(s.id), { orientation: 'landscape' }) }, icon('print', 16), 'Imprimer'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-session', onclick: () => printDialog(s) }, icon('print', 16), 'Imprimer ou exporter'),
         h('a', { class: 'btn', href: `#/dossiers?s=${s.id}${(() => { const o = P.occurrencesOfSession(s.id).filter(x => x.status !== 'reportée').map(x => x.date).sort(); const d = o.find(x => x >= model.todayIso()) || o.at(-1); return d ? `&d=${d}` : ''; })()}`, 'data-testid': 'visit-dossier', title: 'Fiche, séquence, progression et cahier journal du jour, imprimés ensemble' }, 'Dossier de visite'),
-        h('button', { class: 'btn', type: 'button', onclick: () => printDocument(printSession(s.id, { blank: true }), { orientation: 'landscape' }) }, 'Version vierge'),
+        h('button', { class: 'btn', type: 'button', 'data-testid': 'print-session-blank', onclick: () => printDialog(s, { blank: true }) }, 'Version vierge'),
         h('button', { class: 'btn btn-ghost-danger', type: 'button', 'aria-label': 'Mettre à la corbeille', onclick: async () => {
           const planned = occ.filter(o => o.status === 'prévue').length;
           if (!await confirmDialog('Mettre la fiche à la corbeille ?', `${occ.length ? `Elle est utilisée à ${occ.length} date(s) du cahier journal${planned ? `, dont ${planned} à venir` : ''}. Ces dates gardent le lien et retrouveront la fiche si vous la restaurez. ` : ''}Vous pourrez la restaurer depuis la corbeille.`, { confirmLabel: 'Mettre à la corbeille', danger: true })) return;
@@ -290,6 +290,33 @@ function linksSection(s) {
 }
 
 /** Programmer la fiche à une date : crée une séance datée liée (pas une copie). */
+/** Impression ou export PDF : rubriques à cocher et choix de la mise en page (tableau ou sans tableau). Choix retenus dans les réglages. */
+export function printDialog(s, { blank = false } = {}) {
+  const saved = store.getSettings().ficheExport || {};
+  const hidden = new Set(saved.hidden || []);
+  let layout = saved.layout || 'tableau';
+  const boxes = [];
+  const segBtns = FICHE_LAYOUTS.map(([k, l]) => h('button', { type: 'button', class: layout === k ? 'on' : '', 'data-testid': `layout-${k}`, onclick: (ev) => { layout = k; segBtns.forEach(b => b.classList.toggle('on', b === ev.currentTarget)); } }, l));
+  const setAll = (v) => boxes.forEach(b => { b.checked = v; });
+  const body = h('div', { class: 'print-opts' },
+    h('p', { class: 'print-opts-label' }, 'Mise en page'),
+    h('div', { class: 'seg', role: 'group', 'aria-label': 'Mise en page' }, segBtns),
+    h('p', { class: 'muted small' }, 'Tableau : votre fiche actuelle, en paysage. Sans tableau : les rubriques les unes sous les autres, en portrait.'),
+    h('div', { class: 'row', style: { gap: '8px', alignItems: 'center', marginTop: '10px' } }, h('p', { class: 'print-opts-label', style: { margin: 0, flex: 1 } }, 'À afficher sur la fiche'),
+      h('button', { type: 'button', class: 'btn btn-small', onclick: () => setAll(true) }, 'Tout cocher'), h('button', { type: 'button', class: 'btn btn-small', onclick: () => setAll(false) }, 'Tout décocher')),
+    FICHE_PARTS.map(g => h('fieldset', { class: 'print-opts-group' }, h('legend', {}, g.group),
+      h('div', { class: 'chips' }, g.items.map(([k, l]) => { const b = h('input', { type: 'checkbox', value: k, checked: !hidden.has(k), 'data-testid': `part-${k}` }); boxes.push(b); return h('label', { class: 'chip' }, b, l); })))),
+    h('p', { class: 'muted small' }, 'Pour un PDF, choisissez « Enregistrer au format PDF » dans la fenêtre d’impression. Les rubriques vides ne sont imprimées qu’en mode Visite.'));
+  modal({ title: blank ? 'Imprimer la version vierge' : 'Imprimer ou exporter la fiche', body, actions: [
+    { label: 'Annuler', onClick: () => {} },
+    { label: 'Imprimer / PDF', primary: true, testid: 'print-session-go', onClick: async () => {
+      const off = boxes.filter(b => !b.checked).map(b => b.value);
+      await store.setSettings({ ficheExport: { layout, hidden: off } });
+      const show = new Set(boxes.filter(b => b.checked).map(b => b.value));
+      printDocument(printSession(s.id, { blank, show, layout }), { orientation: layout === 'blocs' ? 'portrait' : 'landscape' });
+    } }] });
+}
+
 export function scheduleDialog(s, cls) {
   let date = nextSchoolDay(cls, model.todayIso());
   const body = h('div', { class: 'form' });
