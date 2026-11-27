@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (244) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 256 entrées.
+Légende : ✅ Réalisé (245) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 257 entrées.
 
 ## Étape 1 — Socle
 
@@ -284,3 +284,4 @@ Légende : ✅ Réalisé (244) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §5 Préparation | Sous-domaine : les domaines de la discipline sont proposés en boutons cliquables sous le champ (fiche de séance, séquence, progression, fenêtres de création, activité du cahier journal) ; on peut toujours écrire autre chose |  |
 | ✅ | §6 Cahier journal | Glisser une activité : la page défile toute seule quand on approche du haut ou du bas de l’écran, pour atteindre une activité hors de vue |  |
 | ✅ | §14 Exports | Fiche de séance imprimée ou exportée en PDF : rubriques à cocher (identification, cadre pédagogique, colonnes du déroulement, bilan…) et choix de la mise en page, tableau actuel (paysage) ou sans tableau (rubriques à la suite, portrait) ; derniers choix retenus | Version vierge : mêmes choix |
+| ✅ | §17 Projection | Vie de classe projetée (esprit ClassroomScreen / Digiscreen) : tirage au sort d’élèves (1 à 4, chacun son tour, absents de l’appel exclus, prénoms qui défilent), 12 pictogrammes de consigne de travail, feu du bruit manuel ou automatique au micro (analysé sur l’appareil), rituels du matin (date, hier, demain, n° du jour d’école décomposé, météo, anniversaires au choix) | Prénoms seuls à l’écran |

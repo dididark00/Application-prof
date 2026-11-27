@@ -9,12 +9,14 @@ import * as P from '../pedago.js';
 import * as PL from '../planning.js';
 import * as T from '../timer.js';
 import * as G from '../groups.js';
+import * as R from '../rituels.js';
+import { levelFromRms, zoneOf } from './outils.js';
 import { h, icon, toast, badge, emptyState } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 
 const KEY = 'classeur-projection';
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('classeur-projection') : null;
-const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false }, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
+const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false, rituels: false }, picto: null, feu: null, tirage: null, drawn: [], drawCount: 1, noRepeat: true, meteo: null, birthdays: false, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
 
 function loadCtrl() { try { return { ...DEF, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch { return { ...DEF }; } }
 let ctrl = loadCtrl();
@@ -42,7 +44,11 @@ export function buildPayload(cls, date, c = ctrl) {
   const sl = ssh && !ssh.deletedAt ? ssh.slides[Math.min(c.slideIndex || 0, ssh.slides.length - 1)] : null;
   const diapo = sl ? (() => { const f = sl.fileId ? store.get(sl.fileId) : null; const v = f?.versions?.at(-1);
     return { kind: sl.kind, kicker: sl.kicker || '', title: sl.title || '', text: sl.text || '', minutes: sl.minutes || null, blobId: v?.blobId || null, mime: v?.mime || '', url: sl.kind === 'lien' ? (sl.url || '') : '', index: c.slideIndex || 0, count: ssh.slides.length }; })() : null;
-  return { diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
+  // Vie de classe : uniquement des prénoms (tirage) ; anniversaires seulement si l'enseignante l'a coché.
+  const name = (id) => store.get(id)?.firstName || null;
+  const tirage = c.tirage ? { names: c.tirage.ids.map(name).filter(Boolean), pool: R.drawPool(cls, date).map(s => s.firstName), seq: c.tirage.seq } : null;
+  const rituel = c.panels.rituels ? R.ritual(cls, date, { meteo: c.meteo, birthdays: c.birthdays }) : null;
+  return { picto: R.pictoOf(c.picto), feu: c.feu || null, tirage, rituel, diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
 }
 
 /** Envoie une diapositive à l'écran de projection (sans les notes présentateur). */
@@ -98,6 +104,7 @@ export function render({ query, rerender }) {
         sl?.notes ? h('div', { class: 'presenter' }, h('h3', {}, 'Notes présentateur (non projetées)'), h('p', { class: 'pre' }, sl.notes)) : null,
         sl?.minutes ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => { T.setDuration(sl.minutes * 60); T.open(); T.start(); } }, `Timer ${sl.minutes} min`) : null);
     })() : null,
+    classLifeCard(cls, date, set),
     h('section', { class: 'card' }, h('h2', {}, 'Séance projetée'),
       entries.length ? h('div', { class: 'quick-list' }, entries.map(e => h('button', { class: `quick-item ${e.key === ctrl.entryKey ? 'on' : ''}`, type: 'button', 'data-testid': 'proj-entry', onclick: () => set({ entryKey: e.key, phaseId: e.session?.phases?.[0]?.id || null, supportFileId: null }) },
         h('strong', {}, `${e.start}–${e.end} · ${e.subject || ''}`), h('span', { class: 'muted' }, e.title)))) : emptyState('Aucune séance ce jour'),
@@ -111,6 +118,69 @@ export function render({ query, rerender }) {
         })(),
         files.length ? h('div', {}, h('h3', {}, 'Supports de la séance'), h('div', { class: 'row' }, files.map(f => h('button', { class: `btn btn-small ${ctrl.supportFileId === f.id ? 'btn-primary' : ''}`, type: 'button', onclick: () => set({ supportFileId: ctrl.supportFileId === f.id ? null : f.id, panels: { ...ctrl.panels, support: true } }) }, f.name)))) : null)
         : entry ? h('p', { class: 'muted' }, 'Aucune fiche de séance liée à ce créneau : seul le programme est projeté.') : null));
+}
+
+// ───────── Vie de classe (pupitre)
+// Feu automatique : le micro est analysé sur l'appareil de l'enseignante, rien n'est enregistré ni envoyé.
+const mic = { stream: null, ctx: null, raf: 0, zone: null, since: 0, calm: 45, loud: 70 };
+export function stopMic() { cancelAnimationFrame(mic.raf); mic.stream?.getTracks().forEach(t => t.stop()); mic.ctx?.close().catch(() => {}); mic.stream = null; mic.ctx = null; mic.zone = null; }
+async function startMic(onFeu, marker) {
+  try { mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch { toast('Micro refusé ou absent : autorisez le micro pour ce site.', { kind: 'error' }); return false; }
+  mic.ctx = new AudioContext(); const an = mic.ctx.createAnalyser(); an.fftSize = 2048;
+  mic.ctx.createMediaStreamSource(mic.stream).connect(an);
+  const buf = new Float32Array(an.fftSize);
+  const loop = () => {
+    if (!marker.isConnected && !document.querySelector('[data-mic-marker]')) { stopMic(); return; }
+    an.getFloatTimeDomainData(buf); let s = 0; for (const x of buf) s += x * x;
+    const z = zoneOf(levelFromRms(Math.sqrt(s / buf.length)), mic.calm, mic.loud);
+    // Le feu ne change qu'après 1,5 s dans la même zone, pour éviter le clignotement.
+    if (z !== mic.zone) { mic.zone = z; mic.since = performance.now(); }
+    else if (mic.since && performance.now() - mic.since > 1500) { mic.since = 0; onFeu(R.feuOfZone(z)); }
+    mic.raf = requestAnimationFrame(loop);
+  };
+  loop(); return true;
+}
+
+function classLifeCard(cls, date, set) {
+  const pool = R.drawPool(cls, date);
+  const done = (ctrl.drawn || []).filter(id => pool.some(s => s.id === id));
+  const doDraw = () => {
+    if (!pool.length) { toast('Aucun élève présent à tirer.', { kind: 'error' }); return; }
+    const r = R.draw(pool, { count: ctrl.drawCount || 1, drawn: ctrl.drawn || [], noRepeat: ctrl.noRepeat });
+    if (r.newRound) toast('Tout le monde est passé : nouveau tour.');
+    set({ tirage: { ids: r.picked, seq: (ctrl.tirage?.seq || 0) + 1 }, drawn: r.drawn });
+  };
+  const marker = h('span', { 'data-mic-marker': '1', hidden: true });
+  const tirageNames = (ctrl.tirage?.ids || []).map(id => store.get(id)?.firstName).filter(Boolean);
+  return h('section', { class: 'card', 'data-testid': 'class-life' }, h('h2', {}, 'Vie de classe'),
+    h('p', { class: 'muted small' }, 'Tirage au sort, consignes de travail et rituels du matin, affichés en grand sur l’écran projeté. Seuls les prénoms apparaissent.'),
+    h('div', { class: 'grid-3 life-grid' },
+      h('div', { class: 'life-block' }, h('h3', {}, 'Tirer au sort'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'draw', onclick: doDraw }, `Tirer ${ctrl.drawCount > 1 ? ctrl.drawCount + ' élèves' : 'un élève'}`),
+          h('label', { class: 'inline' }, 'Nombre', h('select', { 'data-testid': 'draw-count', onchange: (e) => set({ drawCount: Number(e.target.value) }) }, [1, 2, 3, 4].map(n => h('option', { value: n, selected: (ctrl.drawCount || 1) === n }, n))))),
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: ctrl.noRepeat, 'data-testid': 'draw-norepeat', onchange: (e) => set({ noRepeat: e.target.checked, drawn: [] }) }), 'Chacun son tour (sans répéter)'),
+        tirageNames.length ? h('p', { class: 'life-result', 'data-testid': 'draw-result' }, tirageNames.join(' · ')) : null,
+        h('p', { class: 'muted small' }, `${pool.length} élève(s) présent(s)${ctrl.noRepeat ? ` · déjà passés : ${done.length}/${pool.length}` : ''}. Les absents de l’appel sont exclus.`),
+        h('div', { class: 'row' },
+          ctrl.noRepeat && done.length ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'draw-reset', onclick: () => set({ drawn: [] }) }, 'Nouveau tour') : null,
+          ctrl.tirage ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'draw-hide', onclick: () => set({ tirage: null }) }, 'Retirer de l’écran') : null)),
+      h('div', { class: 'life-block' }, h('h3', {}, 'Consigne de travail'),
+        h('div', { class: 'picto-grid' }, R.PICTOS.map(([k, e, l]) => h('button', { type: 'button', class: `picto-btn ${ctrl.picto === k ? 'on' : ''}`, 'aria-pressed': String(ctrl.picto === k), 'data-testid': `picto-${k}`, title: l, onclick: () => set({ picto: ctrl.picto === k ? null : k }) }, h('span', { class: 'picto-emoji', 'aria-hidden': 'true' }, e), h('span', { class: 'picto-label' }, l)))),
+        h('h3', {}, 'Feu du bruit'),
+        h('div', { class: 'row' }, R.FEUX.map(([k, l]) => h('button', { type: 'button', class: `feu-btn feu-${k} ${ctrl.feu === k ? 'on' : ''}`, title: l, 'aria-label': l, 'aria-pressed': String(ctrl.feu === k), 'data-testid': `feu-${k}`, onclick: () => { if (mic.stream) stopMic(); set({ feu: ctrl.feu === k ? null : k }); } })),
+          h('button', { class: `btn btn-small ${mic.stream ? 'btn-primary' : ''}`, type: 'button', 'data-testid': 'feu-auto', onclick: async () => {
+            if (mic.stream) { stopMic(); set({}); return; }
+            if (await startMic((f) => { if (ctrl.feu !== f) set({ feu: f }); }, marker)) set({});
+          } }, mic.stream ? 'Arrêter le micro' : 'Automatique (micro)'), marker),
+        h('p', { class: 'muted small' }, 'Automatique : le feu suit le niveau sonore de la classe (seuils du sonomètre). Le son est analysé sur cet appareil, jamais enregistré ni envoyé.')),
+      h('div', { class: 'life-block' }, h('h3', {}, 'Rituels du matin'),
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!ctrl.panels.rituels, 'data-testid': 'panel-rituels', onchange: (e) => set({ panels: { ...ctrl.panels, rituels: e.target.checked } }) }), 'Projeter la date et le jour d’école'),
+        h('p', { class: 'small' }, R.ritual(cls, date).dayNumberText || 'Pas de classe ce jour : le numéro du jour d’école n’est pas affiché.'),
+        h('p', { class: 'small' }, 'Météo du jour (choisie avec la classe)'),
+        h('div', { class: 'picto-grid meteo' }, R.METEO.map(([k, e, l]) => h('button', { type: 'button', class: `picto-btn ${ctrl.meteo === k ? 'on' : ''}`, 'aria-pressed': String(ctrl.meteo === k), title: l, 'data-testid': `meteo-${k}`, onclick: () => set({ meteo: ctrl.meteo === k ? null : k, panels: { ...ctrl.panels, rituels: true } }) }, h('span', { class: 'picto-emoji', 'aria-hidden': 'true' }, e), h('span', { class: 'picto-label' }, l)))),
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!ctrl.birthdays, 'data-testid': 'rituel-birthdays', onchange: (e) => set({ birthdays: e.target.checked }) }), 'Souhaiter les anniversaires (prénom seul)'))));
 }
 
 // ───────── Écran
@@ -134,6 +204,7 @@ export function screenView(p, preview = false) {
     return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
       h('div', { class: `slide slide-${d.kind} big` }, d.kicker ? h('div', { class: 'slide-kicker' }, d.kicker) : null, h('div', { class: 'slide-title' }, d.title),
         d.kind === 'image' ? media : d.kind === 'lien' ? (embedOf(d.url) && !preview ? embedFrame(d.url, d.title, { note: false }) : h('div', { class: 'slide-text' }, embedOf(d.url) ? `Présentation ${embedOf(d.url).service} (affichée sur l’écran projeté)` : 'Présentation externe : ouverte sur l’ordinateur de l’enseignante')) : d.text ? h('div', { class: 'slide-text pre' }, d.text) : null),
+      signalsEl(p, 'corner-left'),
       showTimer ? h('section', { class: 'screen-timer corner' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null);
   }
   return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
@@ -142,11 +213,28 @@ export function screenView(p, preview = false) {
     h('div', { class: 'screen-grid' },
       p.panels.programme ? h('section', { class: 'screen-prog' }, h('h2', {}, 'Programme'), h('ol', {}, p.programme.map(x => h('li', { class: x.current ? 'current' : '' }, h('span', { class: 'st' }, x.start), ` ${x.subject}${x.title && x.title !== x.subject ? ' — ' + x.title : ''}`)))) : null,
       h('div', { class: 'screen-main' },
+        p.tirage?.names?.length ? h('section', { class: 'screen-tirage', 'data-seq': String(p.tirage.seq), 'data-testid': 'screen-tirage' }, h('h2', {}, p.tirage.names.length > 1 ? 'Au tableau' : 'C’est à toi'),
+          h('div', { class: 'tirage-names', 'data-final': p.tirage.names.join(' · ') }, p.tirage.names.join(' · '))) : null,
+        p.rituel ? h('section', { class: 'screen-rituel', 'data-testid': 'screen-rituel' },
+          h('p', { class: 'rituel-today' }, p.rituel.today),
+          h('p', { class: 'rituel-around' }, p.rituel.yesterday, ' ', p.rituel.tomorrow),
+          p.rituel.dayNumberText ? h('p', { class: 'rituel-num' }, p.rituel.dayNumberText) : null,
+          p.rituel.meteo ? h('p', { class: 'rituel-meteo' }, h('span', { class: 'rituel-meteo-emoji', 'aria-hidden': 'true' }, p.rituel.meteo.emoji), ` ${p.rituel.meteo.label}.`) : null,
+          p.rituel.birthdays?.length ? h('p', { class: 'rituel-anniv' }, `🎂 Joyeux anniversaire ${p.rituel.birthdays.join(' et ')} !`) : null) : null,
         p.panels.consigne && p.consigne ? h('section', { class: 'screen-consigne' }, h('h2', {}, p.consigne.phase), h('p', { class: 'pre' }, p.consigne.text || ''), p.consigne.trace ? h('p', { class: 'trace pre' }, p.consigne.trace) : null) : null,
         p.panels.support ? supportEl : null,
         p.panels.groupes && p.groupes ? h('section', { class: 'screen-groups' }, h('h2', {}, p.groupes.name), h('div', { class: 'screen-groups-grid' }, p.groupes.groups.map(g => h('div', { class: 'screen-group', style: { borderColor: g.color } }, h('strong', { style: { color: g.color } }, g.name), g.activity ? h('div', { class: 'small' }, g.activity) : null, h('div', {}, g.members.join(', ')))))) : null,
         p.panels.devoirs && p.devoirs.length ? h('section', { class: 'screen-devoirs' }, h('h2', {}, 'Devoirs'), h('ul', {}, p.devoirs.map(d => h('li', {}, `${d.title} — pour le ${model.frDate(d.dueDate, { weekday: 'long', day: 'numeric', month: 'long' })}${d.levels.length ? ' (' + d.levels.join(', ') + ')' : ''}`)))) : null),
-      showTimer ? h('section', { class: 'screen-timer' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null));
+      h('div', { class: 'screen-side' }, signalsEl(p),
+        showTimer ? h('section', { class: 'screen-timer' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null)));
+}
+
+/** Pictogramme de travail et feu du bruit. */
+function signalsEl(p, extra = '') {
+  if (!p.picto && !p.feu) return null;
+  return h('section', { class: `screen-signals ${extra}` },
+    p.picto ? h('div', { class: 'screen-picto', 'data-testid': 'screen-picto' }, h('div', { class: 'screen-picto-emoji', 'aria-hidden': 'true' }, p.picto.emoji), h('div', { class: 'screen-picto-label' }, p.picto.label)) : null,
+    p.feu ? h('div', { class: 'screen-feu', 'data-feu': p.feu, 'data-testid': 'screen-feu', role: 'img', 'aria-label': `Feu ${p.feu}` }, ['rouge', 'orange', 'vert'].map(k => h('span', { class: `lamp lamp-${k} ${p.feu === k ? 'on' : ''}` }))) : null);
 }
 
 function diskEl() { const d = h('div', { class: 'screen-disk', 'data-disk': '1' }); d.innerHTML = T.disk(360); return d; }
@@ -156,7 +244,18 @@ export function renderScreen() {
   let payload = null;
   try { payload = JSON.parse(localStorage.getItem(`${KEY}-payload`)); } catch { /* */ }
   const host = h('div', { class: 'screen-host' });
-  const draw = () => { host.replaceChildren(screenView(payload)); drawDisk(); };
+  let lastSeq = payload?.tirage?.seq ?? null;
+  const draw = () => { host.replaceChildren(screenView(payload)); drawDisk(); spin(); };
+  // Tirage : quelques prénoms défilent avant le résultat (seulement pour un nouveau tirage).
+  const spin = () => {
+    const el = host.querySelector('.tirage-names'); const seq = payload?.tirage?.seq ?? null;
+    if (!el || seq === lastSeq) return; lastSeq = seq;
+    const pool = payload.tirage.pool?.length ? payload.tirage.pool : [el.dataset.final]; const final = el.dataset.final;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let i = 0; el.classList.add('spinning');
+    const tick = () => { if (!el.isConnected) return; if (i++ < 14) { el.textContent = pool[Math.floor(Math.random() * pool.length)]; setTimeout(tick, 50 + i * 12); } else { el.textContent = final; el.classList.remove('spinning'); el.classList.add('landed'); } };
+    tick();
+  };
   const drawDisk = () => { const d = host.querySelector('[data-disk]'); if (d) { d.innerHTML = T.disk(360); const t = host.querySelector('.screen-time'); if (t) t.textContent = T.fmt(T.remaining()); } };
   if (channel) channel.onmessage = (e) => { if (e.data?.type === 'payload') { payload = e.data.payload; draw(); } };
   window.addEventListener('storage', (e) => { if (e.key === `${KEY}-payload`) { try { payload = JSON.parse(e.newValue); } catch { /* */ } draw(); } });

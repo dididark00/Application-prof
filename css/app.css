@@ -1617,3 +1617,45 @@ button.nav-grp-head:hover { background: var(--surface-2); color: var(--ink); }
 .print-root.theme-couleur .fiche-blocs .fb-phase { border-color: var(--pline); border-left: 4px solid var(--pb); }
 .print-root.theme-couleur .fiche-blocs .fb-phase-head strong { color: var(--pb); }
 .btn.btn-wrap { white-space: normal; max-width: 100%; height: auto; text-align: left; overflow-wrap: anywhere; margin: 2px 0; }
+
+/* ───── Vie de classe : tirage, pictogrammes, feu du bruit, rituels ───── */
+.life-grid { align-items: start; }
+.life-block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.life-block h3 { margin: 4px 0 0; }
+.life-result { font-size: 1.4rem; font-weight: 800; color: var(--accent); margin: 0; }
+.picto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.picto-grid.meteo { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+.picto-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: inherit; cursor: pointer; font: inherit; font-size: .78rem; line-height: 1.15; text-align: center; min-height: 64px; }
+.picto-btn .picto-emoji { font-size: 1.6rem; line-height: 1; }
+.picto-btn.on { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); font-weight: 700; }
+.feu-btn { width: 38px; height: 38px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; opacity: .45; }
+.feu-btn.on { opacity: 1; border-color: var(--ink, #222); }
+.feu-vert { background: #2e9d4f; } .feu-orange { background: #f0a020; } .feu-rouge { background: #d63a32; }
+.screen-side { display: flex; flex-direction: column; align-items: center; gap: 3vh; }
+.screen-signals { display: flex; flex-direction: column; align-items: center; gap: 2vh; }
+.screen-signals.corner-left { position: fixed; left: 2vw; bottom: 2vh; flex-direction: row; }
+.screen-picto { text-align: center; border: 5px solid var(--accent); border-radius: 24px; padding: .3em .6em; background: #fff; }
+.screen-picto-emoji { font-size: 4.2em; line-height: 1.1; }
+.screen-picto-label { font-weight: 800; font-size: 1.1em; }
+.screen-signals.corner-left .screen-picto-emoji { font-size: 2.4em; }
+.screen-feu { display: flex; flex-direction: column; gap: .25em; background: #222; padding: .3em; border-radius: 1em; }
+.screen-feu .lamp { width: 2.3em; height: 2.3em; border-radius: 50%; opacity: .18; }
+.screen-feu .lamp.on { opacity: 1; box-shadow: 0 0 .8em currentColor; }
+.lamp-rouge { background: #e53935; color: #e53935; } .lamp-orange { background: #ffa000; color: #ffa000; } .lamp-vert { background: #2ecc58; color: #2ecc58; }
+.screen.preview .screen-picto-emoji { font-size: 2em; }
+.screen.preview .screen-feu .lamp { width: 1em; height: 1em; }
+.screen-tirage { text-align: center; }
+.tirage-names { font-size: 3.2em; font-weight: 900; color: var(--accent); line-height: 1.15; overflow-wrap: anywhere; }
+.tirage-names.spinning { opacity: .55; }
+.tirage-names.landed { animation: tirage-pop .45s ease-out; }
+@keyframes tirage-pop { 0% { transform: scale(.6); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.screen-rituel { background: #f3f7ff; border-radius: 16px; padding: .5em .8em; }
+.screen-rituel p { margin: .15em 0; }
+.rituel-today { font-size: 1.5em; font-weight: 800; }
+.rituel-around { color: #444; }
+.rituel-num { font-weight: 700; color: var(--accent); }
+.rituel-meteo-emoji { font-size: 1.6em; vertical-align: middle; }
+.rituel-anniv { font-size: 1.3em; font-weight: 800; color: #b5227a; }
+@media (prefers-reduced-motion: reduce) { .tirage-names.landed { animation: none; } }
+.screen .tirage-names, .screen .rituel-num { color: #3d32a8; }
+.screen .screen-picto { border-color: #3d32a8; }

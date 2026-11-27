@@ -128,6 +128,36 @@ await test('§17 Projection et impressions familles : aucune donnée sensible', 
   assert((await page.locator('main').innerText()).includes('SECRET-SANTE'), 'déverrouillage inopérant');
 });
 
+await test('Vie de classe projetée : tirage sans répétition (absents exclus), pictogramme, feu, rituels', async () => {
+  const r0 = await S(`const R = await import('./js/rituels.js'); const pool = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    let d = []; const seen = []; for (let i = 0; i < 3; i++) { const r = R.draw(pool, { drawn: d }); d = r.drawn; seen.push(...r.picked); }
+    const r4 = R.draw(pool, { drawn: d }); const two = R.draw(pool, { count: 2, drawn: ['a', 'b'] });
+    return { seen: seen.sort().join(''), round: r4.newRound, two: two.picked.length, twoHasC: two.picked.includes('c'), dec: R.decompose(54), dec2: R.decompose(107) };`);
+  eq(r0.seen, 'abc', 'chacun une fois'); assert(r0.round, 'nouveau tour'); eq(r0.two, 2, 'deux tirés'); assert(r0.twoHasC, 'le restant est tiré d’abord');
+  eq(r0.dec, '5 dizaines, 4 unités', 'décomposition'); eq(r0.dec2, '1 centaine, 7 unités', 'décomposition centaine');
+  await page.evaluate(() => localStorage.removeItem('classeur-projection'));
+  await go('#/projection?d=2026-11-02'); await page.waitForTimeout(200);
+  const info = await S(`const cls = store.get(a.cls); const R = await import('./js/rituels.js'); return { abs: [...G.absentsOn(cls, '2026-11-02')], n: R.drawPool(cls, '2026-11-02').length, day: R.schoolDayNumber(cls, '2026-11-02') };`, ids);
+  assert(info.n > 2, 'élèves à tirer'); assert(info.day > 20, 'numéro du jour d’école : ' + info.day);
+  const drawn = [];
+  for (let i = 0; i < info.n; i++) { await page.getByTestId('draw').click(); await page.waitForTimeout(60); drawn.push(...(await page.evaluate(() => JSON.parse(localStorage.getItem('classeur-projection')).tirage.ids))); }
+  eq(new Set(drawn).size, info.n, 'chacun son tour, sans répétition');
+  for (const id of info.abs) assert(!drawn.includes(id), 'élève absent tiré');
+  await page.getByTestId('picto-chuchoter').click(); await page.getByTestId('feu-orange').click();
+  await page.getByTestId('meteo-pluie').click(); await page.waitForTimeout(150);
+  const payload = await page.evaluate(() => localStorage.getItem('classeur-projection-payload'));
+  const last = await S(`return store.all('student').map(s => s.lastName).filter(Boolean)`);
+  for (const ln of last) assert(!payload.includes(`"${ln}"`) && !payload.includes(` ${ln}`), 'nom de famille projeté : ' + ln);
+  const screen = await ctx.newPage(); await screen.goto(`${BASE}#/ecran`); await screen.waitForTimeout(1500);
+  const st = await screen.locator('body').innerText();
+  assert(st.includes('On chuchote'), 'pictogramme absent'); assert(st.includes('Aujourd’hui, nous sommes lundi 2 novembre 2026'), 'rituel de la date absent');
+  assert(st.includes('Il pleut') && st.includes('jour d’école'), 'météo ou jour d’école absent');
+  eq(await screen.locator('[data-feu=orange] .lamp-orange.on').count(), 1, 'feu orange');
+  const name = await screen.locator('.tirage-names').innerText(); assert(name.length > 1, 'prénom tiré affiché');
+  await screen.screenshot({ path: `${OUT}vie-de-classe-ecran.png` }); await screen.close();
+  await page.getByTestId('draw-hide').click(); await page.getByTestId('picto-chuchoter').click(); await page.getByTestId('feu-orange').click(); await page.getByTestId('panel-rituels').uncheck();
+});
+
 await test('Inscription au service ≠ présence prévue (absent à l’appel)', async () => {
   const r = await S(`const cls = store.get(a.cls); const rows = V.serviceDay(cls, '2026-11-02', 'Cantine'); return { reg: rows.length, exp: rows.filter(x => x.expected).length, nino: rows.find(x => x.student.id === a.nino) };`, ids);
   assert(r.nino && r.nino.registered && !r.nino.expected, 'absent compté présent à la cantine');
