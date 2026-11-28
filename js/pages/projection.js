@@ -10,13 +10,14 @@ import * as PL from '../planning.js';
 import * as T from '../timer.js';
 import * as G from '../groups.js';
 import * as R from '../rituels.js';
+import * as W from '../screen-widgets.js';
 import { levelFromRms, zoneOf } from './outils.js';
-import { h, icon, toast, badge, emptyState } from '../ui.js';
+import { h, icon, toast, badge, emptyState, modal, confirmDialog } from '../ui.js';
 import { pageHeader, subTabs, needClass } from '../components.js';
 
 const KEY = 'classeur-projection';
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('classeur-projection') : null;
-const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false, rituels: false }, picto: null, feu: null, tirage: null, drawn: [], drawCount: 1, noRepeat: true, meteo: null, birthdays: false, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
+const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false, rituels: false, chrono: false, horloge: false }, layoutId: null, chrono: null, clock: { mode: 'reelle', time: '09:00', digital: true, seconds: false }, picto: null, feu: null, tirage: null, drawn: [], drawCount: 1, noRepeat: true, meteo: null, birthdays: false, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
 
 function loadCtrl() { try { return { ...DEF, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch { return { ...DEF }; } }
 let ctrl = loadCtrl();
@@ -47,8 +48,10 @@ export function buildPayload(cls, date, c = ctrl) {
   // Vie de classe : uniquement des prénoms (tirage) ; anniversaires seulement si l'enseignante l'a coché.
   const name = (id) => store.get(id)?.firstName || null;
   const tirage = c.tirage ? { names: c.tirage.ids.map(name).filter(Boolean), pool: R.drawPool(cls, date).map(s => s.firstName), seq: c.tirage.seq } : null;
-  const rituel = c.panels.rituels ? R.ritual(cls, date, { meteo: c.meteo, birthdays: c.birthdays }) : null;
-  return { picto: R.pictoOf(c.picto), feu: c.feu || null, tirage, rituel, diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
+  const layout = c.layoutId ? W.layoutOf(c.layoutId) : null;
+  const has = (k) => !!layout?.items.some(x => x.key === k);
+  const rituel = c.panels.rituels || has('rituel') ? R.ritual(cls, date, { meteo: c.meteo, birthdays: c.birthdays }) : null;
+  return { layout: layout ? { name: layout.name, items: layout.items } : null, chrono: c.chrono || W.CHRONO0, clock: { ...DEF.clock, ...(c.clock || {}) }, picto: R.pictoOf(c.picto), feu: c.feu || null, tirage, rituel, diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
 }
 
 /** Envoie une diapositive à l'écran de projection (sans les notes présentateur). */
@@ -86,8 +89,9 @@ export function render({ query, rerender }) {
     h('div', { class: 'card notice' }, h('p', {}, 'L’écran de projection n’affiche que ce qui est coché ci-dessous : jamais de bilans, notes, coordonnées ni informations personnelles. Glissez la fenêtre « écran » sur le vidéoprojecteur ou le TNI et mettez-la en plein écran (F11).')),
     h('div', { class: 'grid-2' },
       h('section', { class: 'card' }, h('h2', {}, 'Ce qui est projeté'),
-        h('div', { class: 'chips' }, [['programme', 'Programme du jour'], ['consigne', 'Consigne'], ['devoirs', 'Devoirs'], ['timer', 'Timer'], ['support', 'Support'], ['groupes', 'Groupes']].map(([k, l]) =>
+        h('div', { class: 'chips' }, [['programme', 'Programme du jour'], ['consigne', 'Consigne'], ['devoirs', 'Devoirs'], ['timer', 'Timer'], ['support', 'Support'], ['groupes', 'Groupes'], ['horloge', 'Horloge'], ['chrono', 'Chronomètre']].map(([k, l]) =>
           h('label', { class: 'chip' }, h('input', { type: 'checkbox', checked: !!ctrl.panels[k], 'data-testid': `panel-${k}`, onchange: (e) => setPanel(k, e.target.checked) }), l))),
+        ctrl.layoutId && W.layoutOf(ctrl.layoutId) ? h('p', { class: 'muted small', 'data-testid': 'free-note' }, `Disposition « ${W.layoutOf(ctrl.layoutId).name} » : l’écran affiche les widgets placés, ces cases ne servent qu’à la disposition classique.`) : null,
         G.setsOf(cls.id).length ? h('label', { class: 'inline' }, 'Groupes projetés', h('select', { 'data-testid': 'proj-groupset', onchange: (e) => set({ groupSetId: e.target.value || null, panels: { ...ctrl.panels, groupes: !!e.target.value } }) },
           h('option', { value: '' }, entry?.occ?.groups ? 'ceux de la séance' : '—'), G.setsOf(cls.id).map(gs => h('option', { value: gs.id, selected: ctrl.groupSetId === gs.id }, gs.name)))) : null,
         h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: ctrl.blank, onchange: (e) => set({ blank: e.target.checked }) }), 'Écran noir (masquer tout)'),
@@ -105,6 +109,8 @@ export function render({ query, rerender }) {
         sl?.minutes ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => { T.setDuration(sl.minutes * 60); T.open(); T.start(); } }, `Timer ${sl.minutes} min`) : null);
     })() : null,
     classLifeCard(cls, date, set),
+    clockCard(set),
+    layoutCard(set),
     h('section', { class: 'card' }, h('h2', {}, 'Séance projetée'),
       entries.length ? h('div', { class: 'quick-list' }, entries.map(e => h('button', { class: `quick-item ${e.key === ctrl.entryKey ? 'on' : ''}`, type: 'button', 'data-testid': 'proj-entry', onclick: () => set({ entryKey: e.key, phaseId: e.session?.phases?.[0]?.id || null, supportFileId: null }) },
         h('strong', {}, `${e.start}–${e.end} · ${e.subject || ''}`), h('span', { class: 'muted' }, e.title)))) : emptyState('Aucune séance ce jour'),
@@ -118,6 +124,99 @@ export function render({ query, rerender }) {
         })(),
         files.length ? h('div', {}, h('h3', {}, 'Supports de la séance'), h('div', { class: 'row' }, files.map(f => h('button', { class: `btn btn-small ${ctrl.supportFileId === f.id ? 'btn-primary' : ''}`, type: 'button', onclick: () => set({ supportFileId: ctrl.supportFileId === f.id ? null : f.id, panels: { ...ctrl.panels, support: true } }) }, f.name)))) : null)
         : entry ? h('p', { class: 'muted' }, 'Aucune fiche de séance liée à ce créneau : seul le programme est projeté.') : null));
+}
+
+// ───────── Horloge et chronomètre (pupitre)
+function clockCard(set) {
+  const c = ctrl.chrono || W.CHRONO0; const k = { ...DEF.clock, ...(ctrl.clock || {}) };
+  const setClock = (patch) => set({ clock: { ...k, ...patch }, panels: { ...ctrl.panels, horloge: true } });
+  const live = h('strong', { class: 'chrono-live', 'data-testid': 'chrono-live' }, W.fmtChrono(W.chronoMs(c)));
+  if (c.running) { const iv = setInterval(() => { if (!live.isConnected) { clearInterval(iv); return; } live.textContent = W.fmtChrono(W.chronoMs(ctrl.chrono)); }, 250); }
+  return h('section', { class: 'card', 'data-testid': 'clock-card' }, h('h2', {}, 'Horloge et chronomètre'),
+    h('div', { class: 'grid-2' },
+      h('div', { class: 'life-block' }, h('h3', {}, 'Horloge à aiguilles'),
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!ctrl.panels.horloge, 'data-testid': 'panel-horloge2', onchange: (e) => set({ panels: { ...ctrl.panels, horloge: e.target.checked } }) }), 'Projeter l’horloge'),
+        h('div', { class: 'seg', role: 'group', 'aria-label': 'Heure affichée' },
+          h('button', { type: 'button', class: k.mode !== 'fixe' ? 'on' : '', 'data-testid': 'clock-real', onclick: () => setClock({ mode: 'reelle' }) }, 'Heure réelle'),
+          h('button', { type: 'button', class: k.mode === 'fixe' ? 'on' : '', 'data-testid': 'clock-fixed', onclick: () => setClock({ mode: 'fixe' }) }, 'Heure à lire')),
+        k.mode === 'fixe' ? h('label', { class: 'inline' }, 'Heure', h('input', { type: 'time', value: k.time, 'data-testid': 'clock-time', onchange: (e) => setClock({ time: e.target.value || '09:00' }) })) : null,
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: k.digital, 'data-testid': 'clock-digital', onchange: (e) => setClock({ digital: e.target.checked }) }), 'Afficher aussi l’heure en chiffres'),
+        k.mode !== 'fixe' ? h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: k.seconds, onchange: (e) => setClock({ seconds: e.target.checked }) }), 'Trotteuse (secondes)') : null,
+        h('p', { class: 'muted small' }, 'Heure à lire : pour la lecture de l’heure, réglez l’horloge et décochez l’heure en chiffres le temps que la classe cherche.')),
+      h('div', { class: 'life-block' }, h('h3', {}, 'Chronomètre'),
+        h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!ctrl.panels.chrono, 'data-testid': 'panel-chrono2', onchange: (e) => set({ panels: { ...ctrl.panels, chrono: e.target.checked } }) }), 'Projeter le chronomètre'),
+        h('div', { class: 'row' }, live,
+          h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'chrono-toggle', onclick: () => set({ chrono: W.chronoToggle(c), panels: { ...ctrl.panels, chrono: true } }) }, c.running ? 'Pause' : (W.chronoMs(c) ? 'Reprendre' : 'Démarrer')),
+          h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'chrono-reset', onclick: () => set({ chrono: { ...W.CHRONO0 } }) }, 'Remettre à zéro')),
+        h('p', { class: 'muted small' }, 'Il compte le temps qui passe (défi, calcul mental, rangement) ; le timer, lui, décompte.'))));
+}
+
+// ───────── Disposition libre de l'écran (pupitre)
+let editSel = null, refocus = false;
+function layoutCard(set) {
+  const list = W.layouts(); const cur = ctrl.layoutId ? W.layoutOf(ctrl.layoutId) : null;
+  const save = async (items) => { await W.upsertLayout({ ...cur, items: items.map(W.clampItem) }); set({}); };
+  const create = (from = null) => {
+    const name = h('input', { value: from ? `${from.name} (copie)` : '', placeholder: 'ex. Rituels, Ateliers, Calcul mental', 'data-testid': 'layout-name' });
+    const tpl = h('select', { 'data-testid': 'layout-template' }, W.TEMPLATES.map(([k, l]) => h('option', { value: k, selected: k === 'rituels' }, l)));
+    modal({ title: from ? 'Dupliquer la disposition' : 'Nouvelle disposition', body: h('div', { class: 'stack' }, h('div', { class: 'field' }, h('label', {}, 'Nom'), name),
+      from ? null : h('div', { class: 'field' }, h('label', {}, 'Point de départ'), tpl), h('p', { class: 'muted small' }, 'Vous placerez ensuite les widgets en les faisant glisser, et les agrandirez par le coin.')),
+    actions: [{ label: 'Annuler', onClick: () => {} }, { label: 'Créer', primary: true, testid: 'layout-create-go', onClick: async () => {
+      const l = from ? { ...from, id: store.uid(), name: name.value.trim() || `${from.name} (copie)`, items: from.items.map(x => ({ ...x })) } : W.newLayout(name.value.trim(), tpl.value);
+      await W.upsertLayout(l); editSel = null; set({ layoutId: l.id });
+    } }] });
+  };
+  const rename = () => { const name = h('input', { value: cur.name, 'data-testid': 'layout-rename-input' });
+    modal({ title: 'Renommer la disposition', body: h('div', { class: 'field' }, h('label', {}, 'Nom'), name), actions: [{ label: 'Annuler', onClick: () => {} }, { label: 'Renommer', primary: true, onClick: async () => { await W.upsertLayout({ ...cur, name: name.value.trim() || cur.name }); set({}); } }] }); };
+  const del = async () => { if (!(await confirmDialog('Supprimer la disposition', `Supprimer « ${cur.name} » ? L’écran reviendra à la disposition classique.`, { confirmLabel: 'Supprimer', danger: true }))) return;
+    await W.saveLayouts(list.filter(l => l.id !== cur.id)); editSel = null; set({ layoutId: null }); };
+
+  const head = h('div', { class: 'row' },
+    h('label', { class: 'inline' }, 'Disposition', h('select', { 'data-testid': 'layout-select', onchange: (e) => { editSel = null; set({ layoutId: e.target.value || null }); } },
+      h('option', { value: '' }, 'Classique (automatique)'), list.map(l => h('option', { value: l.id, selected: l.id === ctrl.layoutId }, l.name)))),
+    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'layout-new', onclick: () => create() }, icon('plus', 14), 'Nouvelle disposition'),
+    cur ? h('button', { class: 'btn btn-small', type: 'button', onclick: rename }, 'Renommer') : null,
+    cur ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => create(cur) }, 'Dupliquer') : null,
+    cur ? h('button', { class: 'btn btn-small btn-danger', type: 'button', 'data-testid': 'layout-delete', onclick: del }, 'Supprimer') : null);
+  if (!cur) return h('section', { class: 'card', 'data-testid': 'layout-card' }, h('h2', {}, 'Disposition de l’écran'), head,
+    h('p', { class: 'muted small' }, 'Classique : l’écran s’organise tout seul selon ce qui est coché. Créez une disposition pour placer vous-même les widgets (horloge, timer, tirage, pictogramme…) et la retrouver d’un clic, par exemple « Rituels » ou « Ateliers ».'));
+
+  const items = cur.items.map(x => ({ ...x }));
+  if (editSel != null && editSel >= items.length) editSel = null;
+  const canvas = h('div', { class: 'layout-canvas', 'data-testid': 'layout-canvas' });
+  const place = (el, i) => Object.assign(el.style, { left: `${i.x}%`, top: `${i.y}%`, width: `${i.w}%`, height: `${i.h}%` });
+  items.forEach((it, idx) => {
+    const grip = h('span', { class: 'lw-resize', 'aria-hidden': 'true', 'data-testid': 'lw-resize' });
+    const box = h('div', { class: `lw ${editSel === idx ? 'sel' : ''}`, tabindex: '0', role: 'button', 'data-testid': 'lw', 'data-key': it.key, 'aria-label': `${W.widgetLabel(it.key)} : flèches pour déplacer, Maj + flèches pour redimensionner`,
+      onkeydown: (e) => { const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; if (!d) { if (e.key === 'Delete') { items.splice(idx, 1); editSel = null; save(items); } return; }
+        e.preventDefault(); editSel = idx; refocus = true; const n = e.shiftKey ? { ...it, w: it.w + d[0] * 2, h: it.h + d[1] * 2 } : { ...it, x: it.x + d[0] * 2, y: it.y + d[1] * 2 }; items[idx] = W.clampItem(n); save(items); } },
+      h('span', { class: 'lw-label' }, W.widgetLabel(it.key)), grip);
+    place(box, it);
+    box.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return; ev.preventDefault(); box.setPointerCapture?.(ev.pointerId);
+      const r = canvas.getBoundingClientRect(); const sx = ev.clientX, sy = ev.clientY; const resize = ev.target === grip; let moved = false; let n = it;
+      const move = (e) => { const dx = (e.clientX - sx) / r.width * 100, dy = (e.clientY - sy) / r.height * 100; if (Math.abs(dx) + Math.abs(dy) > .5) moved = true;
+        n = W.clampItem(resize ? { ...it, w: it.w + dx, h: it.h + dy } : { ...it, x: it.x + dx, y: it.y + dy }); place(box, n); };
+      const up = () => { box.removeEventListener('pointermove', move); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up);
+        editSel = idx; if (moved) { items[idx] = n; save(items); } else set({}); };
+      box.addEventListener('pointermove', move); box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+    });
+    canvas.append(box);
+  });
+  if (refocus) { refocus = false; setTimeout(() => canvas.querySelectorAll('.lw')[editSel]?.focus(), 0); }
+  if (!items.length) canvas.append(h('p', { class: 'layout-empty muted' }, 'Ajoutez des widgets avec la liste ci-dessous.'));
+  const sel = editSel != null ? items[editSel] : null;
+  const scale = (d) => { items[editSel] = { ...sel, scale: Math.max(.5, Math.min(3, Math.round(((sel.scale || 1) + d) * 10) / 10)) }; save(items); };
+  return h('section', { class: 'card', 'data-testid': 'layout-card' }, h('h2', {}, 'Disposition de l’écran'), head,
+    h('p', { class: 'muted small' }, 'Faites glisser un widget pour le déplacer, tirez le coin pour l’agrandir. Clavier : sélectionnez-le puis flèches (Maj + flèches pour la taille). Le résultat s’affiche aussitôt sur l’écran projeté.'),
+    canvas,
+    h('div', { class: 'row', style: { marginTop: '8px' } },
+      h('label', { class: 'inline' }, 'Ajouter', h('select', { 'data-testid': 'layout-add', onchange: (e) => { if (!e.target.value) return; items.push(W.clampItem({ key: e.target.value, ...W.freeSpot(items), scale: 1 })); editSel = items.length - 1; save(items); } },
+        h('option', { value: '' }, 'un widget…'), W.WIDGETS.map(([k, l]) => h('option', { value: k }, `${l}${items.some(x => x.key === k) ? ' (déjà placé)' : ''}`)))),
+      sel ? [h('span', { class: 'muted' }, `Sélection : ${W.widgetLabel(sel.key)}`),
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'lw-smaller', 'aria-label': 'Texte plus petit', onclick: () => scale(-.1) }, 'A−'),
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'lw-bigger', 'aria-label': 'Texte plus grand', onclick: () => scale(.1) }, 'A+'),
+        h('button', { class: 'btn btn-small btn-danger', type: 'button', 'data-testid': 'lw-remove', onclick: () => { items.splice(editSel, 1); editSel = null; save(items); } }, 'Retirer')] : null));
 }
 
 // ───────── Vie de classe (pupitre)
@@ -188,16 +287,19 @@ function classLifeCard(cls, date, set) {
 export function screenView(p, preview = false) {
   if (!p) return h('div', { class: 'screen' }, h('p', {}, 'En attente du pupitre…'));
   if (p.blank) return h('div', { class: 'screen blank' });
+  const free = !!p.layout;
+  const on = (k) => free || !!p.panels[k];
   const tstate = T.getState();
-  const showTimer = p.panels.timer && (tstate.running || T.remaining() < tstate.duration);
+  const timerEl = () => h('section', { class: 'screen-timer' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining())));
+  const showTimer = free || (p.panels.timer && (tstate.running || T.remaining() < tstate.duration));
   const supportEl = h('div', { class: 'screen-support' });
-  if (p.panels.support && p.support?.kind === 'blob' && p.support.blobId && !preview) {
+  if (on('support') && p.support?.kind === 'blob' && p.support.blobId && !preview) {
     store.getBlob(p.support.blobId).then(b => {
       if (!b) return; const url = URL.createObjectURL(b);
       supportEl.replaceChildren((p.support.mime || '').startsWith('image/') ? h('img', { src: url, alt: p.support.name }) : (p.support.mime === 'application/pdf' ? h('iframe', { src: url, title: p.support.name }) : h('p', {}, p.support.name)));
     });
-  } else if (p.panels.support && p.support?.kind === 'link' && embedOf(p.support.url || '') && !preview) supportEl.append(embedFrame(p.support.url, p.support.name, { note: false }));
-  else if (p.panels.support && p.support) supportEl.append(h('p', { class: 'muted' }, `Support : ${p.support.name}${p.support.kind === 'link' ? ' (lien externe : ouvrez-le dans un autre onglet)' : ''}`));
+  } else if (on('support') && p.support?.kind === 'link' && embedOf(p.support.url || '') && !preview) supportEl.append(embedFrame(p.support.url, p.support.name, { note: false }));
+  else if (on('support') && p.support) supportEl.append(h('p', { class: 'muted' }, `Support : ${p.support.name}${p.support.kind === 'link' ? ' (lien externe : ouvrez-le dans un autre onglet)' : ''}`));
   if (p.panels.diapo && p.diapo) {
     const d = p.diapo; const media = h('div', { class: 'slide-media' });
     if (d.blobId && !preview) store.getBlob(d.blobId).then(b => { if (!b) return; const url = URL.createObjectURL(b); media.replaceChildren(d.mime.startsWith('image/') ? h('img', { src: url, alt: d.title }) : h('iframe', { src: url, title: d.title })); });
@@ -205,28 +307,51 @@ export function screenView(p, preview = false) {
       h('div', { class: `slide slide-${d.kind} big` }, d.kicker ? h('div', { class: 'slide-kicker' }, d.kicker) : null, h('div', { class: 'slide-title' }, d.title),
         d.kind === 'image' ? media : d.kind === 'lien' ? (embedOf(d.url) && !preview ? embedFrame(d.url, d.title, { note: false }) : h('div', { class: 'slide-text' }, embedOf(d.url) ? `Présentation ${embedOf(d.url).service} (affichée sur l’écran projeté)` : 'Présentation externe : ouverte sur l’ordinateur de l’enseignante')) : d.text ? h('div', { class: 'slide-text pre' }, d.text) : null),
       signalsEl(p, 'corner-left'),
-      showTimer ? h('section', { class: 'screen-timer corner' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null);
+      showTimer && p.panels.timer ? h('section', { class: 'screen-timer corner' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null);
   }
+  const date = p.dateLabel.replace(/^./, c => c.toUpperCase());
+  const parts = {
+    date: () => h('header', { class: 'screen-head' }, h('span', {}, date)),
+    message: () => p.message ? h('div', { class: 'screen-message' }, p.message) : null,
+    programme: () => on('programme') ? h('section', { class: 'screen-prog' }, h('h2', {}, 'Programme'), h('ol', {}, p.programme.map(x => h('li', { class: x.current ? 'current' : '' }, h('span', { class: 'st' }, x.start), ` ${x.subject}${x.title && x.title !== x.subject ? ' — ' + x.title : ''}`)))) : null,
+    tirage: () => p.tirage?.names?.length ? h('section', { class: 'screen-tirage', 'data-seq': String(p.tirage.seq), 'data-testid': 'screen-tirage' }, h('h2', {}, p.tirage.names.length > 1 ? 'Au tableau' : 'C’est à toi'),
+      h('div', { class: 'tirage-names', 'data-final': p.tirage.names.join(' · ') }, p.tirage.names.join(' · '))) : null,
+    rituel: () => p.rituel ? h('section', { class: 'screen-rituel', 'data-testid': 'screen-rituel' },
+      h('p', { class: 'rituel-today' }, p.rituel.today),
+      h('p', { class: 'rituel-around' }, p.rituel.yesterday, ' ', p.rituel.tomorrow),
+      p.rituel.dayNumberText ? h('p', { class: 'rituel-num' }, p.rituel.dayNumberText) : null,
+      p.rituel.meteo ? h('p', { class: 'rituel-meteo' }, h('span', { class: 'rituel-meteo-emoji', 'aria-hidden': 'true' }, p.rituel.meteo.emoji), ` ${p.rituel.meteo.label}.`) : null,
+      p.rituel.birthdays?.length ? h('p', { class: 'rituel-anniv' }, `🎂 Joyeux anniversaire ${p.rituel.birthdays.join(' et ')} !`) : null) : null,
+    consigne: () => on('consigne') && p.consigne ? h('section', { class: 'screen-consigne' }, h('h2', {}, p.consigne.phase), h('p', { class: 'pre' }, p.consigne.text || ''), p.consigne.trace ? h('p', { class: 'trace pre' }, p.consigne.trace) : null) : null,
+    support: () => on('support') && p.support ? supportEl : null,
+    groupes: () => on('groupes') && p.groupes ? h('section', { class: 'screen-groups' }, h('h2', {}, p.groupes.name), h('div', { class: 'screen-groups-grid' }, p.groupes.groups.map(g => h('div', { class: 'screen-group', style: { borderColor: g.color } }, h('strong', { style: { color: g.color } }, g.name), g.activity ? h('div', { class: 'small' }, g.activity) : null, h('div', {}, g.members.join(', ')))))) : null,
+    devoirs: () => on('devoirs') && p.devoirs.length ? h('section', { class: 'screen-devoirs' }, h('h2', {}, 'Devoirs'), h('ul', {}, p.devoirs.map(d => h('li', {}, `${d.title} — pour le ${model.frDate(d.dueDate, { weekday: 'long', day: 'numeric', month: 'long' })}${d.levels.length ? ' (' + d.levels.join(', ') + ')' : ''}`)))) : null,
+    picto: () => p.picto ? signalsEl({ picto: p.picto }) : null,
+    feu: () => p.feu ? signalsEl({ feu: p.feu }) : null,
+    timer: () => showTimer ? timerEl() : null,
+    chrono: () => on('chrono') ? h('section', { class: 'screen-chrono', 'data-testid': 'screen-chrono' }, h('h2', {}, 'Chronomètre'), h('div', { class: 'chrono-time', 'data-chrono': '1' }, W.fmtChrono(W.chronoMs(p.chrono)))) : null,
+    horloge: () => on('horloge') ? clockEl(p.clock) : null,
+  };
+  if (free) {
+    return h('div', { class: `screen free ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
+      p.layout.items.map(i => { const el = parts[i.key]?.();
+        return h('div', { class: `widget widget-${i.key}${el ? '' : ' empty'}`, 'data-widget': i.key, style: { left: `${i.x}%`, top: `${i.y}%`, width: `${i.w}%`, height: `${i.h}%`, '--ws': String(i.scale || 1) } },
+          h('div', { class: 'widget-in' }, el || (preview ? h('span', { class: 'widget-ph' }, W.widgetLabel(i.key)) : null))); }));
+  }
+  const sig = signalsEl(p);
   return h('div', { class: `screen ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
-    h('header', { class: 'screen-head' }, h('span', {}, p.dateLabel.replace(/^./, c => c.toUpperCase()))),
-    p.message ? h('div', { class: 'screen-message' }, p.message) : null,
+    parts.date(), parts.message(),
     h('div', { class: 'screen-grid' },
-      p.panels.programme ? h('section', { class: 'screen-prog' }, h('h2', {}, 'Programme'), h('ol', {}, p.programme.map(x => h('li', { class: x.current ? 'current' : '' }, h('span', { class: 'st' }, x.start), ` ${x.subject}${x.title && x.title !== x.subject ? ' — ' + x.title : ''}`)))) : null,
-      h('div', { class: 'screen-main' },
-        p.tirage?.names?.length ? h('section', { class: 'screen-tirage', 'data-seq': String(p.tirage.seq), 'data-testid': 'screen-tirage' }, h('h2', {}, p.tirage.names.length > 1 ? 'Au tableau' : 'C’est à toi'),
-          h('div', { class: 'tirage-names', 'data-final': p.tirage.names.join(' · ') }, p.tirage.names.join(' · '))) : null,
-        p.rituel ? h('section', { class: 'screen-rituel', 'data-testid': 'screen-rituel' },
-          h('p', { class: 'rituel-today' }, p.rituel.today),
-          h('p', { class: 'rituel-around' }, p.rituel.yesterday, ' ', p.rituel.tomorrow),
-          p.rituel.dayNumberText ? h('p', { class: 'rituel-num' }, p.rituel.dayNumberText) : null,
-          p.rituel.meteo ? h('p', { class: 'rituel-meteo' }, h('span', { class: 'rituel-meteo-emoji', 'aria-hidden': 'true' }, p.rituel.meteo.emoji), ` ${p.rituel.meteo.label}.`) : null,
-          p.rituel.birthdays?.length ? h('p', { class: 'rituel-anniv' }, `🎂 Joyeux anniversaire ${p.rituel.birthdays.join(' et ')} !`) : null) : null,
-        p.panels.consigne && p.consigne ? h('section', { class: 'screen-consigne' }, h('h2', {}, p.consigne.phase), h('p', { class: 'pre' }, p.consigne.text || ''), p.consigne.trace ? h('p', { class: 'trace pre' }, p.consigne.trace) : null) : null,
-        p.panels.support ? supportEl : null,
-        p.panels.groupes && p.groupes ? h('section', { class: 'screen-groups' }, h('h2', {}, p.groupes.name), h('div', { class: 'screen-groups-grid' }, p.groupes.groups.map(g => h('div', { class: 'screen-group', style: { borderColor: g.color } }, h('strong', { style: { color: g.color } }, g.name), g.activity ? h('div', { class: 'small' }, g.activity) : null, h('div', {}, g.members.join(', ')))))) : null,
-        p.panels.devoirs && p.devoirs.length ? h('section', { class: 'screen-devoirs' }, h('h2', {}, 'Devoirs'), h('ul', {}, p.devoirs.map(d => h('li', {}, `${d.title} — pour le ${model.frDate(d.dueDate, { weekday: 'long', day: 'numeric', month: 'long' })}${d.levels.length ? ' (' + d.levels.join(', ') + ')' : ''}`)))) : null),
-      h('div', { class: 'screen-side' }, signalsEl(p),
-        showTimer ? h('section', { class: 'screen-timer' }, diskEl(), h('div', { class: 'screen-time' }, T.fmt(T.remaining()))) : null)));
+      parts.programme(),
+      h('div', { class: 'screen-main' }, parts.tirage(), parts.rituel(), parts.consigne(), parts.support(), parts.groupes(), parts.devoirs()),
+      h('div', { class: 'screen-side' }, sig, parts.timer(), parts.chrono(), parts.horloge())));
+}
+
+/** Horloge à aiguilles, réelle ou réglée sur une heure à lire. */
+function clockEl(clock) {
+  const t = W.clockTime(clock);
+  const face = h('div', { class: 'clock-face', 'data-clock': '1' }); face.innerHTML = W.clockSvg(t, { seconds: clock.mode !== 'fixe' && clock.seconds });
+  return h('section', { class: 'screen-clock', 'data-testid': 'screen-clock' }, face, clock.digital ? h('div', { class: 'clock-digital', 'data-clock-digital': '1' }, W.clockDigital(t)) : null);
 }
 
 /** Pictogramme de travail et feu du bruit. */
@@ -256,7 +381,13 @@ export function renderScreen() {
     const tick = () => { if (!el.isConnected) return; if (i++ < 14) { el.textContent = pool[Math.floor(Math.random() * pool.length)]; setTimeout(tick, 50 + i * 12); } else { el.textContent = final; el.classList.remove('spinning'); el.classList.add('landed'); } };
     tick();
   };
-  const drawDisk = () => { const d = host.querySelector('[data-disk]'); if (d) { d.innerHTML = T.disk(360); const t = host.querySelector('.screen-time'); if (t) t.textContent = T.fmt(T.remaining()); } };
+  const drawDisk = () => {
+    const d = host.querySelector('[data-disk]'); if (d) { d.innerHTML = T.disk(360); const t = host.querySelector('.screen-time'); if (t) t.textContent = T.fmt(T.remaining()); }
+    const c = host.querySelector('[data-chrono]'); if (c && payload) c.textContent = W.fmtChrono(W.chronoMs(payload.chrono));
+    const k = host.querySelector('[data-clock]');
+    if (k && payload?.clock && payload.clock.mode !== 'fixe') { const t = W.clockTime(payload.clock); const sig = `${t.h}:${t.m}:${payload.clock.seconds ? t.s : ''}`;
+      if (k.dataset.sig !== sig) { k.dataset.sig = sig; k.innerHTML = W.clockSvg(t, { seconds: payload.clock.seconds }); const dg = host.querySelector('[data-clock-digital]'); if (dg) dg.textContent = W.clockDigital(t); } }
+  };
   if (channel) channel.onmessage = (e) => { if (e.data?.type === 'payload') { payload = e.data.payload; draw(); } };
   window.addEventListener('storage', (e) => { if (e.key === `${KEY}-payload`) { try { payload = JSON.parse(e.newValue); } catch { /* */ } draw(); } });
   T.subscribe(() => draw());

@@ -303,6 +303,7 @@ export const ROADMAP = [
   R(5, '§6 Cahier journal', 'Glisser une activité : la page défile toute seule quand on approche du haut ou du bas de l’écran, pour atteindre une activité hors de vue', 'fait', ''),
   R(5, '§14 Exports', 'Fiche de séance imprimée ou exportée en PDF : rubriques à cocher (identification, cadre pédagogique, colonnes du déroulement, bilan…) et choix de la mise en page, tableau actuel (paysage) ou sans tableau (rubriques à la suite, portrait) ; derniers choix retenus', 'fait', 'Version vierge : mêmes choix'),
   R(5, '§17 Projection', 'Vie de classe projetée (esprit ClassroomScreen / Digiscreen) : tirage au sort d’élèves (1 à 4, chacun son tour, absents de l’appel exclus, prénoms qui défilent), 12 pictogrammes de consigne de travail, feu du bruit manuel ou automatique au micro (analysé sur l’appareil), rituels du matin (date, hier, demain, n° du jour d’école décomposé, météo, anniversaires au choix)', 'fait', 'Prénoms seuls à l’écran'),
+  R(5, '§17 Projection', 'Écran à widgets (esprit Digiscreen) : dispositions enregistrées et synchronisées (modèles Rituels, Travail en classe, Ateliers, ou vide), 14 widgets à placer par glisser-déposer et à agrandir par le coin (ou au clavier), taille du texte réglable ; horloge à aiguilles (heure réelle ou heure à lire, chiffres masquables, trotteuse) ; chronomètre', 'fait', 'Disposition classique conservée par défaut'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

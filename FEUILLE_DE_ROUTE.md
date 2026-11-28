@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (245) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 257 entrées.
+Légende : ✅ Réalisé (246) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 258 entrées.
 
 ## Étape 1 — Socle
 
@@ -285,3 +285,4 @@ Légende : ✅ Réalisé (245) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §6 Cahier journal | Glisser une activité : la page défile toute seule quand on approche du haut ou du bas de l’écran, pour atteindre une activité hors de vue |  |
 | ✅ | §14 Exports | Fiche de séance imprimée ou exportée en PDF : rubriques à cocher (identification, cadre pédagogique, colonnes du déroulement, bilan…) et choix de la mise en page, tableau actuel (paysage) ou sans tableau (rubriques à la suite, portrait) ; derniers choix retenus | Version vierge : mêmes choix |
 | ✅ | §17 Projection | Vie de classe projetée (esprit ClassroomScreen / Digiscreen) : tirage au sort d’élèves (1 à 4, chacun son tour, absents de l’appel exclus, prénoms qui défilent), 12 pictogrammes de consigne de travail, feu du bruit manuel ou automatique au micro (analysé sur l’appareil), rituels du matin (date, hier, demain, n° du jour d’école décomposé, météo, anniversaires au choix) | Prénoms seuls à l’écran |
+| ✅ | §17 Projection | Écran à widgets (esprit Digiscreen) : dispositions enregistrées et synchronisées (modèles Rituels, Travail en classe, Ateliers, ou vide), 14 widgets à placer par glisser-déposer et à agrandir par le coin (ou au clavier), taille du texte réglable ; horloge à aiguilles (heure réelle ou heure à lire, chiffres masquables, trotteuse) ; chronomètre | Disposition classique conservée par défaut |

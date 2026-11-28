@@ -158,6 +158,49 @@ await test('Vie de classe projetée : tirage sans répétition (absents exclus),
   await page.getByTestId('draw-hide').click(); await page.getByTestId('picto-chuchoter').click(); await page.getByTestId('feu-orange').click(); await page.getByTestId('panel-rituels').uncheck();
 });
 
+await test('Écran à widgets : disposition enregistrée, glisser-déposer, horloge à lire, chronomètre', async () => {
+  const u = await S(`const W = await import('./js/screen-widgets.js');
+    const a1 = W.handAngles({ h: 3, m: 45, s: 0 }); const c = W.chronoToggle(W.CHRONO0, 1000); const c2 = W.chronoToggle(c, 66000);
+    return { h: a1.h, m: a1.m, fmt: W.fmtChrono(W.chronoMs(c2)), run: W.chronoMs(c, 4000), cl: W.clampItem({ x: 98, y: -5, w: 40, h: 3 }), spot: W.freeSpot([{ x: 0, y: 0, w: 50, h: 100 }]) };`);
+  eq(u.h, 112.5, 'aiguille des heures à 3 h 45'); eq(u.m, 270, 'aiguille des minutes'); eq(u.fmt, '01:05', 'chrono'); eq(u.run, 3000, 'chrono en marche');
+  eq(JSON.stringify(u.cl), JSON.stringify({ x: 60, y: 0, w: 40, h: 6 }), 'widget gardé dans l’écran'); assert(u.spot.x >= 50, 'place libre');
+  await page.evaluate(() => localStorage.removeItem('classeur-projection')); await S(`await store.setSettings({ screenLayouts: [] })`);
+  await go('#/projection?d=2026-11-02'); await page.waitForTimeout(200);
+  await page.getByTestId('layout-new').click(); await page.getByTestId('layout-name').fill('Calcul mental'); await page.getByTestId('layout-template').selectOption('classe');
+  await page.getByTestId('layout-create-go').click(); await page.waitForTimeout(250);
+  await page.getByTestId('layout-add').selectOption('horloge'); await page.waitForTimeout(200);
+  await page.getByTestId('layout-add').selectOption('chrono'); await page.waitForTimeout(200);
+  let L = await S(`return store.getSettings().screenLayouts[0]`);
+  eq(L.name, 'Calcul mental', 'nom'); assert(L.items.some(i => i.key === 'horloge') && L.items.some(i => i.key === 'chrono'), 'widgets ajoutés');
+  // Glisser le widget « Consigne » vers la droite.
+  await page.getByTestId('layout-canvas').scrollIntoViewIfNeeded();
+  const box = page.locator('[data-testid=lw][data-key=consigne]'); const bb = await box.boundingBox(); const cv = await page.getByTestId('layout-canvas').boundingBox();
+  const x0 = L.items.find(i => i.key === 'consigne').x;
+  const px = bb.x + bb.width * .5, py = bb.y + bb.height * .85; await page.mouse.move(px, py); await page.mouse.down(); await page.mouse.move(px + cv.width * .1, py, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(250);
+  L = await S(`return store.getSettings().screenLayouts[0]`);
+  const x1 = L.items.find(i => i.key === 'consigne').x; assert(Math.abs(x1 - x0 - 10) <= 1.5, `déplacement ${x0} → ${x1}`);
+  // Clavier : Maj + flèche droite agrandit.
+  const w0 = L.items.find(i => i.key === 'consigne').w;
+  await page.locator('[data-testid=lw][data-key=consigne]').focus(); await page.keyboard.press('Shift+ArrowLeft'); await page.waitForTimeout(200);
+  L = await S(`return store.getSettings().screenLayouts[0]`); eq(L.items.find(i => i.key === 'consigne').w, w0 - 2, 'taille au clavier');
+  await page.getByTestId('lw-bigger').click(); await page.waitForTimeout(150);
+  // Horloge à lire et chronomètre.
+  await page.getByTestId('clock-fixed').click(); await page.getByTestId('clock-time').fill('03:45'); await page.getByTestId('clock-time').dispatchEvent('change'); await page.waitForTimeout(150);
+  await page.getByTestId('clock-digital').uncheck(); await page.getByTestId('chrono-toggle').click(); await page.waitForTimeout(150);
+  const screen = await ctx.newPage(); await screen.goto(`${BASE}#/ecran`); await screen.waitForTimeout(2300);
+  eq(await screen.locator('.screen.free .widget').count(), L.items.length, 'widgets projetés');
+  eq(await screen.locator('[data-hand=h]').getAttribute('data-angle'), '112.5', 'horloge réglée sur 3 h 45');
+  eq(await screen.locator('[data-clock-digital]').count(), 0, 'heure en chiffres masquée');
+  const ch = await screen.locator('[data-chrono]').innerText(); assert(/^00:0[1-4]$/.test(ch), 'chronomètre en marche : ' + ch);
+  const st = await screen.locator('.widget[data-widget=consigne]').getAttribute('style'); assert(st.includes(`left: ${x1}%`), 'position projetée');
+  await screen.screenshot({ path: `${OUT}ecran-widgets.png` });
+  await page.getByTestId('layout-select').selectOption(''); await page.waitForTimeout(400);
+  eq(await screen.locator('.screen.free').count(), 0, 'retour à la disposition classique');
+  await screen.close();
+  await page.getByTestId('chrono-reset').click(); await page.getByTestId('layout-select').selectOption(L.id); await page.getByTestId('layout-delete').click(); await modalBtn('Supprimer').click(); await page.waitForTimeout(200);
+  eq(await S(`return store.getSettings().screenLayouts.length`), 0, 'disposition supprimée');
+});
+
 await test('Inscription au service ≠ présence prévue (absent à l’appel)', async () => {
   const r = await S(`const cls = store.get(a.cls); const rows = V.serviceDay(cls, '2026-11-02', 'Cantine'); return { reg: rows.length, exp: rows.filter(x => x.expected).length, nino: rows.find(x => x.student.id === a.nino) };`, ids);
   assert(r.nino && r.nino.registered && !r.nino.expected, 'absent compté présent à la cantine');
