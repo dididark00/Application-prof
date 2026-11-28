@@ -830,6 +830,26 @@ await test('Programmes : tout importer pour la classe, relier les compétences a
   assert(/Déroulement/i.test(t), 'déroulement imprimé');
 });
 
+await test('Atelier : dévoiler la fiche pas à pas (boutons et flèches du clavier)', async () => {
+  await go('#/atelier');
+  await page.getByRole('button', { name: 'Figures (mesurer, tracer)' }).first().click(); await page.waitForTimeout(300);
+  await page.getByRole('button', { name: 'Afficher en grand' }).click(); await page.waitForTimeout(300);
+  try {
+  const vis = () => page.evaluate(() => [...document.querySelector('.animate-board svg').children].filter(e => e.style.visibility !== 'hidden').length);
+  const all = await vis();
+  await page.getByTestId('reveal-start').click(); await page.waitForTimeout(100);
+  const lab = await page.getByTestId('reveal-label').innerText(); const n = Number(lab.split('/')[1]);
+  assert(lab.startsWith('0/') && n >= 2, 'étapes : ' + lab);
+  const hidden0 = await vis(); assert(hidden0 < all, 'fiche cachée au départ');
+  await page.getByTestId('reveal-next').click(); const v1 = await vis(); assert(v1 > hidden0, 'un élément dévoilé');
+  await page.keyboard.press('ArrowRight'); eq(await page.getByTestId('reveal-label').innerText(), `2/${n}`, 'flèche droite');
+  await page.keyboard.press('ArrowLeft'); eq(await page.getByTestId('reveal-label').innerText(), `1/${n}`, 'flèche gauche');
+  await page.getByTestId('reveal-all').click(); eq(await vis(), all, 'tout affiché');
+  await page.getByTestId('reveal-start').click(); eq(await vis(), all, 'arrêt : tout visible');
+  } finally { await page.locator('.animate-bar').getByRole('button', { name: 'Fermer' }).click(); }
+  await page.getByRole('button', { name: 'Tableau d’écriture (Seyès)' }).first().click();
+});
+
 await test('Atelier : agrandir l’affichage au tableau, et plusieurs supports pour une même séance', async () => {
   await go('#/atelier');
   await page.getByRole('button', { name: 'Afficher en grand' }).click(); await page.waitForTimeout(300);

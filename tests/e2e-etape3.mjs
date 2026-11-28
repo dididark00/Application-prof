@@ -201,6 +201,50 @@ await test('Écran à widgets : disposition enregistrée, glisser-déposer, horl
   eq(await S(`return store.getSettings().screenLayouts.length`), 0, 'disposition supprimée');
 });
 
+await test('Petits outils projetés (QR, dés, vote, tableau blanc) et rotation des ateliers à la fin du timer', async () => {
+  const u = await S(`const W = await import('./js/screen-widgets.js');
+    const svg = W.qrSvg('https://exemple.fr/élève'); const d = W.rollDice(3, 6); const v = W.voteOptions('Oui\\n Non \\n\\nPeut-être', [{ label: 'Non', count: 4 }]);
+    return { svg: svg.startsWith('<svg') && svg.includes('<path'), d: d.length === 3 && d.every(x => x >= 1 && x <= 6), v: v.map(o => o.label + o.count).join(',') };`);
+  assert(u.svg, 'QR code SVG'); assert(u.d, 'dés'); eq(u.v, 'Oui0,Non4,Peut-être0', 'options de vote (compteurs gardés)');
+  await page.evaluate(() => { localStorage.removeItem('classeur-projection'); localStorage.removeItem('classeur-timer'); localStorage.removeItem('classeur-timer-alerted'); });
+  const gs = await S(`const st = store.all('student').filter(s => !s.deletedAt).slice(0, 6).map(s => s.id);
+    const r = await store.create('groupset', { classId: a, name: 'Ateliers maths', kind: 'ateliers', permanent: false, groups: [
+      { id: store.uid(), name: 'Bleus', color: '#2f6f8f', memberIds: st.slice(0, 2), roles: {}, activity: 'Atelier A', order: 1 },
+      { id: store.uid(), name: 'Rouges', color: '#d9534f', memberIds: st.slice(2, 4), roles: {}, activity: 'Atelier B', order: 2 },
+      { id: store.uid(), name: 'Verts', color: '#3f8f3f', memberIds: st.slice(4, 6), roles: {}, activity: 'Atelier C', order: 3 }] }); return r.id;`, ids.cls);
+  await go('#/projection?d=2026-11-02'); await page.waitForTimeout(200);
+  await page.getByTestId('qr-text').fill('https://exemple.fr/'); await page.getByTestId('qr-go').click();
+  await page.getByTestId('dice-count').selectOption('3'); await page.getByTestId('dice-roll').click();
+  await page.getByTestId('vote-options').fill('Oui\nNon'); await page.getByTestId('vote-apply').click();
+  await page.getByTestId('vote-plus-1').click(); await page.getByTestId('vote-plus-1').click(); await page.getByTestId('panel-tableau').check();
+  await page.getByTestId('proj-groupset').selectOption(gs); await page.getByTestId('rotation-on').check(); await page.getByTestId('rotation-next').click(); await page.waitForTimeout(150);
+  eq(await page.getByTestId('rotation-index').innerText(), 'Rotation 2/3', 'rotation manuelle');
+  const screen = await ctx.newPage(); await screen.goto(`${BASE}#/ecran`); await screen.waitForTimeout(1800);
+  assert(await screen.locator('[data-testid=screen-qr] svg').count() === 1, 'QR code projeté');
+  eq(await screen.locator('.die').count(), 3, 'trois dés'); assert((await screen.locator('[data-sum]').innerText()).startsWith('Total'), 'total des dés');
+  assert((await screen.locator('[data-testid=screen-vote]').innerText()).includes('2 votes'), 'vote projeté');
+  const groupsTxt = await screen.locator('.screen-groups').innerText();
+  assert(/Bleus\s*Atelier B/.test(groupsTxt) && /Verts\s*Atelier A/.test(groupsTxt), 'ateliers tournés : ' + groupsTxt.replace(/\s+/g, ' '));
+  // Tableau blanc : un trait dessiné reste après une mise à jour de l'écran.
+  await screen.locator('[data-testid=board-canvas]').scrollIntoViewIfNeeded(); const cv = await screen.locator('[data-testid=board-canvas]').boundingBox();
+  await screen.mouse.move(cv.x + 20, cv.y + 20); await screen.mouse.down(); await screen.mouse.move(cv.x + 120, cv.y + 60, { steps: 5 }); await screen.mouse.up();
+  const ink = () => screen.evaluate(() => { const c = document.querySelector('[data-testid=board-canvas]'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n; });
+  assert(await ink() > 50, 'trait dessiné');
+  await page.getByTestId('dice-roll').click(); await screen.waitForTimeout(1500); assert(await ink() > 50, 'trait conservé après mise à jour');
+  // Fin du timer : passage automatique à l'atelier suivant et relance.
+  await page.getByTestId('rotation-auto').check(); await page.waitForTimeout(100);
+  await page.evaluate(async () => { const T = await import('./js/timer.js'); T.setDuration(5); T.start(); });
+  await page.waitForTimeout(7500);
+  const c = await page.evaluate(() => JSON.parse(localStorage.getItem('classeur-projection')));
+  eq(c.rotation.step, 2, 'atelier suivant à la fin du timer');
+  assert(await page.evaluate(async () => (await import('./js/timer.js')).getState().running), 'timer relancé');
+  assert(/Bleus\s*Atelier C/.test(await screen.locator('.screen-groups').innerText()), 'écran à jour');
+  await page.evaluate(async () => { const T = await import('./js/timer.js'); T.reset(); });
+  await screen.close();
+  await page.getByTestId('rotation-on').uncheck(); await page.getByTestId('panel-tableau').uncheck(); await page.getByTestId('panel-qr').uncheck(); await page.getByTestId('panel-des').uncheck(); await page.getByTestId('panel-vote').uncheck();
+  await S(`await store.remove(a)`, gs);
+});
+
 await test('Inscription au service ≠ présence prévue (absent à l’appel)', async () => {
   const r = await S(`const cls = store.get(a.cls); const rows = V.serviceDay(cls, '2026-11-02', 'Cantine'); return { reg: rows.length, exp: rows.filter(x => x.expected).length, nino: rows.find(x => x.student.id === a.nino) };`, ids);
   assert(r.nino && r.nino.registered && !r.nino.expected, 'absent compté présent à la cantine');

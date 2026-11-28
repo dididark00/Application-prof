@@ -433,6 +433,24 @@ async function saveSupport(o) {
 }
 
 /** Affichage en grand, avec annotation au doigt ou à la souris (non enregistrée). */
+/**
+ * Affichage progressif : les éléments de la fiche (SVG) sont regroupés par lignes, de haut en bas.
+ * Le fond, le titre et les grands éléments (quadrillage, cadre) restent visibles.
+ */
+export function revealSteps(svg, { maxSteps = 24 } = {}) {
+  if (!svg) return [];
+  const vb = svg.viewBox?.baseVal; const H = vb?.height || 297, W = vb?.width || 210;
+  const items = [...svg.children].map(el => { let b = null; try { b = el.getBBox(); } catch { /* */ } return { el, b }; })
+    .filter(({ el, b }) => b && (b.width || b.height) && el.tagName !== 'defs' && !(b.height > H * .6 && b.width > W * .6) && !(el.tagName === 'text' && b.y + b.height < 22 && b.y < 20));
+  items.sort((a, b) => a.b.y - b.b.y);
+  const rows = [];
+  for (const it of items) { const r = rows.at(-1); if (r && it.b.y + it.b.height / 2 <= r.bottom + 1) { r.els.push(it.el); r.bottom = Math.max(r.bottom, it.b.y + it.b.height); } else rows.push({ els: [it.el], bottom: it.b.y + it.b.height }); }
+  if (rows.length <= maxSteps) return rows.map(r => r.els);
+  const k = Math.ceil(rows.length / maxSteps); const out = [];
+  for (let i = 0; i < rows.length; i += k) out.push(rows.slice(i, i + k).flatMap(r => r.els));
+  return out;
+}
+
 export function animate(content) {
   const wrap = h('div', { class: 'animate' });
   const board = h('div', { class: 'animate-board' }, content);
@@ -459,7 +477,28 @@ export function animate(content) {
   const moveBtn = h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'zoom-move', title: 'Déplacer la page au doigt (au lieu d’écrire)', onclick: () => { moving = !moving; canvas.style.pointerEvents = moving ? 'none' : ''; moveBtn.classList.toggle('btn-primary', moving); moveBtn.textContent = moving ? '✋ Déplacer (actif)' : '✋ Déplacer'; } }, '✋ Déplacer');
   canvas.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.25 : -0.25)); } else if (zoom > 1) { board.scrollBy(e.deltaX, e.deltaY); ctx?.clearRect(0, 0, canvas.width, canvas.height); } }, { passive: false });
   document.addEventListener('keydown', function zk(e) { if (!document.body.contains(wrap)) { document.removeEventListener('keydown', zk); return; } if (e.key === '+' || e.key === '=') setZoom(zoom + 0.5); if (e.key === '-') setZoom(zoom - 0.5); if (e.key === '0') setZoom(1); });
+  // Dévoiler pas à pas (flèches, espace ou télécommande de présentation).
+  let steps = null, shown = 0;
+  const stepLabel = h('span', { class: 'small', 'data-testid': 'reveal-label' });
+  const showUpTo = (n) => { shown = Math.max(0, Math.min(steps.length, n)); steps.forEach((els, i) => els.forEach(el => { el.style.visibility = i < shown ? '' : 'hidden'; })); stepLabel.textContent = `${shown}/${steps.length}`; };
+  const revealCtl = h('span', { class: 'reveal-ctl', hidden: true },
+    h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Masquer le dernier élément', 'data-testid': 'reveal-prev', onclick: () => showUpTo(shown - 1) }, '◀'), stepLabel,
+    h('button', { class: 'btn btn-small btn-primary', type: 'button', 'aria-label': 'Dévoiler l’élément suivant', 'data-testid': 'reveal-next', onclick: () => showUpTo(shown + 1) }, '▶'),
+    h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'reveal-all', onclick: () => { showUpTo(steps.length); } }, 'Tout'));
+  const revealBtn = h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'reveal-start', title: 'Cacher la fiche et la dévoiler élément par élément', onclick: () => {
+    if (steps) { showUpTo(steps.length); steps = null; revealCtl.hidden = true; revealBtn.textContent = 'Dévoiler pas à pas'; return; }
+    steps = revealSteps(board.querySelector('svg'));
+    if (!steps.length) { steps = null; return; }
+    revealCtl.hidden = false; revealBtn.textContent = 'Arrêter le pas à pas'; showUpTo(0);
+  } }, 'Dévoiler pas à pas');
+  document.addEventListener('keydown', function rk(e) {
+    if (!document.body.contains(wrap)) { document.removeEventListener('keydown', rk); return; }
+    if (!steps || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); showUpTo(shown + 1); }
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); showUpTo(shown - 1); }
+  });
   wrap.append(board, canvas, h('div', { class: 'animate-bar' },
+    revealBtn, revealCtl,
     h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Rétrécir', 'data-testid': 'zoom-out', onclick: () => setZoom(zoom - 0.5) }, 'A−'),
     zLabel,
     h('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Agrandir', 'data-testid': 'zoom-in', onclick: () => setZoom(zoom + 0.5) }, 'A+'),

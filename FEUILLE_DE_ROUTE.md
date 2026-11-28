@@ -2,7 +2,7 @@
 
 Fichier généré depuis `js/roadmap.js` (`node tools/roadmap-md.mjs`). La même liste est consultable dans l’application : Réglages › Feuille de route.
 
-Légende : ✅ Réalisé (246) · 🟡 Partiel (2) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 258 entrées.
+Légende : ✅ Réalisé (249) · 🟡 Partiel (1) · ⚙️ À configurer (0) · ⬜ À développer (0) · ✖️ Retiré (impossible gratuitement, sans serveur) (10) — 260 entrées.
 
 ## Étape 1 — Socle
 
@@ -139,7 +139,7 @@ Légende : ✅ Réalisé (246) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §19 Atelier | Cartes monde/continents/France à partir de données sourcées | Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée. |
 | ✅ | §19 Atelier | Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes | Imprimables et jouables en grand (tactile), reliés aux séances. |
 | ✅ | §19 Atelier | Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé | Audio : voix de synthèse de l’appareil (indiquée comme telle) ou enregistrement de l’enseignante. |
-| 🟡 | §19 Atelier | Modes concevoir/animer plein écran, annotation, tactile | Plein écran, annotation au doigt, instruments déplaçables, jeux jouables en grand. À venir : affichage progressif des éléments d’une fiche. |
+| ✅ | §19 Atelier | Modes concevoir/animer plein écran, annotation, tactile | Plein écran, annotation au doigt, instruments déplaçables, jeux jouables en grand, fiche dévoilée pas à pas (boutons, flèches ou télécommande de présentation). |
 | ✅ | §19 Atelier | Fenêtre de projection séparée / image dans l’image si supporté | Écran de projection séparé (Aujourd’hui › Projection) ; timer en image dans l’image sur Chrome/Edge. |
 | ✅ | §20 Plans | Fiches de groupes imprimables/projetables (version enseignant séparée) | Plan de classe et groupes › Fiches de groupe / Version enseignante (notes) ; projection des groupes. |
 | ✅ | §20 Plans | Éditeur de schémas EPS lié aux préparations et au cahier journal | Déplacer, redimensionner, orienter, dupliquer, annuler ; modèles ; couleurs d’équipes des groupes ; image, impression, projection ; croquis non coté sauf dimensions saisies. |
@@ -286,3 +286,5 @@ Légende : ✅ Réalisé (246) · 🟡 Partiel (2) · ⚙️ À configurer (0) �
 | ✅ | §14 Exports | Fiche de séance imprimée ou exportée en PDF : rubriques à cocher (identification, cadre pédagogique, colonnes du déroulement, bilan…) et choix de la mise en page, tableau actuel (paysage) ou sans tableau (rubriques à la suite, portrait) ; derniers choix retenus | Version vierge : mêmes choix |
 | ✅ | §17 Projection | Vie de classe projetée (esprit ClassroomScreen / Digiscreen) : tirage au sort d’élèves (1 à 4, chacun son tour, absents de l’appel exclus, prénoms qui défilent), 12 pictogrammes de consigne de travail, feu du bruit manuel ou automatique au micro (analysé sur l’appareil), rituels du matin (date, hier, demain, n° du jour d’école décomposé, météo, anniversaires au choix) | Prénoms seuls à l’écran |
 | ✅ | §17 Projection | Écran à widgets (esprit Digiscreen) : dispositions enregistrées et synchronisées (modèles Rituels, Travail en classe, Ateliers, ou vide), 14 widgets à placer par glisser-déposer et à agrandir par le coin (ou au clavier), taille du texte réglable ; horloge à aiguilles (heure réelle ou heure à lire, chiffres masquables, trotteuse) ; chronomètre | Disposition classique conservée par défaut |
+| ✅ | §17 Projection | Petits outils projetés : QR code créé sur l’appareil (bibliothèque libre, sans service en ligne), dés (1 à 6, 6 faces à points, 10 ou 20), vote à main levée avec graphique, tableau blanc où l’on dessine sur l’écran projeté (feutres, gomme, tout effacer) ; aussi en widgets | Dessins non enregistrés |
+| ✅ | §17 Projection | Rotation des ateliers : chaque groupe passe à l’atelier suivant (manuel ou automatique à la fin du timer, qui se relance), « rotation 2/3 » affichée, arrêt quand tous les groupes ont fait tous les ateliers | Écran projeté ouvert pour le passage automatique |

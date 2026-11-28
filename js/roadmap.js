@@ -170,7 +170,7 @@ export const ROADMAP = [
   R(4, '§19 Atelier', 'Cartes monde/continents/France à partir de données sourcées', 'fait', 'Natural Earth (domaine public) et IGN Admin Express (Licence ouverte) ; versions vierge numérotée, légendée, corrigée.'),
   R(4, '§19 Atelier', 'Jeux : memory, associations, classement, remise en ordre, quiz, bingo, cartes', 'fait', 'Imprimables et jouables en grand (tactile), reliés aux séances.'),
   R(4, '§19 Atelier', 'Anglais : flashcards, affiches, vocabulaire, dialogues, audio sourcé', 'fait', 'Audio : voix de synthèse de l’appareil (indiquée comme telle) ou enregistrement de l’enseignante.'),
-  R(4, '§19 Atelier', 'Modes concevoir/animer plein écran, annotation, tactile', 'partiel', 'Plein écran, annotation au doigt, instruments déplaçables, jeux jouables en grand. À venir : affichage progressif des éléments d’une fiche.'),
+  R(4, '§19 Atelier', 'Modes concevoir/animer plein écran, annotation, tactile', 'fait', 'Plein écran, annotation au doigt, instruments déplaçables, jeux jouables en grand, fiche dévoilée pas à pas (boutons, flèches ou télécommande de présentation).'),
   R(4, '§19 Atelier', 'Fenêtre de projection séparée / image dans l’image si supporté', 'fait', 'Écran de projection séparé (Aujourd’hui › Projection) ; timer en image dans l’image sur Chrome/Edge.'),
 
   // ── §20 Plans, groupes, EPS
@@ -304,6 +304,8 @@ export const ROADMAP = [
   R(5, '§14 Exports', 'Fiche de séance imprimée ou exportée en PDF : rubriques à cocher (identification, cadre pédagogique, colonnes du déroulement, bilan…) et choix de la mise en page, tableau actuel (paysage) ou sans tableau (rubriques à la suite, portrait) ; derniers choix retenus', 'fait', 'Version vierge : mêmes choix'),
   R(5, '§17 Projection', 'Vie de classe projetée (esprit ClassroomScreen / Digiscreen) : tirage au sort d’élèves (1 à 4, chacun son tour, absents de l’appel exclus, prénoms qui défilent), 12 pictogrammes de consigne de travail, feu du bruit manuel ou automatique au micro (analysé sur l’appareil), rituels du matin (date, hier, demain, n° du jour d’école décomposé, météo, anniversaires au choix)', 'fait', 'Prénoms seuls à l’écran'),
   R(5, '§17 Projection', 'Écran à widgets (esprit Digiscreen) : dispositions enregistrées et synchronisées (modèles Rituels, Travail en classe, Ateliers, ou vide), 14 widgets à placer par glisser-déposer et à agrandir par le coin (ou au clavier), taille du texte réglable ; horloge à aiguilles (heure réelle ou heure à lire, chiffres masquables, trotteuse) ; chronomètre', 'fait', 'Disposition classique conservée par défaut'),
+  R(5, '§17 Projection', 'Petits outils projetés : QR code créé sur l’appareil (bibliothèque libre, sans service en ligne), dés (1 à 6, 6 faces à points, 10 ou 20), vote à main levée avec graphique, tableau blanc où l’on dessine sur l’écran projeté (feutres, gomme, tout effacer) ; aussi en widgets', 'fait', 'Dessins non enregistrés'),
+  R(5, '§17 Projection', 'Rotation des ateliers : chaque groupe passe à l’atelier suivant (manuel ou automatique à la fin du timer, qui se relance), « rotation 2/3 » affichée, arrêt quand tous les groupes ont fait tous les ateliers', 'fait', 'Écran projeté ouvert pour le passage automatique'),
 
   // ── §23 Bibliothèque
   R(3, '§23 Bibliothèque', 'Catalogue (exemplaires distincts) et prêts ; un exemplaire = un prêt actif', 'fait'),

@@ -17,7 +17,7 @@ import { pageHeader, subTabs, needClass } from '../components.js';
 
 const KEY = 'classeur-projection';
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('classeur-projection') : null;
-const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false, rituels: false, chrono: false, horloge: false }, layoutId: null, chrono: null, clock: { mode: 'reelle', time: '09:00', digital: true, seconds: false }, picto: null, feu: null, tirage: null, drawn: [], drawCount: 1, noRepeat: true, meteo: null, birthdays: false, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
+const DEF = { panels: { programme: true, consigne: true, devoirs: false, timer: true, support: false, groupes: false, diapo: false, rituels: false, chrono: false, horloge: false, qr: false, des: false, vote: false, tableau: false }, qr: { text: '', label: '' }, dice: null, diceCount: 2, diceFaces: 6, vote: { question: '', options: [] }, rotation: { on: false, step: 0, auto: false }, pubDate: null, layoutId: null, chrono: null, clock: { mode: 'reelle', time: '09:00', digital: true, seconds: false }, picto: null, feu: null, tirage: null, drawn: [], drawCount: 1, noRepeat: true, meteo: null, birthdays: false, groupSetId: null, slideshowId: null, slideIndex: 0, entryKey: null, phaseId: null, message: '', supportFileId: null, blank: false };
 
 function loadCtrl() { try { return { ...DEF, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; } catch { return { ...DEF }; } }
 let ctrl = loadCtrl();
@@ -41,6 +41,11 @@ export function buildPayload(cls, date, c = ctrl) {
   const set = c.groupSetId ? store.get(c.groupSetId) : null;
   const gsrc = occGroups || (set && !set.deletedAt ? G.snapshotSet(set) : null);
   const groupes = gsrc ? { name: gsrc.name, groups: gsrc.groups.map(g => ({ name: g.name, color: g.color, activity: g.activity || '', members: g.memberIds.map(id => { const st = store.get(id); return st ? `${st.firstName}${g.roles?.[id] ? ' (' + g.roles[id] + ')' : ''}` : null; }).filter(Boolean) })) } : null;
+  // Rotation des ateliers : chaque groupe passe à l'atelier suivant (activités des groupes, dans l'ordre).
+  if (groupes && c.rotation?.on && groupes.groups.length > 1) {
+    const n = groupes.groups.length, s = (((c.rotation.step || 0) % n) + n) % n; const acts = groupes.groups.map(g => g.activity);
+    groupes.groups = groupes.groups.map((g, i) => ({ ...g, activity: acts[(i + s) % n] || '' })); groupes.rotation = { index: s + 1, total: n };
+  }
   const ssh = c.slideshowId ? store.get(c.slideshowId) : null;
   const sl = ssh && !ssh.deletedAt ? ssh.slides[Math.min(c.slideIndex || 0, ssh.slides.length - 1)] : null;
   const diapo = sl ? (() => { const f = sl.fileId ? store.get(sl.fileId) : null; const v = f?.versions?.at(-1);
@@ -51,7 +56,10 @@ export function buildPayload(cls, date, c = ctrl) {
   const layout = c.layoutId ? W.layoutOf(c.layoutId) : null;
   const has = (k) => !!layout?.items.some(x => x.key === k);
   const rituel = c.panels.rituels || has('rituel') ? R.ritual(cls, date, { meteo: c.meteo, birthdays: c.birthdays }) : null;
-  return { layout: layout ? { name: layout.name, items: layout.items } : null, chrono: c.chrono || W.CHRONO0, clock: { ...DEF.clock, ...(c.clock || {}) }, picto: R.pictoOf(c.picto), feu: c.feu || null, tirage, rituel, diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
+  const qr = (c.panels.qr || has('qr')) && c.qr?.text ? { text: c.qr.text, label: c.qr.label || '' } : null;
+  const vote = (c.panels.vote || has('vote')) && c.vote?.options?.length ? { question: c.vote.question || '', options: c.vote.options } : null;
+  const des = (c.panels.des || has('des')) && c.dice ? c.dice : null;
+  return { qr, vote, des, tableau: !!(c.panels.tableau || has('tableau')), layout: layout ? { name: layout.name, items: layout.items } : null, chrono: c.chrono || W.CHRONO0, clock: { ...DEF.clock, ...(c.clock || {}) }, picto: R.pictoOf(c.picto), feu: c.feu || null, tirage, rituel, diapo, groupes, date, dateLabel: model.frDate(date, { weekday: 'long', day: 'numeric', month: 'long' }), panels: c.panels, programme, consigne, devoirs, message: c.message || '', support, blank: !!c.blank };
 }
 
 /** Envoie une diapositive à l'écran de projection (sans les notes présentateur). */
@@ -61,6 +69,7 @@ export function projectSlide(cls, slideshowId, index) {
 }
 
 function publish(cls, date) {
+  ctrl.pubDate = date;
   try { localStorage.setItem(KEY, JSON.stringify(ctrl)); localStorage.setItem(`${KEY}-payload`, JSON.stringify(buildPayload(cls, date))); } catch { /* */ }
   if (channel) channel.postMessage({ type: 'payload', payload: buildPayload(cls, date) });
 }
@@ -75,6 +84,7 @@ export function render({ query, rerender }) {
   const entries = plan.entries.filter(e => e.kind !== 'event');
   const entry = entries.find(e => e.key === ctrl.entryKey) || null;
   const set = (patch) => { ctrl = { ...ctrl, ...patch }; publish(cls, date); rerender(); };
+  rerenderPupitre = rerender;
   const setPanel = (k, v) => set({ panels: { ...ctrl.panels, [k]: v } });
   publish(cls, date);
   const payload = buildPayload(cls, date);
@@ -94,6 +104,7 @@ export function render({ query, rerender }) {
         ctrl.layoutId && W.layoutOf(ctrl.layoutId) ? h('p', { class: 'muted small', 'data-testid': 'free-note' }, `Disposition « ${W.layoutOf(ctrl.layoutId).name} » : l’écran affiche les widgets placés, ces cases ne servent qu’à la disposition classique.`) : null,
         G.setsOf(cls.id).length ? h('label', { class: 'inline' }, 'Groupes projetés', h('select', { 'data-testid': 'proj-groupset', onchange: (e) => set({ groupSetId: e.target.value || null, panels: { ...ctrl.panels, groupes: !!e.target.value } }) },
           h('option', { value: '' }, entry?.occ?.groups ? 'ceux de la séance' : '—'), G.setsOf(cls.id).map(gs => h('option', { value: gs.id, selected: ctrl.groupSetId === gs.id }, gs.name)))) : null,
+        payload.groupes ? rotationBlock(payload, set) : null,
         h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: ctrl.blank, onchange: (e) => set({ blank: e.target.checked }) }), 'Écran noir (masquer tout)'),
         h('div', { class: 'field' }, h('label', {}, 'Message affiché'), h('input', { value: ctrl.message, placeholder: 'ex. Sortez votre cahier du jour', 'data-testid': 'proj-message', onchange: (e) => set({ message: e.target.value }) })),
         h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', onclick: () => T.open() }, 'Régler le timer'), h('span', { class: 'muted small' }, 'Le timer projeté suit celui de l’application.'))),
@@ -110,6 +121,7 @@ export function render({ query, rerender }) {
     })() : null,
     classLifeCard(cls, date, set),
     clockCard(set),
+    toolsCard(set),
     layoutCard(set),
     h('section', { class: 'card' }, h('h2', {}, 'Séance projetée'),
       entries.length ? h('div', { class: 'quick-list' }, entries.map(e => h('button', { class: `quick-item ${e.key === ctrl.entryKey ? 'on' : ''}`, type: 'button', 'data-testid': 'proj-entry', onclick: () => set({ entryKey: e.key, phaseId: e.session?.phases?.[0]?.id || null, supportFileId: null }) },
@@ -124,6 +136,70 @@ export function render({ query, rerender }) {
         })(),
         files.length ? h('div', {}, h('h3', {}, 'Supports de la séance'), h('div', { class: 'row' }, files.map(f => h('button', { class: `btn btn-small ${ctrl.supportFileId === f.id ? 'btn-primary' : ''}`, type: 'button', onclick: () => set({ supportFileId: ctrl.supportFileId === f.id ? null : f.id, panels: { ...ctrl.panels, support: true } }) }, f.name)))) : null)
         : entry ? h('p', { class: 'muted' }, 'Aucune fiche de séance liée à ce créneau : seul le programme est projeté.') : null));
+}
+
+// ───────── Rotation des ateliers
+let rerenderPupitre = null;
+// Une autre fenêtre (l'écran) a fait avancer la rotation : le pupitre se met à jour.
+window.addEventListener('storage', (e) => { if (e.key === KEY) { ctrl = loadCtrl(); if (document.querySelector('[data-testid=class-life]')) rerenderPupitre?.(); } });
+// Fin du timer : passer automatiquement à l'atelier suivant et relancer le timer (une seule fenêtre le fait).
+T.onFinish(() => {
+  const c = loadCtrl(); if (!c.rotation?.on || !c.rotation.auto) return;
+  const cls = model.currentClass(); if (!cls) return;
+  const date = c.pubDate || model.todayIso(); const n = buildPayload(cls, date, c).groupes?.rotation?.total || 0;
+  if (!n) return;
+  if ((c.rotation.step || 0) + 1 >= n) { ctrl = { ...c, rotation: { ...c.rotation, auto: false } }; publish(cls, date); toast('Rotation terminée : chaque groupe est passé à tous les ateliers.'); rerenderPupitre?.(); return; }
+  ctrl = { ...c, rotation: { ...c.rotation, step: (c.rotation.step || 0) + 1 } }; publish(cls, date);
+  setTimeout(() => T.start(), 400);
+  toast(`Rotation ${ctrl.rotation.step + 1}/${n} : changement d’atelier.`);
+  if (document.querySelector('[data-testid=class-life]')) rerenderPupitre?.();
+});
+function rotationBlock(payload, set) {
+  const r = ctrl.rotation || DEF.rotation; const g = payload.groupes; const n = g.groups.length;
+  const withActs = g.groups.filter(x => x.activity).length;
+  const rot = (patch) => set({ rotation: { ...r, ...patch } });
+  return h('div', { class: 'rotation-block', 'data-testid': 'rotation-block' },
+    h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: r.on, 'data-testid': 'rotation-on', onchange: (e) => rot({ on: e.target.checked, step: 0 }) }), 'Rotation des ateliers'),
+    r.on ? [
+      h('div', { class: 'row' },
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rotation-prev', disabled: !(r.step > 0), onclick: () => rot({ step: Math.max(0, r.step - 1) }) }, '◀ Précédente'),
+        h('strong', { 'data-testid': 'rotation-index' }, `Rotation ${g.rotation?.index || 1}/${n}`),
+        h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'rotation-next', disabled: r.step + 1 >= n, onclick: () => rot({ step: Math.min(n - 1, r.step + 1) }) }, 'Suivante ▶')),
+      h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: r.auto, 'data-testid': 'rotation-auto', onchange: (e) => rot({ auto: e.target.checked }) }), 'À la fin du timer, passer à l’atelier suivant et relancer le timer'),
+      h('p', { class: 'muted small' }, withActs < n ? 'Indiquez l’activité de chaque groupe (Ma classe › Groupes) : ce sont les ateliers qui tournent.' : 'Chaque groupe passe à l’atelier du groupe suivant. L’écran projeté doit rester ouvert pour le passage automatique.')] : null);
+}
+
+// ───────── Petits outils (pupitre)
+function toolsCard(set) {
+  const q = ctrl.qr || DEF.qr; const v = ctrl.vote || DEF.vote;
+  const panel = (k, label) => h('label', { class: 'inline' }, h('input', { type: 'checkbox', checked: !!ctrl.panels[k], 'data-testid': `panel-${k}`, onchange: (e) => set({ panels: { ...ctrl.panels, [k]: e.target.checked } }) }), label);
+  const qrIn = h('input', { value: q.text, placeholder: 'https://… ou un texte', 'data-testid': 'qr-text', 'aria-label': 'Lien ou texte du QR code' });
+  const qrLbl = h('input', { value: q.label, placeholder: 'Légende (facultative)', 'aria-label': 'Légende du QR code' });
+  const prev = h('div', { class: 'qr-mini' }); if (q.text) prev.innerHTML = W.qrSvg(q.text);
+  const optsIn = h('textarea', { rows: 4, 'data-testid': 'vote-options', placeholder: 'Une réponse par ligne (6 au plus)\nOui\nNon', 'aria-label': 'Réponses du vote' }, v.options.map(o => o.label).join('\n'));
+  const qIn = h('input', { value: v.question, placeholder: 'Question (facultative)', 'data-testid': 'vote-question', 'aria-label': 'Question du vote' });
+  const setVote = (patch) => set({ vote: { ...v, ...patch } });
+  const count = (i, d) => setVote({ options: v.options.map((o, j) => j === i ? { ...o, count: Math.max(0, (o.count || 0) + d) } : o) });
+  return h('section', { class: 'card', 'data-testid': 'tools-card' }, h('h2', {}, 'Petits outils'),
+    h('div', { class: 'grid-2' },
+      h('div', { class: 'life-block' }, h('h3', {}, 'QR code'), panel('qr', 'Projeter le QR code'), qrIn, qrLbl,
+        h('div', { class: 'row' }, h('button', { class: 'btn btn-primary btn-small', type: 'button', 'data-testid': 'qr-go', onclick: () => set({ qr: { text: qrIn.value.trim(), label: qrLbl.value.trim() }, panels: { ...ctrl.panels, qr: !!qrIn.value.trim() } }) }, 'Créer et projeter'), prev),
+        h('p', { class: 'muted small' }, 'Le QR code est fabriqué sur cet appareil, sans service en ligne : les élèves le flashent avec une tablette pour ouvrir un lien.')),
+      h('div', { class: 'life-block' }, h('h3', {}, 'Dés'), panel('des', 'Projeter les dés'),
+        h('div', { class: 'row' },
+          h('label', { class: 'inline' }, 'Nombre', h('select', { 'data-testid': 'dice-count', onchange: (e) => set({ diceCount: Number(e.target.value) }) }, [1, 2, 3, 4, 5, 6].map(n => h('option', { value: n, selected: ctrl.diceCount === n }, n)))),
+          h('label', { class: 'inline' }, 'Faces', h('select', { 'data-testid': 'dice-faces', onchange: (e) => set({ diceFaces: Number(e.target.value) }) }, W.DICE_FACES.map(n => h('option', { value: n, selected: ctrl.diceFaces === n }, n === 6 ? '6 (points)' : n)))),
+          h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'dice-roll', onclick: () => set({ dice: { values: W.rollDice(ctrl.diceCount, ctrl.diceFaces), faces: ctrl.diceFaces, seq: (ctrl.dice?.seq || 0) + 1 }, panels: { ...ctrl.panels, des: true } }) }, 'Lancer')),
+        ctrl.dice ? h('p', { class: 'life-result', 'data-testid': 'dice-result' }, ctrl.dice.values.join(' · '), ctrl.dice.values.length > 1 ? ` (total ${ctrl.dice.values.reduce((a, b) => a + b, 0)})` : '') : null),
+      h('div', { class: 'life-block' }, h('h3', {}, 'Vote à main levée'), panel('vote', 'Projeter le vote'), qIn, optsIn,
+        h('div', { class: 'row' }, h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'vote-apply', onclick: () => set({ vote: { question: qIn.value.trim(), options: W.voteOptions(optsIn.value, v.options) }, panels: { ...ctrl.panels, vote: true } }) }, 'Mettre à jour les réponses'),
+          v.options.length ? h('button', { class: 'btn btn-small', type: 'button', 'data-testid': 'vote-reset', onclick: () => setVote({ options: v.options.map(o => ({ ...o, count: 0 })) }) }, 'Remettre à zéro') : null),
+        v.options.length ? h('div', { class: 'vote-ctl' }, v.options.map((o, i) => h('div', { class: 'row' }, h('span', { class: 'vote-ctl-label' }, o.label),
+          h('button', { class: 'btn btn-small', type: 'button', 'aria-label': `Retirer un vote : ${o.label}`, onclick: () => count(i, -1) }, '−'), h('strong', { 'data-testid': `vote-count-${i}` }, String(o.count || 0)),
+          h('button', { class: 'btn btn-small', type: 'button', 'aria-label': `Ajouter un vote : ${o.label}`, 'data-testid': `vote-plus-${i}`, onclick: () => count(i, 1) }, '+')))) : null,
+        h('p', { class: 'muted small' }, 'Comptez les mains levées et cliquez « + » : le graphique se met à jour sur l’écran. Le vote est anonyme.')),
+      h('div', { class: 'life-block' }, h('h3', {}, 'Tableau blanc'), panel('tableau', 'Projeter le tableau blanc'),
+        h('p', { class: 'muted small' }, 'On dessine directement sur l’écran projeté (TNI, tablette ou souris) : feutres de couleur, gomme, tout effacer. Les dessins restent sur l’écran, ils ne sont pas enregistrés.'))));
 }
 
 // ───────── Horloge et chronomètre (pupitre)
@@ -324,13 +400,18 @@ export function screenView(p, preview = false) {
       p.rituel.birthdays?.length ? h('p', { class: 'rituel-anniv' }, `🎂 Joyeux anniversaire ${p.rituel.birthdays.join(' et ')} !`) : null) : null,
     consigne: () => on('consigne') && p.consigne ? h('section', { class: 'screen-consigne' }, h('h2', {}, p.consigne.phase), h('p', { class: 'pre' }, p.consigne.text || ''), p.consigne.trace ? h('p', { class: 'trace pre' }, p.consigne.trace) : null) : null,
     support: () => on('support') && p.support ? supportEl : null,
-    groupes: () => on('groupes') && p.groupes ? h('section', { class: 'screen-groups' }, h('h2', {}, p.groupes.name), h('div', { class: 'screen-groups-grid' }, p.groupes.groups.map(g => h('div', { class: 'screen-group', style: { borderColor: g.color } }, h('strong', { style: { color: g.color } }, g.name), g.activity ? h('div', { class: 'small' }, g.activity) : null, h('div', {}, g.members.join(', ')))))) : null,
+    groupes: () => on('groupes') && p.groupes ? h('section', { class: 'screen-groups' }, h('h2', {}, p.groupes.name, p.groupes.rotation ? h('span', { class: 'rotation-badge', 'data-testid': 'screen-rotation' }, ` · rotation ${p.groupes.rotation.index}/${p.groupes.rotation.total}`) : null), h('div', { class: 'screen-groups-grid' }, p.groupes.groups.map(g => h('div', { class: 'screen-group', style: { borderColor: g.color } }, h('strong', { style: { color: g.color } }, g.name), g.activity ? h('div', { class: 'small' }, g.activity) : null, h('div', {}, g.members.join(', ')))))) : null,
     devoirs: () => on('devoirs') && p.devoirs.length ? h('section', { class: 'screen-devoirs' }, h('h2', {}, 'Devoirs'), h('ul', {}, p.devoirs.map(d => h('li', {}, `${d.title} — pour le ${model.frDate(d.dueDate, { weekday: 'long', day: 'numeric', month: 'long' })}${d.levels.length ? ' (' + d.levels.join(', ') + ')' : ''}`)))) : null,
     picto: () => p.picto ? signalsEl({ picto: p.picto }) : null,
     feu: () => p.feu ? signalsEl({ feu: p.feu }) : null,
     timer: () => showTimer ? timerEl() : null,
     chrono: () => on('chrono') ? h('section', { class: 'screen-chrono', 'data-testid': 'screen-chrono' }, h('h2', {}, 'Chronomètre'), h('div', { class: 'chrono-time', 'data-chrono': '1' }, W.fmtChrono(W.chronoMs(p.chrono)))) : null,
     horloge: () => on('horloge') ? clockEl(p.clock) : null,
+    qr: () => p.qr ? qrEl(p.qr) : null,
+    des: () => p.des ? h('section', { class: 'screen-dice', 'data-testid': 'screen-dice' }, h('div', { class: 'dice', 'data-seq': String(p.des.seq) }, p.des.values.map(v => { const d = h('div', { class: 'die', 'data-final': String(v), 'data-faces': String(p.des.faces) }); d.innerHTML = W.dieSvg(v, p.des.faces); return d; })),
+      p.des.values.length > 1 ? h('div', { class: 'dice-sum', 'data-sum': '1' }, `Total : ${p.des.values.reduce((a, b) => a + b, 0)}`) : null) : null,
+    vote: () => p.vote ? voteEl(p.vote) : null,
+    tableau: () => p.tableau ? boardEl(preview) : null,
   };
   if (free) {
     return h('div', { class: `screen free ${preview ? 'preview' : ''}`, 'data-testid': preview ? 'screen-preview' : 'screen' },
@@ -343,8 +424,45 @@ export function screenView(p, preview = false) {
     parts.date(), parts.message(),
     h('div', { class: 'screen-grid' },
       parts.programme(),
-      h('div', { class: 'screen-main' }, parts.tirage(), parts.rituel(), parts.consigne(), parts.support(), parts.groupes(), parts.devoirs()),
+      h('div', { class: 'screen-main' }, parts.tirage(), parts.rituel(), parts.consigne(), parts.support(), parts.groupes(), parts.devoirs(), parts.des(), parts.vote(), parts.qr(), parts.tableau()),
       h('div', { class: 'screen-side' }, sig, parts.timer(), parts.chrono(), parts.horloge())));
+}
+
+function qrEl(q) {
+  const box = h('div', { class: 'qr-box' }); box.innerHTML = W.qrSvg(q.text);
+  return h('section', { class: 'screen-qr', 'data-testid': 'screen-qr' }, box, h('div', { class: 'qr-label' }, q.label || q.text.replace(/^https?:\/\//, '').slice(0, 60)));
+}
+function voteEl(v) {
+  const total = v.options.reduce((a, o) => a + (o.count || 0), 0); const max = Math.max(1, ...v.options.map(o => o.count || 0));
+  return h('section', { class: 'screen-vote', 'data-testid': 'screen-vote' }, v.question ? h('h2', {}, v.question) : null,
+    h('div', { class: 'vote-bars' }, v.options.map((o, i) => h('div', { class: 'vote-row' }, h('span', { class: 'vote-label' }, o.label),
+      h('span', { class: 'vote-track' }, h('span', { class: `vote-bar c${i % 6}`, style: { width: `${Math.round((o.count || 0) * 100 / max)}%` } })), h('strong', { class: 'vote-count' }, String(o.count || 0))))),
+    h('div', { class: 'vote-total' }, `${total} vote${total > 1 ? 's' : ''}`));
+}
+
+// Tableau blanc : on dessine directement sur l'écran projeté (TNI, tablette). Les traits restent sur cet écran
+// (ils survivent aux mises à jour de l'affichage) et ne sont ni enregistrés ni envoyés.
+const board = { strokes: [], color: '#1f2a27', size: 4, erase: false };
+const BOARD_COLORS = ['#1f2a27', '#d9534f', '#2f6f8f', '#3f8f3f', '#e0a020'];
+function boardEl(preview) {
+  if (preview) return h('section', { class: 'screen-board' }, h('p', { class: 'widget-ph' }, 'Tableau blanc : dessinez sur l’écran projeté'));
+  const cv = h('canvas', { class: 'board-canvas', 'data-testid': 'board-canvas' });
+  const paint = () => { const r = cv.getBoundingClientRect(); if (!r.width) return; const k = devicePixelRatio || 1; cv.width = r.width * k; cv.height = r.height * k;
+    const g = cv.getContext('2d'); g.scale(k, k); g.lineCap = 'round'; g.lineJoin = 'round';
+    for (const s of board.strokes) { g.strokeStyle = s.erase ? '#ffffff' : s.color; g.lineWidth = s.erase ? s.size * 6 : s.size; g.beginPath(); s.pts.forEach(([x, y], i) => i ? g.lineTo(x * r.width, y * r.height) : g.moveTo(x * r.width, y * r.height)); if (s.pts.length === 1) g.lineTo(s.pts[0][0] * r.width + .1, s.pts[0][1] * r.height); g.stroke(); } };
+  let cur = null;
+  const pt = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  cv.addEventListener('pointerdown', (e) => { e.preventDefault(); cv.setPointerCapture?.(e.pointerId); cur = { color: board.color, size: board.size, erase: board.erase, pts: [pt(e)] }; board.strokes.push(cur); paint(); });
+  cv.addEventListener('pointermove', (e) => { if (!cur) return; cur.pts.push(pt(e)); paint(); });
+  const end = () => { cur = null; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  if ('ResizeObserver' in window) new ResizeObserver(() => paint()).observe(cv); else setTimeout(paint, 50);
+  const tool = (label, on, onclick, extra = {}, txt = null) => h('button', { type: 'button', class: `board-tool ${on ? 'on' : ''}`, 'aria-pressed': String(!!on), 'aria-label': label, title: label, onclick, ...extra }, txt);
+  const bar = h('div', { class: 'board-bar' },
+    BOARD_COLORS.map((c, i) => tool(`Feutre ${['noir', 'rouge', 'bleu', 'vert', 'jaune'][i]}`, !board.erase && board.color === c, () => { board.color = c; board.erase = false; refresh(); }, { style: { background: c } })),
+    tool('Gomme', board.erase, () => { board.erase = true; refresh(); }, {}, '⌫'),
+    tool('Tout effacer', false, () => { board.strokes = []; paint(); }, { 'data-testid': 'board-clear' }, '✕'));
+  const refresh = () => bar.querySelectorAll('.board-tool').forEach((b, i) => b.classList.toggle('on', i < BOARD_COLORS.length ? (!board.erase && board.color === BOARD_COLORS[i]) : i === BOARD_COLORS.length && board.erase));
+  return h('section', { class: 'screen-board' }, bar, cv);
 }
 
 /** Horloge à aiguilles, réelle ou réglée sur une heure à lire. */
@@ -370,7 +488,19 @@ export function renderScreen() {
   try { payload = JSON.parse(localStorage.getItem(`${KEY}-payload`)); } catch { /* */ }
   const host = h('div', { class: 'screen-host' });
   let lastSeq = payload?.tirage?.seq ?? null;
-  const draw = () => { host.replaceChildren(screenView(payload)); drawDisk(); spin(); };
+  let lastDice = payload?.des?.seq ?? null;
+  const draw = () => { host.replaceChildren(screenView(payload)); drawDisk(); spin(); roll(); };
+  const roll = () => {
+    const el = host.querySelector('.dice'); const seq = payload?.des?.seq ?? null;
+    if (!el || seq === lastDice) return; lastDice = seq;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const dies = [...el.querySelectorAll('.die')]; const sum = host.querySelector('[data-sum]'); if (sum) sum.style.visibility = 'hidden';
+    let i = 0; el.classList.add('rolling');
+    const tick = () => { if (!el.isConnected) return;
+      if (i++ < 10) { dies.forEach(d => { d.innerHTML = W.dieSvg(1 + Math.floor(Math.random() * Number(d.dataset.faces)), Number(d.dataset.faces)); }); setTimeout(tick, 60 + i * 10); }
+      else { dies.forEach(d => { d.innerHTML = W.dieSvg(Number(d.dataset.final), Number(d.dataset.faces)); }); el.classList.remove('rolling'); if (sum) sum.style.visibility = ''; } };
+    tick();
+  };
   // Tirage : quelques prénoms défilent avant le résultat (seulement pour un nouveau tirage).
   const spin = () => {
     const el = host.querySelector('.tirage-names'); const seq = payload?.tirage?.seq ?? null;

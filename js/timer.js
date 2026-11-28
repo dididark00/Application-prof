@@ -29,6 +29,9 @@ if (channel) channel.onmessage = (e) => { if (e.data?.type === 'state') { state 
 window.addEventListener('storage', (e) => { if (e.key === KEY) { const s = load(); state = { ...s, open: state.open, min: state.min, big: state.big, x: state.x, y: state.y, size: state.size }; draw(); } });
 
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+/** Appelé une seule fois par fin de timer (dans la fenêtre qui la détecte en premier). */
+const finishers = new Set();
+export function onFinish(fn) { finishers.add(fn); return () => finishers.delete(fn); }
 export function getState() { return { ...state }; }
 
 /** Secondes restantes, recalculées depuis l'heure de fin. */
@@ -63,6 +66,7 @@ function maybeAlert() {
   let already = null;
   try { already = localStorage.getItem(ALERT_KEY); localStorage.setItem(ALERT_KEY, String(endAt)); } catch { /* */ }
   if (already === String(endAt)) return;
+  for (const fn of finishers) { try { fn(); } catch (e) { console.warn(e); } }
   if (state.sound && !isProjectionView()) beep();
   if (el) { el.classList.add('done'); setTimeout(() => el && el.classList.remove('done'), 4000); }
 }
